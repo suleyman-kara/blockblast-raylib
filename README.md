@@ -41,24 +41,117 @@ Teslim edilecek materyaller: Kaynak kodlar, proje raporu, maksimum 5 dakikalık 
 | Rapor ve Dokümantasyon | %10 |
 | Video Sunumu | %5 |
 
-## Takım Görev Dağılımı (To-Do List)
+## Takım To-Do List
+Aşağıda, paylaştığın eğitim programının kronolojik sırasına göre düzenlenmiş, teknik kazanımları vurgulayan ve taranabilirliği yüksek formatı yer almaktadır:
 
-Deneyimsiz üyelerin iş yükü görsel ve işitsel statik fonksiyonlar ile mantıksal veri tanımlamaları arasında eşitlenmiştir.
+### 1. **02 - 09 Mart | Kişisel Tanıtım Sayfası**
 
-### Mukaddes (Dosya I/O)
+* **Hedef:** Local ve Remote repository bağlantısını kurmak.
+* **Görev:** Kendinizi tanıtan bir `README.md` dosyası oluşturun.
+* **Kazanımlar:**
+* Dosya takibi: `git init`, `git add`, `git commit`
+* Buluta gönderim: `git remote add`, `git push`
 
-**Görev 1:** `save.c` modülünü yazmak, skorları .txt veya .dat formatında diske kaydetmek ve okumak.
-**Görev 2:** Ücretsiz ses (audio) dosyalarını projeye dahil edip oyun içi olaylara bağlamak.
+### 2. **09 - 16 Mart | Basit Hesap Makinesi**
 
-### Berivan (Görselleştirme)
+* **Hedef:** Git "Branch" (Dal) yapısını öğrenmek.
+* **Görev:** Ana dalda (main) toplama, yeni bir dalda (`feature-subtraction`) çıkarma özelliğini geliştirin.
+* **Kazanımlar:**
+* Dal yönetimi: `git branch`, `git checkout`, `git switch`
+* Birleştirme: `git merge`
 
-**Görev 1:** Metinleri, skor tabelasını ve oyun sonu ekranı yazılarını Raylib ile çizdirmek.
-**Görev 2:** Blok dokularını (texture), bekleme tepsisini ve temel arka planı Raylib ile çizdirmek.
+### 3. **16 - 23 Mart | İstatistik Kütüphanesi**
 
-### Süleyman (Çekirdek Algoritmalar)
+* **Hedef:** Kodu modüler parçalara bölmek.
+* **Görev:** Sayı dizisinin ortalamasını ve maksimumunu bulan sistemi 3 dosyaya ayırın (`math_utils.h`, `math_utils.c`, `main.c`).
+* **Kazanımlar:**
+* Header dosyası bağlama ve Header Guard (`#ifndef`, `#define`) kullanımı.
+* Çoklu dosya linkleme süreci.
 
-**Görev 1:** `shapes.c` içerisinde kullanılacak blok türlerinin statik matris dizilerini tanımlamak.
-**Görev 2:** Alt kısımdaki bekleme tepsisinin (tray) veri mantığını ve yenilenmesini kurgulamak.
-**Görev 3:** Inputları alıp sürükle-bırak mekaniğini grid matrisine matematiksel olarak oturtmak (Snap to grid).
-**Görev 4:** Çarpışma algılama, satır/sütun temizleme ve oyun sonu kontrolü algoritmalarını yazmak.
-**Görev 5:** Pointer veri aktarım ağını kurmak ve malloc/free işlemlerini kontrol ederek bellek sızıntısını engellemek.
+### 4. **23 - 30 Mart | Kişisel Not Defteri**
+
+* **Hedef:** Dosya I/O ve Pointer mantığına giriş.
+* **Görev:** `notlar.txt` dosyasına veri yazan ve okuyan uygulama.
+* **Kazanımlar:**
+* Fonksiyonlar: `fopen()`, `fprintf()`, `fscanf()`, `fclose()`
+* `FILE *fptr` tanımı ile pointer kullanımı.
+
+### 5. **30 Mart - 06 Nisan | Envanter Yönetim Sistemi**
+
+* **Hedef:** "Call by Reference" (Adres ile çağırma) mantığı.
+* **Görev:** Ürün fiyat ve stok adedini pointer kullanarak güncelleyen sistem.
+* **Kazanımlar:**
+* Operatörler: `*` (Dereferencing) ve `&` (Address-of).
+* Pointer aritmetiği ve bellek yönetimi.
+
+### 6. **06 - 13 Nisan | Zıplayan Kare**
+
+* **Hedef:** Raylib çekirdek döngüsünü anlamak.
+* **Görev:** Kenarlara çarpınca renk değiştiren, klavye ile kontrol edilen kare.
+* **Kazanımlar:**
+* Game Loop: `InitWindow()`, `WindowShouldClose()`
+* Çizim: `BeginDrawing()`, `ClearBackground()`, `DrawRectangle()`
+* Girdi: `IsKeyDown()`
+
+### 7. **13 - 20 Nisan | Statik Izgara Sistemi**
+
+* **Hedef:** Block Blast temeli için 10x10'luk oyun alanı.
+* **Görev:** İç içe `for` döngüleri ile ızgara çizimi.
+* **Kazanımlar:**
+* 2D Array (Çift boyutlu diziler) ile dünya temsili.
+* Koordinat dönüşüm matematiği ($x = sütun \times hücre\_boyutu$).
+
+### 8. **20 - 27 Nisan | Sürükle-Bırak Şekiller**
+
+* **Hedef:** Blok taşıma ve "Snapping" (Mıknatıslanma) mekaniği.
+* **Görev:** Fare ile tutulan bloğun ızgara hücrelerine tam oturması.
+* **Kazanımlar:**
+* Çarpışma Kontrolü: `GetMousePosition()`, `CheckCollisionPointRec()`
+* Sınır Kontrolü (Boundary check).
+
+### 9. **27 Nisan - 04 Mayıs | Satır Patlatma Mekaniği**
+
+* **Hedef:** Dolu satırları temizleme ve skor sistemi.
+* **Görev:** Satır dolduğunda dizideki değerleri sıfırlama.
+* **Kazanımlar:**
+* Dizi tarama algoritmaları.
+* UI ve Ses: `DrawText()`, `LoadSound()`, `PlaySound()`.
+
+### Mukaddes'in Proje Bağlantıları:
+| Proje No | Bağlantı |
+| -------- | -------- |
+| 1        |          |
+| 2        |          |
+| 3        |          |
+| 4        |          |
+| 5        |          |
+| 6        |          |
+| 7        |          |
+| 8        |          |
+| 9        |          |
+
+### Berivan'ın Proje Bağlantıları:
+| Proje No | Bağlantı |
+| -------- | -------- |
+| 1        |          |
+| 2        |          |
+| 3        |          |
+| 4        |          |
+| 5        |          |
+| 6        |          |
+| 7        |          |
+| 8        |          |
+| 9        |          |
+
+### Süleyman'ın Proje Bağlantıları:
+| Proje No | Bağlantı |
+| -------- | -------- |
+| 1        |          |
+| 2        |          |
+| 3        |          |
+| 4        |          |
+| 5        |          |
+| 6        |          |
+| 7        |          |
+| 8        |          |
+| 9        |          |
