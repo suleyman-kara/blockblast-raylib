@@ -42,7 +42,6 @@ Teslim edilecek materyaller: Kaynak kodlar, proje raporu, maksimum 5 dakikalık 
 | Video Sunumu | %5 |
 
 ## Takım To-Do List
-Aşağıda, paylaştığın eğitim programının kronolojik sırasına göre düzenlenmiş, teknik kazanımları vurgulayan ve taranabilirliği yüksek formatı yer almaktadır:
 
 ### 1. **02 - 09 Mart | Kişisel Tanıtım Sayfası**
 
