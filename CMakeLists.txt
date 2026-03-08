@@ -16,11 +16,16 @@ set(SOURCES
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-
-# .h FILES
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-
 target_link_libraries(${PROJECT_NAME} raylib)
+
+if(APPLE)
+    target_link_libraries(${PROJECT_NAME} "-framework IOKit" "-framework Cocoa" "-framework OpenGL")
+elseif(WIN32)
+    target_link_libraries(${PROJECT_NAME} winmm gdi32 opengl32 shell32)
+elseif(UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} m pthread dl rt)
+endif()
 
 # OS Linker (DO NOT CHANGE!)
 if(APPLE)
