@@ -116,41 +116,15 @@ Teslim edilecek materyaller: Kaynak kodlar, proje raporu, maksimum 5 dakikalık 
 * Dizi tarama algoritmaları.
 * UI ve Ses: `DrawText()`, `LoadSound()`, `PlaySound()`.
 
-### Mukaddes'in Proje Bağlantıları:
-| Proje No | Bağlantı |
-| -------- | -------- |
-| 1        |          |
-| 2        |          |
-| 3        |          |
-| 4        |          |
-| 5        |          |
-| 6        |          |
-| 7        |          |
-| 8        |          |
-| 9        |          |
-
-### Berivan'ın Proje Bağlantıları:
-| Proje No | Bağlantı |
-| -------- | -------- |
-| 1        |          |
-| 2        |          |
-| 3        |          |
-| 4        |          |
-| 5        |          |
-| 6        |          |
-| 7        |          |
-| 8        |          |
-| 9        |          |
-
-### Süleyman'ın Proje Bağlantıları:
-| Proje No | Bağlantı |
-| -------- | -------- |
-| 1        |          |
-| 2        |          |
-| 3        |          |
-| 4        |          |
-| 5        |          |
-| 6        |          |
-| 7        |          |
-| 8        |          |
-| 9        |          |
+### Proje Bağlantıları
+| Proje No | Mukaddes | Berivan | Süleyman |
+| -------- | -------- | ------- | -------- |
+| 1        |          |         |          |
+| 2        |          |         |          |
+| 3        |          |         |          |
+| 4        |          |         |          |
+| 5        |          |         |          |
+| 6        |          |         |          |
+| 7        |          |         |          |
+| 8        |          |         |          |
+| 9        |          |         |          |
