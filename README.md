@@ -4,6 +4,26 @@
 
 Bu proje, Block Blast oyununun C ve Raylib kütüphanesi kullanılarak geliştirilmiş klonudur. Temel amaç, bellek yönetimi ve pointer manipülasyonu gibi düşük seviyeli yetkinlikleri oyun geliştirme dinamikleriyle birleştirerek modüler bir yapı ortaya koymaktır. Projede harici kütüphane kullanımı yasaktır.
 
+## Kurulum ve Derleme
+
+Bu proje **CMake** ve **Raylib** kullanılarak geliştirilmektedir. Raylib bağımlılığı CMake üzerinden otomatik olarak (`FetchContent` ile) Github'dan indirilir.
+
+### Ön Koşullar
+Projeyi bilgisayarınızda derleyip çalıştırabilmek için aşağıdaki araçların yüklü olması zorunludur:
+* **Git:** Raylib kütüphanesini arka planda indirebilmek için ([İndir](https://git-scm.com/downloads)).
+* **C/C++ Derleyicisi (Compiler):** 
+  * **Windows:** Visual Studio C++ Build Tools (MSVC) veya MinGW/GCC.
+  * **macOS:** Xcode Command Line Tools (`xcode-select --install` terminal komutu ile).
+  * **Linux:** GCC veya Clang (`sudo apt install build-essential` komutu ile).
+* **CMake:** Derleme sürecini yönetmek için ([İndir](https://cmake.org/download/)).
+
+### VS Code ile Çalıştırma
+1. Cihazınızda Git, CMake ve uygun bir derleyici kurulu olduğundan emin olun.
+2. Bu projeyi VS Code ile açın.
+3. VS Code'un **C/C++** ve **CMake Tools** eklentilerini yükleyin.
+4. Alt durum çubuğunda (veya komut paletinde `CMake: Select a Kit` yazarak) doğru **Derleyici Kitini** (Örn: Windows için *Visual Studio Community 2022 Release - amd64* veya *GCC*) seçin.
+5. `Build` (Derle) butonuna basarak projenin derlenmesini bekleyin. Derleme başarılı olduktan sonra `Play` (Çalıştır) butonuna tıklayarak oyunu başlatabilirsiniz.
+
 ## Teknik Kısıtlar ve Mimari
 
 * **Veri Yapıları:** Oyun elemanlarının struct yapıları ile tanımlanması.
