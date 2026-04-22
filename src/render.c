@@ -295,9 +295,15 @@ static void RenderSettings(GameState *state)
     // Separator line
     DrawRectangle(SCREEN_WIDTH / 2 - 80, 245, 160, 2, (Color){80, 80, 100, 255});
 
+    // Build settings labels dynamically based on sound state
+    char sfxLabel[32];
+    char musicLabel[32];
+    sprintf(sfxLabel, "Ses Efektleri: %s", state->sound.sfxEnabled ? "ACIK" : "KAPALI");
+    sprintf(musicLabel, "Muzik: %s", state->sound.musicEnabled ? "ACIK" : "KAPALI");
+
     const char *items[SETTING_COUNT] = {
-        "Ses Efektleri: ACIK",     // TODO: toggle based on sound state
-        "Muzik: ACIK",             // TODO: toggle based on sound state
+        sfxLabel,
+        musicLabel,
         "Yeniden Baslat",
         "Ana Menuye Don"
     };

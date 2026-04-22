@@ -22,6 +22,7 @@ set(SOURCES
     src/anim.c
     src/float_text.c
     src/particle.c
+    src/sound.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

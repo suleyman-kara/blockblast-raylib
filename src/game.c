@@ -68,6 +68,7 @@ void GameUpdate(GameState *state)
     switch (state->currentScreen) {
         case SCREEN_MENU:
             if (IsKeyPressed(KEY_ENTER)) {
+                SoundPlayMenuClick(&state->sound);
                 state->currentScreen = SCREEN_PLAY;
                 GameReset(state);
             }
@@ -85,6 +86,7 @@ void GameUpdate(GameState *state)
 
             // Check game over transition
             if (state->gameOver) {
+                SoundPlayLose(&state->sound);
                 state->currentScreen = SCREEN_GAMEOVER;
             }
             break;
@@ -95,21 +97,24 @@ void GameUpdate(GameState *state)
                 state->selectedSetting--;
                 if (state->selectedSetting < 0)
                     state->selectedSetting = SETTING_COUNT - 1;
+                SoundPlayMenuClick(&state->sound);
             }
             if (IsKeyPressed(KEY_DOWN)) {
                 state->selectedSetting++;
                 if (state->selectedSetting >= SETTING_COUNT)
                     state->selectedSetting = 0;
+                SoundPlayMenuClick(&state->sound);
             }
 
             // Select setting
             if (IsKeyPressed(KEY_ENTER)) {
+                SoundPlayMenuClick(&state->sound);
                 switch (state->selectedSetting) {
                     case SETTING_SFX:
-                        // TODO: toggle sfx when sound system is added
+                        SoundToggleSfx(&state->sound);
                         break;
                     case SETTING_MUSIC:
-                        // TODO: toggle music when sound system is added
+                        SoundToggleMusic(&state->sound);
                         break;
                     case SETTING_RESTART:
                         state->currentScreen = SCREEN_PLAY;
@@ -123,12 +128,14 @@ void GameUpdate(GameState *state)
 
             // Back to game with ESC
             if (IsKeyPressed(KEY_ESCAPE)) {
+                SoundPlayMenuClick(&state->sound);
                 state->currentScreen = SCREEN_PLAY;
             }
             break;
 
         case SCREEN_GAMEOVER:
             if (IsKeyPressed(KEY_ENTER)) {
+                SoundPlayMenuClick(&state->sound);
                 state->currentScreen = SCREEN_PLAY;
                 GameReset(state);
             }

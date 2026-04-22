@@ -46,3 +46,8 @@ Deliverables: Source code, project report, a maximum 5-minute demo video, and a 
 | Creativity & Game Design | 15% |
 | Report & Documentation | 10% |
 | Video Presentation | 5% |
+
+
+Ayarlar buton haline getirilecek
+Ses efekti ve arka plan müziği eklenecek
+Adventure mode eklenecek

@@ -1,4 +1,5 @@
 #include "input.h"
+#include "sound.h"
 #include "board.h"
 #include "score.h"
 #include "float_text.h"
@@ -72,6 +73,7 @@ void InputUpdate(GameState *state)
 
         if (BoardCanPlace(&state->board, piece, gridRow, gridCol)) {
             BoardPlace(&state->board, piece, gridRow, gridCol);
+            SoundPlayPlace(&state->sound);
 
             // Save cell colors BEFORE clearing (needed for particle colors)
             int savedColors[GRID_SIZE][GRID_SIZE];
@@ -84,6 +86,13 @@ void InputUpdate(GameState *state)
                 state->combo++;
                 int points = ScoreCalculate(linesCleared, state->combo);
                 state->score += points;
+
+                // Play line clear sound
+                SoundPlayLineClear(&state->sound, linesCleared);
+
+                // Play combo sound (combo >= 2)
+                if (state->combo >= 2)
+                    SoundPlayCombo(&state->sound, state->combo);
 
                 // Add clear animation
                 AnimAddCleared(&state->anims, clearedCells);

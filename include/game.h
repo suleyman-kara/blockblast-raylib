@@ -7,6 +7,7 @@
 #include "anim.h"
 #include "float_text.h"
 #include "particle.h"
+#include "sound.h"
 
 #include <math.h>
 
@@ -60,6 +61,9 @@ typedef struct {
 
     // Settings menu
     int selectedSetting;
+
+    // Sound system
+    SoundSystem sound;
 
     bool gameOver;
 } GameState;
