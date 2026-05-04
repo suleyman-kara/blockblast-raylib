@@ -1,53 +1,139 @@
-# Block Blast Clone with C and Raylib
+# Block Blast — C ve Raylib ile Geliştirilmiş Blok Oyunu
 
-## Project Overview
-This project is a clone of the Block Blast game developed using C and the Raylib library. The main goal is to build a modular structure by combining low-level skills like memory management and pointer manipulation with game development dynamics. The use of external libraries is prohibited.
+## Proje Hakkında
+Bu proje, popüler Block Blast oyununun C programlama dili ve Raylib kütüphanesi kullanılarak geliştirilmiş bir klonudur. Düşük seviye programlama becerileri (bellek yönetimi, pointer işlemleri) ile oyun geliştirme dinamiklerini birleştiren modüler bir yapı hedeflenmiştir.
 
-## Setup and Compilation
-This project uses **CMake** and **Raylib**. The Raylib dependency is automatically downloaded from GitHub via CMake (`FetchContent`).
+---
 
-### Prerequisites
-To compile and run the project, the following tools must be installed:
-* **Git:** To download Raylib in the background ([Download](https://git-scm.com/downloads)).
-* **C/C++ Compiler:** 
-  * **Windows:** [Visual Studio C++ Build Tools (MSVC)](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or [MinGW/GCC (MSYS2)](https://www.msys2.org/).
-  * **macOS:** Xcode Command Line Tools (via `xcode-select --install`).
-  * **Linux:** GCC or Clang (via `sudo apt install build-essential`).
-* **CMake:** To manage the build process ([Download](https://cmake.org/download/)).
+## Kurulum ve Derleme
 
-### Running with VS Code
-1. Ensure Git, CMake, and a suitable compiler are installed.
-2. Open this project with VS Code.
-3. Install the **C/C++** and **CMake Tools** extensions.
-4. Select the correct **Compiler Kit** from the bottom status bar or command palette (`CMake: Select a Kit`).
-5. Click **Build**, and once successful, click **Play** to start the game.
+Proje, **Python 3** tabanlı bir build script'i (`build.py`) ile derlenir. Script, Windows, Linux ve macOS'te sorunsuz çalışacak şekilde tasarlanmıştır.
 
-## Technical Constraints & Architecture
-* **Data Structures:** Game elements defined using structs.
-* **Memory Management:** Dynamic memory control with `malloc`/`free`.
-* **Algorithms:** Multi-dimensional arrays, loops, and conditional statements.
-* **Pointers:** Data transfer between functions and memory manipulation.
-* **File I/O:** Saving high scores and game state.
-* **Animation:** Custom timer logic using raw code and Raylib's `GetFrameTime()`.
+### Gereksinimler
 
-## Game Logic
-* **Collision Detection:** Pointer-based overlap testing between the dragged matrix and the target grid.
-* **Grid Clearing & Combos:** Row/column scanning. Score = Base × N × Combo (N: number of simultaneously cleared lines).
-* **Game Over:** Background simulation checking if available blocks fit into empty spaces.
+| Araç | Açıklama |
+|------|----------|
+| **Python 3** | Build script'ini çalıştırmak için |
+| **C Derleyicisi** (gcc/clang) | Kaynak kodları derlemek için |
+| **make** (opsiyonel) | Varsa raylib Makefile'ı kullanılır, yoksa doğrudan derleme yapılır |
 
-## Delivery and Evaluation
-Deliverables: Source code, project report, a maximum 5-minute demo video, and a live presentation. Every team member must be familiar with the entire codebase.
+**İşletim sistemine göre kurulum:**
 
-| Criterion | Weight |
-| --- | --- |
-| Use of Mandatory Programming Concepts | 25% |
-| Oral Presentation & Jury Performance | 25% |
-| Code Quality & Correctness | 20% |
-| Creativity & Game Design | 15% |
-| Report & Documentation | 10% |
-| Video Presentation | 5% |
+- **Linux:** `sudo apt install build-essential python3`
+- **macOS:** `xcode-select --install` (gcc/clang dahil)
+- **Windows:** [MinGW-w64](https://www.mingw-w64.org/) veya WSL kurulumu
 
-### To-Do List
-- [ ] Adventure mode eklenecek
+### Derleme ve Çalıştırma
+
+```bash
+# Derle ve otomatik çalıştır (varsayılan)
+python build.py
+
+# Sadece derle, çalıştırma
+python build.py --no-run
+
+# Debug modunda derle
+python build.py --debug
+
+# Build klasörünü temizle
+python build.py --clean
+
+# make olmadan doğrudan derle
+python build.py --no-make
+```
+
+Build başarılı olduğunda terminalde `file://build/blockblast` şeklinde tıklanabilir bir yol gösterilir.
+
+### VS Code ile Derleme
+1. Python 3 ve bir C derleyicisi kurulu olduğundan emin olun
+2. Projeyi VS Code ile açın
+3. Terminal'de `python build.py` komutunu çalıştırın
+4. Oyun otomatik olarak başlayacaktır
+
+---
+
+## Proje Yapısı
+
+```
+├── build.py              # Python build script'i
+├── src/                  # Kaynak kodları
+│   ├── main.c            # Giriş noktası
+│   ├── game.c/h          # Oyun durumu ve ekran yönetimi
+│   ├── board.c/h         # 8x8 tahta mantığı
+│   ├── piece.c/h         # Blok parçaları ve rastgele üretim
+│   ├── input.c/h         # Sürükle-bırak giriş işlemleri
+│   ├── render.c/h        # Görsel çizim (tahta, parçalar, menü)
+│   ├── anim.c/h          # Satır/sütun temizleme animasyonu
+│   ├── particle.c/h      # Parçacık efekti sistemi
+│   ├── float_text.c/h    # Yüzen puan metinleri
+│   ├── score.c/h         # Puan hesaplama ve highscore
+│   └── sound.c/h         # Ses sistemi
+├── include/              # Header dosyaları
+├── assets/sounds/        # Ses efektleri ve müzik
+├── raylib/               # Raylib kütüphanesi (v6.0)
+└── build/                # Derleme çıktıları
+```
+
+---
+
+## Teknik Detaylar
+
+### Veri Yapıları
+- **Board:** 8×8 tam sayı matrisi (`int cells[8][8]`)
+- **Piece:** Şekil matrisi (`int shape[5][5]`) + renk index + boyut
+- **PieceSlot:** Parça + ekran konumu (sürükleme paneli için)
+
+### Bellek Yönetimi
+- Parçalar dinamik olarak `malloc` ile oluşturulur, `free` ile temizlenir
+- Animasyon/partikül kuyrukları statik dizi olarak tutulur
+
+### Algoritmalar
+- **Satır/Sütun Tarama:** Dolu satır/sütunları tespit edip temizler
+- **Puan Hesaplama:** `Base × N × Combo` (N: aynı anda temizlenen çizgi sayısı)
+- **Game Over Kontrolü:** Kalan parçaların tahtaya sığıp sığmadığı simüle edilir
+
+### Animasyon Sistemi
+- **Clear Animasyonu:** Temizlenen hücreler 0.35sn'de solarak kaybolur
+- **Parçacık Sistemi:** Her temizlemede 5 parçacık + varyasyon
+- **Float Text:** "+300" gibi puan metinleri yukarı doğru uçar ve kaybolur
+- **Combo Banner:** 3+ combo'da "BEST COMBO! x3" banner'ı gösterilir
+
+### Dosya Okuma/Yazma
+- Highscore `data/highscore.dat` dosyasına kaydedilir
+- `MakeDirectory("data")` ile otomatik oluşturulur
+
+### Ses Sistemi
+- 7 ses efekti (yerleştirme, temizleme, combo, menü...)
+- Arka plan müziği (WAV, loop)
+- Ses/Müzik aç/kapa ayarlar menüsünden yapılır
+
+---
+
+## Oynanış
+
+1. **Ana Menü:** Standart Mod / Macera Modu (çok yakında)
+2. **Oyun:** Alt paneldeki 3 parçayı sürükleyerek 8×8 tahtaya yerleştirin
+3. **Puanlama:** Tam satır veya sütun oluşturun → temizlenir → puan kazanırsınız
+4. **Combo:** Ardışık temizlemeler combo çarpanını artırır
+5. **Game Over:** Hiçbir parça sığmazsa oyun biter
+6. **Ayarlar:** Sağ üstteki dişli ikonundan ses/müzik ayarları, yeniden başlatma
+
+---
+
+## Teslimat ve Değerlendirme
+
+Teslimat: Kaynak kod, proje raporu, maksimum 5 dakikalık demo videosu ve canlı sunum.
+
+| Kriter | Ağırlık |
+|--------|---------|
+| Zorunlu Programlama Kavramlarının Kullanımı | 25% |
+| Sözlü Sunum ve Jüri Performansı | 25% |
+| Kod Kalitesi ve Doğruluk | 20% |
+| Yaratıcılık ve Oyun Tasarımı | 15% |
+| Rapor ve Dokümantasyon | 10% |
+| Video Sunumu | 5% |
+
+### Yapılacaklar
+- [ ] Macera modu eklenecek
 - [ ] Toplanan puana göre arka plan renk değişimi
 - [ ] Görsel ve oynanışa bağlı iyileştirmeler
