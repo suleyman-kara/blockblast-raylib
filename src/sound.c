@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 // Path prefix for sound assets (relative to working directory)
-#define SND_PATH "../assets/sounds/"
+#define SND_PATH "assets/sounds/"
 
 void SoundInit(SoundSystem *snd)
 {
