@@ -137,3 +137,4 @@ Teslimat: Kaynak kod, proje raporu, maksimum 5 dakikalık demo videosu ve canlı
 - [ ] Macera modu eklenecek
 - [ ] Toplanan puana göre arka plan renk değişimi
 - [ ] Görsel ve oynanışa bağlı iyileştirmeler
+- [ ] Birlikte patlayanlar kombo sayılmıyor, düzeltilmeli
