@@ -132,7 +132,7 @@ void GameUpdate(GameState *state)
             // Level selection via clicking
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 // Calculate level button positions (same as render)
-                int mapStartY = 200;
+                int mapStartY = 150;
                 int btnSize = 80;
                 int gap = 15;
                 int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
