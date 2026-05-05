@@ -14,6 +14,7 @@ void RenderDraggedPiece(GameState *state);
 void RenderScore(GameState *state);
 void RenderBanner(GameState *state);
 void RenderGearIcon(void);
+void DrawGemIcon(int x, int y, int cellSize, int gemType);
 void RenderMenu(GameState *state);
 void RenderSettings(GameState *state);
 void RenderGameOver(GameState *state);

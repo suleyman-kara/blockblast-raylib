@@ -1,9 +1,12 @@
 #include "board.h"
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
 void BoardInit(Board *board)
 {
     memset(board->cells, CELL_EMPTY, sizeof(board->cells));
+    memset(board->gems, GEM_NONE, sizeof(board->gems));
 }
 
 bool BoardCanPlace(Board *board, Piece *piece, int row, int col)
@@ -35,11 +38,13 @@ void BoardPlace(Board *board, Piece *piece, int row, int col)
         for (int c = 0; c < piece->width; c++) {
             if (piece->shape[r][c] == 0) continue;
             board->cells[row + r][col + c] = piece->colorIndex;
+            board->gems[row + r][col + c] = piece->gemCells[r][c];
         }
     }
 }
 
-int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
+                    int *diamondsCollected, int *emeraldsCollected)
 {
     int cleared = 0;
     bool rowFull[GRID_SIZE] = {false};
@@ -47,6 +52,10 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
 
     // Initialize clearedCells to false
     memset(clearedCells, false, sizeof(bool) * GRID_SIZE * GRID_SIZE);
+
+    // Reset gem counters
+    if (diamondsCollected) *diamondsCollected = 0;
+    if (emeraldsCollected) *emeraldsCollected = 0;
 
     // Check which rows are full (skip rows with stone blocks)
     for (int r = 0; r < GRID_SIZE; r++) {
@@ -83,7 +92,13 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
         if (!rowFull[r]) continue;
         for (int c = 0; c < GRID_SIZE; c++) {
             clearedCells[r][c] = true;
+            // Collect gems before clearing
+            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
+                (*diamondsCollected)++;
+            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
+                (*emeraldsCollected)++;
             board->cells[r][c] = CELL_EMPTY;
+            board->gems[r][c] = GEM_NONE;
         }
     }
 
@@ -92,7 +107,13 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
         if (!colFull[c]) continue;
         for (int r = 0; r < GRID_SIZE; r++) {
             clearedCells[r][c] = true;
+            // Collect gems before clearing (avoid double-counting row+col intersection)
+            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
+                (*diamondsCollected)++;
+            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
+                (*emeraldsCollected)++;
             board->cells[r][c] = CELL_EMPTY;
+            board->gems[r][c] = GEM_NONE;
         }
     }
 
@@ -113,4 +134,61 @@ bool BoardHasValidMove(Board *board, PieceSlot slots[3])
         }
     }
     return false;
+}
+
+void BoardPrefillGems(Board *board, int count, int levelIndex)
+{
+    // Seed random if not already seeded
+    static bool seeded = false;
+    if (!seeded) {
+        srand((unsigned int)time(NULL));
+        seeded = true;
+    }
+
+    // Use the piece definitions to get random shapes
+    const PieceDef *defs = GetPieceDefinitions();
+
+    for (int i = 0; i < count; i++) {
+        // Pick a random piece definition
+        int defIndex = rand() % PIECE_DEF_COUNT;
+        const PieceDef *def = &defs[defIndex];
+
+        // Try to find a valid position (max 50 attempts)
+        for (int attempt = 0; attempt < 50; attempt++) {
+            int row = rand() % (GRID_SIZE - def->height + 1);
+            int col = rand() % (GRID_SIZE - def->width + 1);
+
+            // Check if all cells are empty
+            bool canPlace = true;
+            for (int r = 0; r < def->height && canPlace; r++) {
+                for (int c = 0; c < def->width && canPlace; c++) {
+                    if (def->shape[r][c] == 0) continue;
+                    if (board->cells[row + r][col + c] != CELL_EMPTY) {
+                        canPlace = false;
+                    }
+                }
+            }
+
+            if (!canPlace) continue;
+
+            // Place the piece with a random color
+            int colorIdx = (rand() % 7) + 1;
+            for (int r = 0; r < def->height; r++) {
+                for (int c = 0; c < def->width; c++) {
+                    if (def->shape[r][c] == 0) continue;
+                    board->cells[row + r][col + c] = colorIdx;
+                    // Assign a gem to some cells (roughly 30% chance)
+                    if ((rand() % 100) < 30) {
+                        // Diamond for even levels, mix for odd
+                        if (levelIndex < 4 || (rand() % 2) == 0) {
+                            board->gems[row + r][col + c] = GEM_DIAMOND;
+                        } else {
+                            board->gems[row + r][col + c] = GEM_EMERALD;
+                        }
+                    }
+                }
+            }
+            break; // Successfully placed
+        }
+    }
 }

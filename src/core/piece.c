@@ -1,5 +1,6 @@
 #include "piece.h"
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 // ---- All piece shape definitions ----
@@ -51,6 +52,11 @@ const PieceDef *GetPieceDefinitions(void)
 
 Piece *PieceCreate(void)
 {
+    return PieceCreateWithGems(0.0f, 0.0f);
+}
+
+Piece *PieceCreateWithGems(float diamondChance, float emeraldChance)
+{
     if (!seeded) {
         srand((unsigned int)time(NULL));
         seeded = true;
@@ -71,6 +77,26 @@ Piece *PieceCreate(void)
     p->height = def->height;
     p->colorIndex = (rand() % 7) + 1; // 1-7
 
+    // Initialize gems
+    memset(p->gemCells, GEM_NONE, sizeof(p->gemCells));
+
+    // Randomly assign gems to filled cells
+    if (diamondChance > 0.0f || emeraldChance > 0.0f) {
+        for (int r = 0; r < p->height; r++) {
+            for (int c = 0; c < p->width; c++) {
+                if (p->shape[r][c] == 0) continue;
+
+                float roll = (float)rand() / (float)RAND_MAX;
+                if (emeraldChance > 0.0f && roll < emeraldChance) {
+                    p->gemCells[r][c] = GEM_EMERALD;
+                } else if (diamondChance > 0.0f && roll < diamondChance + emeraldChance) {
+                    p->gemCells[r][c] = GEM_DIAMOND;
+                }
+                // else: GEM_NONE
+            }
+        }
+    }
+
     return p;
 }
 
@@ -84,11 +110,17 @@ void PieceFree(Piece **piece)
 
 void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth)
 {
+    GenerateRandomPiecesWithGems(slots, panelY, screenWidth, 0.0f, 0.0f);
+}
+
+void GenerateRandomPiecesWithGems(PieceSlot slots[3], float panelY, float screenWidth,
+                                   float diamondChance, float emeraldChance)
+{
     // Divide the bottom panel into 3 equal sections
     float sectionWidth = screenWidth / 3.0f;
 
     for (int i = 0; i < 3; i++) {
-        slots[i].piece = PieceCreate();
+        slots[i].piece = PieceCreateWithGems(diamondChance, emeraldChance);
         // Center each piece in its section
         if (slots[i].piece) {
             float piecePixelW = slots[i].piece->width * 25.0f;  // smaller scale in panel

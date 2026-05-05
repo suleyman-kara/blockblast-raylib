@@ -5,52 +5,21 @@
 
 // ─── Goal Progress ────────────────────────────────────────────────────────────
 void AdventureUpdateProgress(AdventureState *adventure, Board *board,
-                              int linesCleared, int combo, int points)
+                              int linesCleared, int combo, int points,
+                              int diamondsCollected, int emeraldsCollected)
 {
-    const LevelDef *level = AdventureGetLevelDefs();
-    level = &level[adventure->currentLevel];
+    (void)linesCleared;
+    (void)combo;
+    (void)board;
 
-    // First goal
-    switch (level->goalType) {
-        case GOAL_CLEAR_LINES:
-            adventure->goalProgress += linesCleared;
-            break;
-        case GOAL_SCORE:
-            adventure->goalProgress += points;
-            break;
-        case GOAL_COMBO:
-            if (combo >= 2)
-                adventure->goalProgress++;
-            break;
-        case GOAL_MIXED:
-            adventure->goalProgress += linesCleared + points;
-            break;
-    }
+    // Score is tracked externally via state->score, but we also track it here
+    // for the mixed all goal type. The score is passed in via 'points' but
+    // the actual score is accumulated in GameState.score. We just need to
+    // check against goalScore in AdventureCheckGoal.
 
-    // Second goal (if goalValue2 > 0, there's a secondary goal)
-    if (level->goalValue2 > 0) {
-        switch (level->goalType2) {
-            case GOAL_CLEAR_LINES:
-                adventure->goalProgress2 += linesCleared;
-                break;
-            case GOAL_SCORE:
-                adventure->goalProgress2 += points;
-                break;
-            case GOAL_COMBO:
-                if (combo >= 2)
-                    adventure->goalProgress2++;
-                break;
-            default:
-                break;
-        }
-    }
-
-    // Count combos for the combo goal
-    if (combo >= 2) {
-        adventure->comboCount++;
-    }
-
-    (void)board; // unused
+    // Collect gems
+    adventure->collectedDiamonds += diamondsCollected;
+    adventure->collectedEmeralds += emeraldsCollected;
 }
 
 bool AdventureCheckGoal(AdventureState *adventure)
@@ -58,50 +27,33 @@ bool AdventureCheckGoal(AdventureState *adventure)
     const LevelDef *level = AdventureGetLevelDefs();
     level = &level[adventure->currentLevel];
 
-    // Check primary goal
-    bool primaryMet = adventure->goalProgress >= level->goalValue;
+    switch (level->goalType) {
+        case GOAL_SCORE:
+            // Score is checked externally via state->score >= goalScore
+            // This function is called after score is updated
+            return false; // handled externally
 
-    // Check secondary goal if it exists (goalValue2 > 0 and goalType2 is set)
-    bool secondaryMet = true;
-    if (level->goalValue2 > 0) {
-        secondaryMet = adventure->goalProgress2 >= level->goalValue2;
+        case GOAL_GEMS:
+            return adventure->collectedDiamonds >= adventure->goalDiamonds;
+
+        case GOAL_MIXED_GEMS:
+            return adventure->collectedDiamonds >= adventure->goalDiamonds &&
+                   adventure->collectedEmeralds >= adventure->goalEmeralds;
+
+        case GOAL_MIXED_ALL:
+            // Score is checked externally
+            return adventure->collectedDiamonds >= adventure->goalDiamonds &&
+                   adventure->collectedEmeralds >= adventure->goalEmeralds;
+
+        default:
+            return false;
     }
-
-    return primaryMet && secondaryMet;
 }
 
-bool AdventureCheckFailure(AdventureState *adventure)
+bool AdventureCheckFailure(AdventureState *adventure, Board *board, PieceSlot slots[3])
 {
-    // Check if pieceLimit is reached (handled externally)
-    // This returns true if goal was NOT reached and pieces are exhausted
-    const LevelDef *level = AdventureGetLevelDefs();
-    level = &level[adventure->currentLevel];
-    if (adventure->piecesUsed >= level->pieceLimit) {
-        return !AdventureCheckGoal(adventure);
-    }
-    return false;
-}
-
-// ─── Star Calculation ─────────────────────────────────────────────────────────
-int AdventureCalcStars(AdventureState *adventure)
-{
-    const LevelDef *level = AdventureGetLevelDefs();
-    level = &level[adventure->currentLevel];
-
-    float progress;
-    if (level->goalValue2 > 0) {
-        // Use average of the two progress percentages
-        float p1 = (float)adventure->goalProgress / (float)level->goalValue;
-        float p2 = (float)adventure->goalProgress2 / (float)level->goalValue2;
-        progress = (p1 + p2) / 2.0f;
-    } else {
-        progress = (float)adventure->goalProgress / (float)level->goalValue;
-    }
-
-    if (progress >= STAR_3_THRESHOLD) return 3;
-    if (progress >= STAR_2_THRESHOLD) return 2;
-    if (progress >= STAR_1_THRESHOLD) return 1;
-    return 0;
+    // Level fails when there are no valid moves left
+    return !BoardHasValidMove(board, slots);
 }
 
 // ─── Progress Save/Load ──────────────────────────────────────────────────────
@@ -115,7 +67,6 @@ void AdventureLoadProgress(AdventureSaveData *save)
         // Default: only level 1 is unlocked
         for (int i = 0; i < TOTAL_LEVELS; i++) {
             save->levels[i].unlocked = (i == 0);
-            save->levels[i].bestStars = 0;
             save->levels[i].completed = false;
         }
     }

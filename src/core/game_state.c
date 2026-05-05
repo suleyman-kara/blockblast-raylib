@@ -23,9 +23,8 @@ void GameInit(GameState *state)
     for (int i = 0; i < 3; i++)
         state->slots[i].piece = NULL;
 
-    // Load adventure progress and lives
+    // Load adventure progress
     AdventureLoadProgress(&state->adventureSave);
-    AdventureLoadLives(&state->adventureSave);
 }
 
 void GameReset(GameState *state)
@@ -53,7 +52,7 @@ void GameResetAdventure(GameState *state)
     for (int i = 0; i < 3; i++)
         PieceFree(&state->slots[i].piece);
 
-    // Initialize adventure level (sets up board with obstacles)
+    // Initialize adventure level (sets up board with obstacles + prefill)
     AdventureInitLevel(&state->adventure, state->selectedLevel, &state->board);
     state->score = 0;
     state->combo = 0;
@@ -64,5 +63,18 @@ void GameResetAdventure(GameState *state)
     state->particles.count = 0;
     state->banner.active = false;
 
-    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH);
+    // Generate pieces with gem chances based on level type
+    const LevelDef *level = AdventureGetLevelDefs();
+    level = &level[state->selectedLevel];
+
+    float diamondChance = 0.0f;
+    float emeraldChance = 0.0f;
+    if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+        diamondChance = DIAMOND_SPAWN_CHANCE;
+        if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+            emeraldChance = EMERALD_SPAWN_CHANCE;
+        }
+    }
+
+    GenerateRandomPiecesWithGems(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
 }

@@ -66,7 +66,10 @@ void InputUpdate(GameState *state)
             memcpy(savedColors, state->board.cells, sizeof(savedColors));
 
             bool clearedCells[GRID_SIZE][GRID_SIZE];
-            int linesCleared = BoardClearLines(&state->board, clearedCells);
+            int diamondsCollected = 0;
+            int emeraldsCollected = 0;
+            int linesCleared = BoardClearLines(&state->board, clearedCells,
+                                                &diamondsCollected, &emeraldsCollected);
 
             if (linesCleared > 0) {
                 state->combo++;
@@ -119,7 +122,8 @@ void InputUpdate(GameState *state)
                 // Update adventure progress if in adventure mode
                 if (state->currentScreen == SCREEN_ADVENTURE_PLAY) {
                     AdventureUpdateProgress(&state->adventure, &state->board,
-                                            linesCleared, state->combo, points);
+                                            linesCleared, state->combo, points,
+                                            diamondsCollected, emeraldsCollected);
                 }
             } else {
                 state->combo = 0;
@@ -130,13 +134,24 @@ void InputUpdate(GameState *state)
 
             PieceFree(&slot->piece);
 
-            // Track pieces used in adventure mode
-            if (state->currentScreen == SCREEN_ADVENTURE_PLAY) {
-                state->adventure.piecesUsed++;
+            if (AllSlotsEmpty(state->slots)) {
+                // Generate new pieces (with gems if in adventure mode)
+                if (state->currentScreen == SCREEN_ADVENTURE_PLAY) {
+                    const LevelDef *level = AdventureGetLevelDefs();
+                    level = &level[state->adventure.currentLevel];
+                    float diamondChance = 0.0f;
+                    float emeraldChance = 0.0f;
+                    if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+                        diamondChance = DIAMOND_SPAWN_CHANCE;
+                        if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+                            emeraldChance = EMERALD_SPAWN_CHANCE;
+                        }
+                    }
+                    GenerateRandomPiecesWithGems(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
+                } else {
+                    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH);
+                }
             }
-
-            if (AllSlotsEmpty(state->slots))
-                GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH);
 
             if (!BoardHasValidMove(&state->board, state->slots)) {
                 state->gameOver = true;

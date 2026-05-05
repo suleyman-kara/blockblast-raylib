@@ -1,19 +1,23 @@
 #include "render.h"
 #include "adventure.h"
+#include "theme.h"
 
 // ----- Board -----
 void RenderBoard(GameState *state)
 {
+    const GridStyle *g = &THEME_DEFAULT.grid;
+
     // Draw board background
     DrawRectangle(GRID_DRAW_X - 4, GRID_DRAW_Y - 4,
                   GRID_SIZE * CELL_SIZE + 8, GRID_SIZE * CELL_SIZE + 8,
-                  GRID_LINE_CLR);
+                  g->border);
 
     for (int r = 0; r < GRID_SIZE; r++) {
         for (int c = 0; c < GRID_SIZE; c++) {
             int x = GRID_DRAW_X + c * CELL_SIZE;
             int y = GRID_DRAW_Y + r * CELL_SIZE;
             int val = state->board.cells[r][c];
+            int gem = state->board.gems[r][c];
 
             // Check if cell is being animated
             float alpha = AnimGetCellAlpha(&state->anims, r, c);
@@ -29,28 +33,30 @@ void RenderBoard(GameState *state)
                     DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, PIECE_COLORS[underColor]);
                 }
                 // Draw ice overlay
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, ICE_COLOR);
-                // Ice crystal effect (small white diamond)
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, g->iceOverlay);
+                // Ice crystal effect
                 DrawRectangle(x + 15, y + 15, CELL_SIZE - 30, CELL_SIZE - 30, (Color){255,255,255,60});
                 DrawRectangle(x + 20, y + 20, CELL_SIZE - 40, CELL_SIZE - 40, (Color){255,255,255,40});
             } else if (val == CELL_STONE) {
                 // Stone block: gray with rock texture
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, STONE_COLOR);
-                DrawRectangle(x + 3, y + 3, CELL_SIZE - 6, CELL_SIZE - 6, (Color){90, 90, 100, 255});
-                DrawRectangle(x + 8, y + 8, CELL_SIZE - 16, CELL_SIZE - 16, (Color){70, 70, 80, 255});
-                // Small highlight
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, g->stoneBase);
+                DrawRectangle(x + 3, y + 3, CELL_SIZE - 6, CELL_SIZE - 6, g->stoneMid);
+                DrawRectangle(x + 8, y + 8, CELL_SIZE - 16, CELL_SIZE - 16, g->stoneDark);
                 DrawRectangle(x + 10, y + 10, 5, 5, (Color){120, 120, 130, 100});
             } else if (val != CELL_EMPTY) {
                 // Normal filled cell
                 Color clr = PIECE_COLORS[val];
                 DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, clr);
                 // Highlight edge
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, 3,
-                    (Color){255,255,255,40});
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, 3, g->highlight);
+
+                // Draw gem icon if present
+                if (gem != GEM_NONE) {
+                    DrawGemIcon(x, y, CELL_SIZE, gem);
+                }
             } else {
                 // Empty cell
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2,
-                    PIECE_COLORS[0]);
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, g->emptyCell);
             }
         }
     }
@@ -89,10 +95,11 @@ void RenderGhost(GameState *state)
 // ----- Piece slots (bottom panel) -----
 void RenderPieceSlots(GameState *state)
 {
+    const PanelStyle *p = &THEME_DEFAULT.panel;
+
     // Panel background
-    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, SCREEN_HEIGHT - PANEL_Y + 10,
-        (Color){30, 30, 50, 255});
-    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, 2, GRID_LINE_CLR);
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, SCREEN_HEIGHT - PANEL_Y + 10, p->background);
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, (int)p->topBorderWidth, p->topBorder);
 
     for (int i = 0; i < 3; i++) {
         // Skip the slot being dragged
@@ -111,6 +118,11 @@ void RenderPieceSlots(GameState *state)
                 int y = (int)(slot->posY + r * PANEL_PIECE_SCALE);
                 DrawRectangle(x + 1, y + 1,
                     PANEL_PIECE_SCALE - 2, PANEL_PIECE_SCALE - 2, clr);
+
+                // Draw gem icon in panel if present
+                if (p->gemCells[r][c] != GEM_NONE) {
+                    DrawGemIcon(x, y, PANEL_PIECE_SCALE, p->gemCells[r][c]);
+                }
             }
         }
     }
@@ -137,6 +149,11 @@ void RenderDraggedPiece(GameState *state)
             int x = (int)(baseX + c * CELL_SIZE);
             int y = (int)(baseY + r * CELL_SIZE);
             DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, clr);
+
+            // Draw gem icon on dragged piece
+            if (p->gemCells[r][c] != GEM_NONE) {
+                DrawGemIcon(x, y, CELL_SIZE, p->gemCells[r][c]);
+            }
         }
     }
 }

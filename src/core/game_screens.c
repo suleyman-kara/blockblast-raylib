@@ -3,6 +3,24 @@
 #include "adventure.h"
 #include "sound.h"
 
+// Helper: get the rectangle for an adventure level button on the map
+static Rectangle GetLevelButtonRect(int levelIndex)
+{
+    int btnSize = 80;
+    int gap = 15;
+    int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
+    int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
+    int mapStartY = 150;
+    int row = levelIndex / LEVELS_PER_ROW;
+    int col = levelIndex % LEVELS_PER_ROW;
+    return (Rectangle){
+        mapStartX + col * (btnSize + gap),
+        mapStartY + row * (btnSize + gap + 30),
+        btnSize,
+        btnSize
+    };
+}
+
 void GameUpdate(GameState *state)
 {
     float dt = GetFrameTime();
@@ -35,14 +53,7 @@ void GameUpdate(GameState *state)
                     GameReset(state);
                 } else if (CheckCollisionPointRec(mouse, advBtn)) {
                     SoundPlayMenuClick(&state->sound);
-                    // Check lives
-                    AdventureRegenLives(&state->adventureSave);
-                    if (state->adventureSave.currentLives <= 0) {
-                        // No lives - show message (handled in render)
-                        state->currentScreen = SCREEN_ADVENTURE_MAP;
-                    } else {
-                        state->currentScreen = SCREEN_ADVENTURE_MAP;
-                    }
+                    state->currentScreen = SCREEN_ADVENTURE_MAP;
                 }
             }
             break;
@@ -82,17 +93,34 @@ void GameUpdate(GameState *state)
                 state->selectedSetting = 0;
             }
 
-            // Check if level is complete (goal reached)
-            if (AdventureCheckGoal(&state->adventure) && !state->adventure.levelComplete) {
+            const LevelDef *level = AdventureGetLevelDefs();
+            level = &level[state->adventure.currentLevel];
+
+            // Check if level is complete
+            bool goalMet = false;
+            switch (level->goalType) {
+                case GOAL_SCORE:
+                    goalMet = (state->score >= state->adventure.goalScore);
+                    break;
+                case GOAL_GEMS:
+                    goalMet = AdventureCheckGoal(&state->adventure);
+                    break;
+                case GOAL_MIXED_GEMS:
+                    goalMet = AdventureCheckGoal(&state->adventure);
+                    break;
+                case GOAL_MIXED_ALL:
+                    goalMet = (state->score >= state->adventure.goalScore) &&
+                              AdventureCheckGoal(&state->adventure);
+                    break;
+            }
+
+            if (goalMet && !state->adventure.levelComplete) {
                 state->adventure.levelComplete = true;
-                state->adventure.earnedStars = AdventureCalcStars(&state->adventure);
                 state->adventure.showResultScreen = true;
                 state->adventure.resultTimer = 2.0f;
 
                 // Save progress
                 int lvl = state->adventure.currentLevel;
-                if (state->adventure.earnedStars > state->adventureSave.levels[lvl].bestStars)
-                    state->adventureSave.levels[lvl].bestStars = state->adventure.earnedStars;
                 state->adventureSave.levels[lvl].completed = true;
 
                 // Unlock next level
@@ -103,17 +131,12 @@ void GameUpdate(GameState *state)
                 AdventureSaveProgress(&state->adventureSave);
             }
 
-            // Check if level failed (pieces exhausted without reaching goal)
-            if (AdventureCheckFailure(&state->adventure) && !state->adventure.levelComplete) {
+            // Check if level failed (no valid moves left)
+            if (AdventureCheckFailure(&state->adventure, &state->board, state->slots) && !state->adventure.levelComplete) {
                 state->adventure.levelFailed = true;
                 state->adventure.levelComplete = true;
-                state->adventure.earnedStars = 0;
                 state->adventure.showResultScreen = true;
                 state->adventure.resultTimer = 2.0f;
-
-                // Lose a life
-                state->adventureSave.currentLives--;
-                AdventureSaveLives(&state->adventureSave);
             }
 
             // Result screen timer
@@ -131,22 +154,8 @@ void GameUpdate(GameState *state)
         case SCREEN_ADVENTURE_MAP: {
             // Level selection via clicking
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                // Calculate level button positions (same as render)
-                int mapStartY = 150;
-                int btnSize = 80;
-                int gap = 15;
-                int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
-                int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
-
                 for (int i = 0; i < TOTAL_LEVELS; i++) {
-                    int row = i / LEVELS_PER_ROW;
-                    int col = i % LEVELS_PER_ROW;
-                    Rectangle btn = {
-                        mapStartX + col * (btnSize + gap),
-                        mapStartY + row * (btnSize + gap + 30),
-                        btnSize,
-                        btnSize
-                    };
+                    Rectangle btn = GetLevelButtonRect(i);
 
                     if (CheckCollisionPointRec(mouse, btn)) {
                         if (state->adventureSave.levels[i].unlocked) {
