@@ -72,7 +72,7 @@ void InputUpdate(GameState *state)
                                                 &diamondsCollected, &emeraldsCollected);
 
             if (linesCleared > 0) {
-                state->combo++;
+                state->combo += linesCleared;
                 int points = ScoreCalculate(linesCleared, state->combo);
                 state->score += points;
 
