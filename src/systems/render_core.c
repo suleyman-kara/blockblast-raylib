@@ -1,5 +1,6 @@
 #include "render.h"
 #include "font.h"
+#include "theme.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -11,16 +12,17 @@
 void RenderScore(GameState *state)
 {
     char buf[64];
+    const TextStyle *txt = &THEME_DEFAULT.text;
 
     // Score
-    sprintf(buf, "SKOR: %d", state->score);
+    sprintf(buf, "SCORE: %d", state->score);
     int w = GameMeasureText(buf, 28);
-    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 20, 28, WHITE);
+    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 20, 28, txt->primary);
 
     // High score
-    sprintf(buf, "EN YUKSEK: %d", state->highScore);
+    sprintf(buf, "BEST: %d", state->highScore);
     w = GameMeasureText(buf, 18);
-    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 55, 18, (Color){150,150,170,255});
+    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 55, 18, txt->secondary);
 
     // Combo
     if (state->combo > 1) {
@@ -40,7 +42,7 @@ void RenderBanner(GameState *state)
     float progress = 1.0f - t; // 0.0 -> 1.0
 
     // Pulse effect on font size
-    int baseSize = 40;
+    int baseSize = THEME_DEFAULT.effects.bannerPulseBaseSize;
     int pulseSize = baseSize + (int)(8.0f * sinf(progress * PI * 4.0f));
 
     // Alpha: fade in quickly, stay, fade out at the end
@@ -53,8 +55,10 @@ void RenderBanner(GameState *state)
         alpha = 1.0f;                       // fully visible
     }
 
-    Color clr = {255, 220, 50, (unsigned char)(alpha * 255.0f)};
-    Color shadow = {0, 0, 0, (unsigned char)(alpha * 120.0f)};
+    Color clr = THEME_DEFAULT.effects.bannerText;
+    clr.a = (unsigned char)(alpha * 255.0f);
+    Color shadow = THEME_DEFAULT.effects.bannerShadow;
+    shadow.a = (unsigned char)(alpha * 120.0f);
 
     int w = GameMeasureText(state->banner.text, pulseSize);
     int x = (SCREEN_WIDTH - w) / 2;
@@ -105,4 +109,36 @@ void RenderGearIcon(void)
     // Center hole
     DrawCircle(cx, cy, holeR, gearClr);
     DrawCircle(cx, cy, holeR - 2, (Color){30, 30, 48, 255});
+}
+
+// ----- Draw a gem icon inside a cell block -----
+void DrawGemIcon(int x, int y, int cellSize, int gemType)
+{
+    const GemStyle *g = &THEME_DEFAULT.gem;
+    int gemSize = (int)(cellSize * g->sizeRatio);
+    int half = gemSize / 2;
+    int cx = x + cellSize / 2;
+    int cy = y + cellSize / 2;
+
+    if (gemType == GEM_DIAMOND) {
+        // Diamond: cyan/white triangle (pointing down)
+        DrawTriangle((Vector2){cx, cy + half},
+                     (Vector2){cx - half, cy},
+                     (Vector2){cx, cy - half},
+                     g->diamondPrimary);
+        DrawTriangle((Vector2){cx, cy + half},
+                     (Vector2){cx + half, cy},
+                     (Vector2){cx, cy - half},
+                     g->diamondHighlight);
+    } else if (gemType == GEM_EMERALD) {
+        // Emerald: green triangle (pointing down)
+        DrawTriangle((Vector2){cx, cy + half},
+                     (Vector2){cx - half, cy},
+                     (Vector2){cx, cy - half},
+                     g->emeraldPrimary);
+        DrawTriangle((Vector2){cx, cy + half},
+                     (Vector2){cx + half, cy},
+                     (Vector2){cx, cy - half},
+                     g->emeraldHighlight);
+    }
 }

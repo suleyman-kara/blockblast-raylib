@@ -2,13 +2,13 @@
 #define CONFIG_H
 
 #include "raylib.h"
+#include "theme.h"
 #include <stdbool.h>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BLOCK BLAST — Configuration Constants
 //  ═══════════════════════════════════════════════════════════════════════════════
-//  All tunable game constants in one place. Change these to quickly adjust
-//  grid size, colors, layout, scoring, etc.
+//  All tunable game constants in one place.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── Screen & Layout ──────────────────────────────────────────────────────────
@@ -24,6 +24,11 @@
 #define CELL_EMPTY         0
 #define CELL_ICE           8
 #define CELL_STONE         9
+
+// Gem types stored in the gems[][] array
+#define GEM_NONE           0
+#define GEM_DIAMOND        1
+#define GEM_EMERALD        2
 
 // ─── Piece System ─────────────────────────────────────────────────────────────
 #define MAX_PIECE_SIZE     5
@@ -52,14 +57,13 @@
 #define PARTICLE_LIFE        0.7f
 
 // ─── Adventure Mode ───────────────────────────────────────────────────────────
-#define MAX_LIVES            5
-#define LIFE_REGEN_SEC       (20 * 60)   // 20 minutes per life
-#define STAR_1_THRESHOLD     1.00f       // 100% of goal = 1 star
-#define STAR_2_THRESHOLD     1.50f       // 150% of goal = 2 stars
-#define STAR_3_THRESHOLD     2.00f       // 200% of goal = 3 stars
-#define TOTAL_LEVELS         15
+#define TOTAL_LEVELS         10
 #define LEVELS_PER_ROW       3
 #define MAX_OBSTACLES        9
+
+// Gem spawn probability (0.0 – 1.0) for new pieces in gem levels
+#define DIAMOND_SPAWN_CHANCE  0.15f
+#define EMERALD_SPAWN_CHANCE  0.12f
 
 // ─── Settings Menu ────────────────────────────────────────────────────────────
 #define SETTING_COUNT        4
@@ -74,35 +78,16 @@
 #define GEAR_SIZE            36
 
 // ─── Menu Buttons ─────────────────────────────────────────────────────────────
-#define MENU_BTN_W           260
-#define MENU_BTN_H           55
+#define MENU_BTN_W           300
+#define MENU_BTN_H           65
 #define MENU_BTN_X           ((SCREEN_WIDTH - MENU_BTN_W) / 2)
-#define MENU_STD_Y           340
-#define MENU_ADV_Y           420
+#define MENU_STD_Y           360
+#define MENU_ADV_Y           450
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Color Palette
+//  Piece Colors
 //  ═══════════════════════════════════════════════════════════════════════════════
-//  Index 0 = empty cell background, 1-7 = piece colors, 8-9 = ice/stone
-//  Change these to quickly alter the game's visual theme.
+//  Moved to theme.h — kept here as alias for backward compatibility
 // ═══════════════════════════════════════════════════════════════════════════════
-
-static const Color PIECE_COLORS[] = {
-    { 40,  40,  60,  255 },   // 0 = empty cell background
-    { 255, 87,  87,  255 },   // 1 = red
-    { 255, 189, 46,  255 },   // 2 = yellow
-    { 46,  204, 113, 255 },   // 3 = green
-    { 52,  152, 219, 255 },   // 4 = blue
-    { 155, 89,  182, 255 },   // 5 = purple
-    { 255, 147, 51,  255 },   // 6 = orange
-    { 26,  188, 156, 255 },   // 7 = teal
-};
-
-// Theme colors
-#define BG_COLOR            ((Color){ 22,  22,  36,  255 })
-#define GRID_BG_COLOR       ((Color){ 30,  30,  48,  255 })
-#define GRID_LINE_CLR       ((Color){ 50,  50,  70,  255 })
-#define ICE_COLOR           ((Color){ 200, 230, 255, 200 })
-#define STONE_COLOR         ((Color){ 80,  80,  90,  255 })
 
 #endif // CONFIG_H

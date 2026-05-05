@@ -10,6 +10,7 @@ typedef struct {
     int width;
     int height;
     int colorIndex; // 1-7 maps to a color in the palette
+    int gemCells[MAX_PIECE_SIZE][MAX_PIECE_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
 } Piece;
 
 // A slot in the bottom panel holding one piece (or NULL if used)
@@ -30,6 +31,10 @@ typedef struct {
 const PieceDef *GetPieceDefinitions(void);
 
 // Create a piece (malloc) from a random definition with a random color
+// If gemChance > 0, some cells may get a gem assigned
+Piece *PieceCreateWithGems(float diamondChance, float emeraldChance);
+
+// Legacy: create a piece without gems
 Piece *PieceCreate(void);
 
 // Free a piece's memory and set the pointer to NULL
@@ -37,6 +42,10 @@ void PieceFree(Piece **piece);
 
 // Generate 3 random pieces into the given slots
 void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth);
+
+// Generate 3 random pieces with gem chances for adventure mode
+void GenerateRandomPiecesWithGems(PieceSlot slots[3], float panelY, float screenWidth,
+                                   float diamondChance, float emeraldChance);
 
 // Check if all 3 slots are empty (pieces used up)
 bool AllSlotsEmpty(PieceSlot slots[3]);

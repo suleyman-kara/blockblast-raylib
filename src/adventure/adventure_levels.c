@@ -1,148 +1,113 @@
 #include "adventure.h"
 #include "board.h"
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
 // ─── Level Definitions ────────────────────────────────────────────────────────
+// Progression:
+//   Level 1-2:  GOAL_SCORE       (just reach target score)
+//   Level 3-4:  GOAL_GEMS        (collect diamonds only)
+//   Level 5-6:  GOAL_MIXED_GEMS  (collect diamonds + emeralds)
+//   Level 7-10: GOAL_MIXED_ALL   (diamonds + emeralds + score)
 static const LevelDef levelDefs[TOTAL_LEVELS] = {
     {
         .levelNumber = 1,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 3,
-        .pieceLimit = 20,
+        .goalType = GOAL_SCORE,
+        .targetScore = 500,
+        .prefillCount = 0,
         .obstacleCount = 0,
-        .description = "3 satir/sutun temizle"
+        .description = "500 puana ulas"
     },
     {
         .levelNumber = 2,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 5,
-        .pieceLimit = 18,
+        .goalType = GOAL_SCORE,
+        .targetScore = 1000,
+        .prefillCount = 0,
         .obstacleCount = 0,
-        .description = "5 satir/sutun temizle"
+        .description = "1000 puana ulas"
     },
     {
         .levelNumber = 3,
-        .goalType = GOAL_SCORE,
-        .goalValue = 500,
-        .pieceLimit = 20,
+        .goalType = GOAL_GEMS,
+        .targetDiamonds = 3,
+        .gemVariance = 1,
+        .prefillCount = 2,
         .obstacleCount = 0,
-        .description = "500 puan topla"
+        .description = "3 elmas topla"
     },
     {
         .levelNumber = 4,
-        .goalType = GOAL_COMBO,
-        .goalValue = 2,
-        .pieceLimit = 22,
+        .goalType = GOAL_GEMS,
+        .targetDiamonds = 5,
+        .gemVariance = 2,
+        .prefillCount = 3,
         .obstacleCount = 0,
-        .description = "2 kombo yap (tek hamlede 2+ cizgi)"
+        .description = "5 elmas topla"
     },
     {
         .levelNumber = 5,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 8,
-        .pieceLimit = 20,
+        .goalType = GOAL_MIXED_GEMS,
+        .targetDiamonds = 3,
+        .targetEmeralds = 2,
+        .gemVariance = 1,
+        .prefillCount = 4,
         .obstacleCount = 0,
-        .description = "8 satir/sutun temizle"
+        .description = "3 elmas + 2 zumrut topla"
     },
     {
         .levelNumber = 6,
-        .goalType = GOAL_SCORE,
-        .goalValue = 1000,
-        .pieceLimit = 22,
+        .goalType = GOAL_MIXED_GEMS,
+        .targetDiamonds = 4,
+        .targetEmeralds = 3,
+        .gemVariance = 2,
+        .prefillCount = 5,
         .obstacleCount = 0,
-        .description = "1000 puan topla"
+        .description = "4 elmas + 3 zumrut topla"
     },
     {
         .levelNumber = 7,
-        .goalType = GOAL_COMBO,
-        .goalValue = 3,
-        .pieceLimit = 25,
+        .goalType = GOAL_MIXED_ALL,
+        .targetScore = 500,
+        .targetDiamonds = 3,
+        .targetEmeralds = 2,
+        .gemVariance = 1,
+        .prefillCount = 5,
         .obstacleCount = 0,
-        .description = "3 kombo yap"
+        .description = "500 puan + 3 elmas + 2 zumrut"
     },
     {
         .levelNumber = 8,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 6,
-        .pieceLimit = 18,
-        .obstacleCount = 2,
-        .obstacles = {{2, 3}, {5, 4}},
-        .isIce = {true, true},
-        .description = "6 satir/sutun temizle (buz engelli)"
+        .goalType = GOAL_MIXED_ALL,
+        .targetScore = 800,
+        .targetDiamonds = 4,
+        .targetEmeralds = 3,
+        .gemVariance = 2,
+        .prefillCount = 6,
+        .obstacleCount = 0,
+        .description = "800 puan + 4 elmas + 3 zumrut"
     },
     {
         .levelNumber = 9,
-        .goalType = GOAL_SCORE,
-        .goalValue = 800,
-        .goalType2 = GOAL_COMBO,
-        .goalValue2 = 2,
-        .pieceLimit = 20,
-        .obstacleCount = 3,
-        .obstacles = {{1, 2}, {3, 5}, {6, 1}},
-        .isIce = {true, true, true},
-        .description = "800 puan + 2 kombo (buz engelli)"
+        .goalType = GOAL_MIXED_ALL,
+        .targetScore = 1000,
+        .targetDiamonds = 5,
+        .targetEmeralds = 4,
+        .gemVariance = 2,
+        .prefillCount = 7,
+        .obstacleCount = 0,
+        .description = "1000 puan + 5 elmas + 4 zumrut"
     },
     {
         .levelNumber = 10,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 10,
-        .pieceLimit = 22,
-        .obstacleCount = 4,
-        .obstacles = {{1, 7}, {3, 2}, {4, 5}, {6, 3}},
-        .isIce = {true, true, true, true},
-        .description = "10 satir/sutun temizle (buz engelli)"
-    },
-    {
-        .levelNumber = 11,
-        .goalType = GOAL_SCORE,
-        .goalValue = 2000,
-        .pieceLimit = 20,
-        .obstacleCount = 4,
-        .obstacles = {{1, 1}, {2, 5}, {4, 3}, {6, 6}},
-        .isIce = {true, true, true, false},
-        .description = "2000 puan (buz + tas engelli)"
-    },
-    {
-        .levelNumber = 12,
-        .goalType = GOAL_COMBO,
-        .goalValue = 4,
-        .pieceLimit = 25,
-        .obstacleCount = 6,
-        .obstacles = {{0, 3}, {2, 6}, {3, 2}, {5, 5}, {6, 1}, {7, 4}},
-        .isIce = {true, true, false, true, true, false},
-        .description = "4 kombo (buz + tas engelli)"
-    },
-    {
-        .levelNumber = 13,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 12,
-        .pieceLimit = 22,
-        .obstacleCount = 7,
-        .obstacles = {{1, 0}, {1, 7}, {3, 3}, {4, 5}, {5, 1}, {6, 6}, {7, 2}},
-        .isIce = {true, true, true, true, true, false, true},
-        .description = "12 satir/sutun temizle (buz + tas)"
-    },
-    {
-        .levelNumber = 14,
-        .goalType = GOAL_SCORE,
-        .goalValue = 3500,
-        .pieceLimit = 25,
-        .obstacleCount = 8,
-        .obstacles = {{0, 2}, {1, 5}, {2, 1}, {3, 7}, {4, 3}, {5, 6}, {6, 0}, {7, 4}},
-        .isIce = {true, true, true, false, true, true, false, true},
-        .description = "3500 puan (buz + tas engelli)"
-    },
-    {
-        .levelNumber = 15,
-        .goalType = GOAL_CLEAR_LINES,
-        .goalValue = 15,
-        .goalType2 = GOAL_COMBO,
-        .goalValue2 = 3,
-        .pieceLimit = 30,
-        .obstacleCount = 9,
-        .obstacles = {{0, 6}, {1, 1}, {2, 4}, {3, 0}, {4, 7}, {5, 2}, {6, 5}, {7, 0}, {7, 7}},
-        .isIce = {true, true, true, false, true, true, true, false, false},
-        .description = "15 satir + 3 kombo (FINAL BOSS)"
+        .goalType = GOAL_MIXED_ALL,
+        .targetScore = 1500,
+        .targetDiamonds = 6,
+        .targetEmeralds = 5,
+        .gemVariance = 3,
+        .prefillCount = 8,
+        .obstacleCount = 0,
+        .description = "1500 puan + 6 elmas + 5 zumrut (FINAL)"
     },
 };
 
@@ -151,44 +116,62 @@ const LevelDef *AdventureGetLevelDefs(void)
     return levelDefs;
 }
 
-// ─── Board Obstacle Setup ─────────────────────────────────────────────────────
+// ─── Board Obstacle Setup + Prefill ──────────────────────────────────────────
 void AdventureInitLevel(AdventureState *adventure, int levelIndex, Board *board)
 {
     memset(adventure, 0, sizeof(AdventureState));
     adventure->currentLevel = levelIndex;
-    adventure->boardHasObstacles = false;
 
     const LevelDef *level = &levelDefs[levelIndex];
 
     // Clear the board
-    memset(board->cells, CELL_EMPTY, sizeof(board->cells));
+    BoardInit(board);
+
+    // Set goal targets with variance
+    adventure->goalScore = level->targetScore;
+
+    if (level->gemVariance > 0) {
+        static bool seeded = false;
+        if (!seeded) {
+            srand((unsigned int)time(NULL));
+            seeded = true;
+        }
+        int variance = rand() % (level->gemVariance * 2 + 1) - level->gemVariance;
+        adventure->goalDiamonds = level->targetDiamonds + variance;
+        if (adventure->goalDiamonds < 1) adventure->goalDiamonds = 1;
+
+        if (level->targetEmeralds > 0) {
+            variance = rand() % (level->gemVariance * 2 + 1) - level->gemVariance;
+            adventure->goalEmeralds = level->targetEmeralds + variance;
+            if (adventure->goalEmeralds < 1) adventure->goalEmeralds = 1;
+        }
+    } else {
+        adventure->goalDiamonds = level->targetDiamonds;
+        adventure->goalEmeralds = level->targetEmeralds;
+    }
+
+    // Place obstacles (ice/stone)
+    adventure->boardHasObstacles = (level->obstacleCount > 0);
     memset(adventure->iceUnderColor, 0, sizeof(adventure->iceUnderColor));
 
-    // Place obstacles
-    if (level->obstacleCount > 0) {
-        adventure->boardHasObstacles = true;
-        for (int i = 0; i < level->obstacleCount; i++) {
-            int r = level->obstacles[i].row;
-            int c = level->obstacles[i].col;
-            if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-                if (level->isIce[i]) {
-                    // Ice: assign a random color underneath
-                    int colorIdx = (levelIndex + i) % 7 + 1;  // deterministic color
-                    board->cells[r][c] = CELL_ICE;
-                    adventure->iceUnderColor[r][c] = colorIdx;
-                } else {
-                    // Stone: permanent blocker
-                    board->cells[r][c] = CELL_STONE;
-                }
+    for (int i = 0; i < level->obstacleCount; i++) {
+        int r = level->obstacles[i].row;
+        int c = level->obstacles[i].col;
+        if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+            if (level->isIce[i]) {
+                int colorIdx = (levelIndex + i) % 7 + 1;
+                board->cells[r][c] = CELL_ICE;
+                adventure->iceUnderColor[r][c] = colorIdx;
+            } else {
+                board->cells[r][c] = CELL_STONE;
             }
         }
     }
-}
 
-bool AdventureIsCellBlocked(AdventureState *adventure, int row, int col)
-{
-    (void)adventure;
-    return false;  // board.c handles this via BoardCanPlace checking values
+    // Pre-fill board with random pieces that may contain gems
+    if (level->prefillCount > 0) {
+        BoardPrefillGems(board, level->prefillCount, levelIndex);
+    }
 }
 
 int AdventureGetIceUnderColor(AdventureState *adventure, int row, int col)

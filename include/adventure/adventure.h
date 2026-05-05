@@ -5,69 +5,75 @@
 #include "core/board.h"
 #include "core/piece.h"
 #include <stdbool.h>
-#include <time.h>
 
-// ─── Cell types for obstacles ─────────────────────────────────────────────────
-// (CELL_ICE and CELL_STONE are already defined in config.h)
-
-// ─── Level data ───────────────────────────────────────────────────────────────
+// ─── Goal types ───────────────────────────────────────────────────────────────
 typedef enum {
-    GOAL_CLEAR_LINES,   // Clear N lines (rows/columns)
-    GOAL_SCORE,         // Reach N points
-    GOAL_COMBO,         // Perform N combos
-    GOAL_MIXED,         // Multiple goals combined
+    GOAL_SCORE,         // Level 1-2: reach target score
+    GOAL_GEMS,          // Level 3-4: collect diamonds only
+    GOAL_MIXED_GEMS,    // Level 5-6: collect diamonds + emeralds
+    GOAL_MIXED_ALL,     // Level 7-10: collect diamonds + emeralds + reach score
 } GoalType;
 
+// ─── Obstacle position ────────────────────────────────────────────────────────
 typedef struct {
     int row;
     int col;
 } ObstaclePos;
 
+// ─── Level definition ─────────────────────────────────────────────────────────
 typedef struct {
     int levelNumber;
     GoalType goalType;
-    int goalValue;       // Target (e.g., 5 lines, 1000 points, 3 combos)
-    GoalType goalType2;  // For mixed goals (GOAL_MIXED)
-    int goalValue2;
-    int pieceLimit;      // Max pieces allowed
+
+    // Score goal (GOAL_SCORE, GOAL_MIXED_ALL)
+    int targetScore;
+
+    // Gem goals (GOAL_GEMS, GOAL_MIXED_GEMS, GOAL_MIXED_ALL)
+    int targetDiamonds;     // base diamond target
+    int targetEmeralds;     // base emerald target
+    int gemVariance;        // ±variance applied at level start
+
+    // Board prefill
+    int prefillCount;       // how many random pieces to place on board at start
+
+    // Obstacles (ice/stone)
     int obstacleCount;
     ObstaclePos obstacles[MAX_OBSTACLES];
-    bool isIce[MAX_OBSTACLES];  // true = ice, false = stone
-    const char *description;    // e.g., "5 lines clear"
+    bool isIce[MAX_OBSTACLES];
+
+    const char *description;
 } LevelDef;
 
 // ─── Progress data (saved to file) ──────────────────────────────────────────
 typedef struct {
     bool unlocked;
-    int bestStars;     // 0-3
     bool completed;
 } LevelProgress;
 
 typedef struct {
     LevelProgress levels[TOTAL_LEVELS];
-    int currentLives;
-    time_t lastLifeRegen;  // timestamp of last life regen
 } AdventureSaveData;
 
 // ─── Adventure state (runtime) ──────────────────────────────────────────────
 typedef struct {
     int currentLevel;       // 0-based index into levelDefs
-    int piecesUsed;         // how many pieces placed
-    int goalProgress;       // current progress toward goal (e.g., lines cleared)
-    int goalProgress2;      // second goal progress (for mixed)
-    bool goalReached;
-    bool levelFailed;
-    int earnedStars;
+
+    // Goal tracking
+    int goalScore;          // actual score target (after variance)
+    int goalDiamonds;       // actual diamond target (after variance)
+    int goalEmeralds;       // actual emerald target (after variance)
+
+    int collectedDiamonds;
+    int collectedEmeralds;
+
     bool levelComplete;
+    bool levelFailed;
     bool showResultScreen;
     float resultTimer;
 
-    // Combo tracking
-    int comboCount;         // number of combos performed in this level
-
     // Board obstacle data
     bool boardHasObstacles;
-    int iceUnderColor[GRID_SIZE][GRID_SIZE];  // color hidden under ice
+    int iceUnderColor[GRID_SIZE][GRID_SIZE];
 } AdventureState;
 
 // ─── Public functions ──────────────────────────────────────────────────────
@@ -75,33 +81,21 @@ typedef struct {
 // Get the level definitions array
 const LevelDef *AdventureGetLevelDefs(void);
 
-// Initialize adventure state for a given level (loads board obstacles)
+// Initialize adventure state for a given level (loads board obstacles + prefill)
 void AdventureInitLevel(AdventureState *adventure, int levelIndex, Board *board);
-
-// Check if a cell is occupied by an obstacle
-bool AdventureIsCellBlocked(AdventureState *adventure, int row, int col);
 
 // Update goal progress after a piece placement + line clear
 void AdventureUpdateProgress(AdventureState *adventure, Board *board,
-                              int linesCleared, int combo, int points);
+                              int linesCleared, int combo, int points,
+                              int diamondsCollected, int emeraldsCollected);
 
-// Check if player has met the goal
+// Check if player has met all goals
 bool AdventureCheckGoal(AdventureState *adventure);
 
-// Calculate star rating based on progress vs goal
-int AdventureCalcStars(AdventureState *adventure);
-
-// Check if player ran out of pieces (level failed)
-bool AdventureCheckFailure(AdventureState *adventure);
-
-// ─── Life system ───────────────────────────────────────────────────────────
-
-void AdventureLoadLives(AdventureSaveData *save);
-void AdventureSaveLives(AdventureSaveData *save);
-void AdventureRegenLives(AdventureSaveData *save);
+// Check if player ran out of valid moves (level failed)
+bool AdventureCheckFailure(AdventureState *adventure, Board *board, PieceSlot slots[3]);
 
 // ─── Progress save/load ────────────────────────────────────────────────────
-
 void AdventureLoadProgress(AdventureSaveData *save);
 void AdventureSaveProgress(AdventureSaveData *save);
 

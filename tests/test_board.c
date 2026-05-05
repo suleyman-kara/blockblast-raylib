@@ -55,7 +55,7 @@ void test_board_place_and_clear(void)
 
     // Clear lines
     bool cleared[GRID_SIZE][GRID_SIZE] = {false};
-    int lines = BoardClearLines(&b, cleared);
+    int lines = BoardClearLines(&b, cleared, NULL, NULL);
     ASSERT(lines == 1, "should clear 1 line");
 
     // Check row is now empty
@@ -112,7 +112,7 @@ void test_board_clear_column(void)
     }
 
     bool cleared[GRID_SIZE][GRID_SIZE] = {false};
-    int lines = BoardClearLines(&b, cleared);
+    int lines = BoardClearLines(&b, cleared, NULL, NULL);
     ASSERT(lines == 1, "should clear 1 column");
 
     for (int r = 0; r < GRID_SIZE; r++)
@@ -135,7 +135,7 @@ void test_board_clear_multiple_lines(void)
     }
 
     bool cleared[GRID_SIZE][GRID_SIZE] = {false};
-    int lines = BoardClearLines(&b, cleared);
+    int lines = BoardClearLines(&b, cleared, NULL, NULL);
     ASSERT(lines == 3, "should clear 3 rows");
 
     PASS();

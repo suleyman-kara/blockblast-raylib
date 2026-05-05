@@ -1,78 +1,49 @@
 #include "render.h"
 #include "font.h"
 #include "adventure.h"
+#include "theme.h"
 #include <stdio.h>
 
 // ----- Adventure Map -----
 void RenderAdventureMap(GameState *state)
 {
+    const AdventureMapStyle *m = &THEME_DEFAULT.adventureMap;
+    const TextStyle *txt = &THEME_DEFAULT.text;
+
     // Title
     const char *mapTitle = "MACERA MODU";
-    GameDrawText(mapTitle, (SCREEN_WIDTH - GameMeasureText(mapTitle, 36)) / 2, 30, 36, WHITE);
-
-    // Lives display (hearts)
-    char livesBuf[32];
-    AdventureRegenLives(&state->adventureSave);
-    int lives = state->adventureSave.currentLives;
-    sprintf(livesBuf, "Can: ");
-    int lw = GameMeasureText(livesBuf, 20);
-    GameDrawText(livesBuf, 20, 80, 20, (Color){200, 100, 100, 255});
-
-    // Draw hearts (using text symbols as before)
-    for (int i = 0; i < MAX_LIVES; i++) {
-        int hx = 20 + lw + i * 28;
-        Color heartColor = (i < lives) ? (Color){255, 60, 60, 255} : (Color){60, 60, 80, 255};
-        GameDrawText(i < lives ? "@" : "@", hx, 78, 22, heartColor);
-    }
-
-    // Total stars collected
-    int totalStars = 0;
-    int maxStars = TOTAL_LEVELS * 3;
-    for (int i = 0; i < TOTAL_LEVELS; i++)
-        totalStars += state->adventureSave.levels[i].bestStars;
-
-    char starsBuf[64];
-    sprintf(starsBuf, "Yildiz: %d / %d", totalStars, maxStars);
-    int sw = GameMeasureText(starsBuf, 18);
-    GameDrawText(starsBuf, SCREEN_WIDTH - sw - 20, 82, 18, (Color){255, 220, 50, 255});
-
-    // No lives warning
-    if (lives <= 0) {
-        const char *noLivesMsg = "Caniniz kalmadi! 20 dk sonra yenilenir.";
-        int nw = GameMeasureText(noLivesMsg, 16);
-        GameDrawText(noLivesMsg, (SCREEN_WIDTH - nw) / 2, 115, 16, (Color){255, 100, 100, 255});
-    }
+    GameDrawText(mapTitle, (SCREEN_WIDTH - GameMeasureText(mapTitle, 36)) / 2, 30, 36, txt->primary);
 
     // Level grid
-    int btnSize = 80;
-    int gap = 15;
-    int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
+    int totalRowWidth = LEVELS_PER_ROW * m->btnSize + (LEVELS_PER_ROW - 1) * m->btnGap;
     int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
-    int mapStartY = 150;
 
     Vector2 mouse = GetMousePosition();
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
         int col = i % LEVELS_PER_ROW;
-        int bx = mapStartX + col * (btnSize + gap);
-        int by = mapStartY + row * (btnSize + gap + 30);
-        Rectangle btnRect = { bx, by, btnSize, btnSize };
+        int bx = mapStartX + col * (m->btnSize + m->btnGap);
+        int by = m->mapStartY + row * (m->btnSize + m->btnGap + m->btnLabelGap);
+        Rectangle btnRect = { bx, by, m->btnSize, m->btnSize };
 
         bool isUnlocked = state->adventureSave.levels[i].unlocked;
+        bool isCompleted = state->adventureSave.levels[i].completed;
         bool hover = CheckCollisionPointRec(mouse, btnRect) && isUnlocked;
-        int stars = state->adventureSave.levels[i].bestStars;
 
         // Button background
         Color btnColor;
+        Color borderColor;
         if (!isUnlocked) {
-            btnColor = (Color){25, 25, 40, 255};
+            btnColor = m->lockedBg;
+            borderColor = m->lockedBorder;
         } else if (hover) {
-            btnColor = (Color){60, 50, 80, 255};
+            btnColor = m->unlockedBgHover;
+            borderColor = m->unlockedBorder;
         } else {
-            btnColor = (Color){40, 35, 60, 255};
+            btnColor = m->unlockedBg;
+            borderColor = m->unlockedBorder;
         }
-        Color borderColor = isUnlocked ? (Color){120, 80, 180, 255} : (Color){40, 40, 55, 255};
 
         DrawRectangleRounded(btnRect, 0.2f, 6, btnColor);
         DrawRectangleRoundedLines(btnRect, 0.2f, 6, borderColor);
@@ -81,33 +52,23 @@ void RenderAdventureMap(GameState *state)
         char lvlBuf[8];
         sprintf(lvlBuf, "%d", i + 1);
         int lnw = GameMeasureText(lvlBuf, 28);
-        Color lvlColor = isUnlocked ? WHITE : (Color){60, 60, 80, 255};
-        GameDrawText(lvlBuf, bx + (btnSize - lnw) / 2, by + 20, 28, lvlColor);
+        Color lvlColor = isUnlocked ? txt->primary : m->lockedNumber;
+        GameDrawText(lvlBuf, bx + (m->btnSize - lnw) / 2, by + 20, 28, lvlColor);
 
-        // Lock icon for locked levels
-        if (!isUnlocked) {
-            GameDrawText("K", bx + btnSize / 2 - 8, by + btnSize - 22, 18, (Color){60, 60, 80, 255});
-        }
-
-        // Stars below each button
-        int starOffsetX = bx + (btnSize - 3 * 16) / 2;
-        for (int s = 0; s < 3; s++) {
-            Color starColor;
-            if (!isUnlocked) {
-                starColor = (Color){30, 30, 45, 255};
-            } else if (s < stars) {
-                starColor = (Color){255, 220, 50, 255};
-            } else {
-                starColor = (Color){60, 60, 80, 100};
-            }
-            GameDrawText("*", starOffsetX + s * 16, by + btnSize + 5, 16, starColor);
+        // Status indicator
+        if (isCompleted) {
+            // Green checkmark
+            GameDrawText("✓", bx + m->btnSize - 22, by + 5, 18, m->completedText);
+        } else if (!isUnlocked) {
+            // Lock icon
+            GameDrawText("K", bx + m->btnSize / 2 - 8, by + m->btnSize - 22, 18, m->lockedNumber);
         }
     }
 
     // Hint at bottom
     const char *escHint = "ESC: Ana Menu";
     GameDrawText(escHint, (SCREEN_WIDTH - GameMeasureText(escHint, 16)) / 2,
-             SCREEN_HEIGHT - 30, 16, (Color){100, 100, 120, 255});
+             SCREEN_HEIGHT - 30, 16, txt->muted);
 }
 
 // ----- Adventure Play HUD -----
@@ -115,42 +76,56 @@ void RenderAdventurePlay(GameState *state)
 {
     const LevelDef *level = AdventureGetLevelDefs();
     level = &level[state->adventure.currentLevel];
+    const TextStyle *txt = &THEME_DEFAULT.text;
 
     char buf[128];
 
-    // Level info at top
-    int fontSize = 22;
+    // Compact top bar: Level (left) | Goal (right)
+    int topY = 8;
     sprintf(buf, "Level %d", state->adventure.currentLevel + 1);
-    int lw = GameMeasureText(buf, fontSize);
-    GameDrawText(buf, 10, 10, fontSize, (Color){180, 150, 255, 255});
+    GameDrawText(buf, 10, topY, 20, (Color){180, 150, 255, 255});
 
-    // Lives next to level
-    int lives = state->adventureSave.currentLives;
-    for (int i = 0; i < MAX_LIVES; i++) {
-        int hx = 10 + lw + 10 + i * 22;
-        GameDrawText(i < lives ? "@" : "@", hx, 10, 18,
-            i < lives ? (Color){255, 60, 60, 255} : (Color){60, 60, 80, 255});
-    }
-
-    // Goal description
+    // Goal description (right side)
     sprintf(buf, "Hedef: %s", level->description);
-    int gw = GameMeasureText(buf, 16);
-    GameDrawText(buf, SCREEN_WIDTH - gw - 10, 12, 16, (Color){200, 200, 220, 255});
+    int gw = GameMeasureText(buf, 14);
+    GameDrawText(buf, SCREEN_WIDTH - gw - 10, topY + 2, 14, txt->secondary);
 
-    // Progress bar
-    int barY = 40;
-    int barWidth = SCREEN_WIDTH - 80;
-    int barHeight = 14;
-    int barX = 40;
+    // Progress bar (compact, above board)
+    int barY = 35;
+    int barWidth = SCREEN_WIDTH - 60;
+    int barHeight = 12;
+    int barX = 30;
 
-    // Calculate progress percentage
+    // Calculate overall progress
     float progress = 0.0f;
-    if (level->goalValue2 > 0) {
-        float p1 = (float)state->adventure.goalProgress / (float)level->goalValue;
-        float p2 = (float)state->adventure.goalProgress2 / (float)level->goalValue2;
-        progress = (p1 + p2) / 2.0f;
-    } else {
-        progress = (float)state->adventure.goalProgress / (float)level->goalValue;
+    int metGoals = 0;
+
+    switch (level->goalType) {
+        case GOAL_SCORE:
+            if (state->adventure.goalScore > 0) {
+                progress = (float)state->score / (float)state->adventure.goalScore;
+            }
+            break;
+
+        case GOAL_GEMS:
+            if (state->adventure.goalDiamonds > 0) {
+                progress = (float)state->adventure.collectedDiamonds / (float)state->adventure.goalDiamonds;
+            }
+            break;
+
+        case GOAL_MIXED_GEMS:
+            if (state->adventure.goalDiamonds > 0) metGoals += state->adventure.collectedDiamonds;
+            if (state->adventure.goalEmeralds > 0) metGoals += state->adventure.collectedEmeralds;
+            progress = (float)metGoals / (float)(state->adventure.goalDiamonds + state->adventure.goalEmeralds);
+            break;
+
+        case GOAL_MIXED_ALL: {
+            float p1 = (float)state->score / (float)state->adventure.goalScore;
+            float p2 = (float)state->adventure.collectedDiamonds / (float)state->adventure.goalDiamonds;
+            float p3 = (float)state->adventure.collectedEmeralds / (float)state->adventure.goalEmeralds;
+            progress = (p1 + p2 + p3) / 3.0f;
+            break;
+        }
     }
     if (progress > 1.0f) progress = 1.0f;
 
@@ -158,7 +133,7 @@ void RenderAdventurePlay(GameState *state)
     DrawRectangle(barX, barY, barWidth, barHeight, (Color){40, 40, 60, 255});
     DrawRectangleLines(barX, barY, barWidth, barHeight, (Color){60, 60, 80, 255});
 
-    // Bar fill (gradient effect)
+    // Bar fill
     Color barColor;
     if (progress < 0.5f)
         barColor = (Color){255, 100, 100, 255};
@@ -170,28 +145,33 @@ void RenderAdventurePlay(GameState *state)
     DrawRectangle(barX + 1, barY + 1,
                   (int)((barWidth - 2) * progress), barHeight - 2, barColor);
 
-    // Progress text
-    if (level->goalValue2 > 0) {
-        sprintf(buf, "%d/%d  %d/%d",
-                state->adventure.goalProgress, level->goalValue,
-                state->adventure.goalProgress2, level->goalValue2);
-    } else {
-        sprintf(buf, "%d / %d", state->adventure.goalProgress, level->goalValue);
+    // Progress text inside bar
+    switch (level->goalType) {
+        case GOAL_SCORE:
+            sprintf(buf, "%d / %d", state->score, state->adventure.goalScore);
+            break;
+        case GOAL_GEMS:
+            sprintf(buf, "◆ %d / %d", state->adventure.collectedDiamonds, state->adventure.goalDiamonds);
+            break;
+        case GOAL_MIXED_GEMS:
+            sprintf(buf, "◆ %d/%d  ◆ %d/%d",
+                    state->adventure.collectedDiamonds, state->adventure.goalDiamonds,
+                    state->adventure.collectedEmeralds, state->adventure.goalEmeralds);
+            break;
+        case GOAL_MIXED_ALL:
+            sprintf(buf, "%dp ◆%d ◆%d", state->score,
+                    state->adventure.collectedDiamonds, state->adventure.collectedEmeralds);
+            break;
     }
-    int pw = GameMeasureText(buf, 14);
-    GameDrawText(buf, (SCREEN_WIDTH - pw) / 2, barY + 1, 14, (Color){220, 220, 240, 255});
+    int pw = GameMeasureText(buf, 12);
+    GameDrawText(buf, (SCREEN_WIDTH - pw) / 2, barY + 1, 12, (Color){220, 220, 240, 255});
 
-    // Pieces remaining
-    int piecesRemaining = level->pieceLimit - state->adventure.piecesUsed;
-    if (piecesRemaining < 0) piecesRemaining = 0;
-    sprintf(buf, "Kalan parca: %d", piecesRemaining);
-    GameDrawText(buf, 10, barY + barHeight + 5, 16, (Color){180, 180, 200, 255});
-
-    // Score (for GOAL_SCORE type)
-    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED) {
+    // Info line: score (compact, below bar)
+    int infoY = barY + barHeight + 4;
+    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL) {
         sprintf(buf, "Puan: %d", state->score);
-        int sw = GameMeasureText(buf, 16);
-        GameDrawText(buf, SCREEN_WIDTH - sw - 10, barY + barHeight + 5, 16, (Color){180, 180, 200, 255});
+        int sw = GameMeasureText(buf, 14);
+        GameDrawText(buf, SCREEN_WIDTH - sw - 10, infoY, 14, txt->secondary);
     }
 
     // Render board
@@ -204,26 +184,136 @@ void RenderAdventurePlay(GameState *state)
 // ----- Adventure Result Screen -----
 void RenderAdventureResult(GameState *state)
 {
+    const LevelDef *level = AdventureGetLevelDefs();
+    level = &level[state->adventure.currentLevel];
+
+    // Draw the game board underneath (semi-transparent overlay on top)
+    RenderAdventurePlay(state);
+
+    // Semi-transparent dark overlay
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
 
+    // ─── Card background ──────────────────────────────────────────────────────
+    int cardW = 380, cardH = 400;
+    int cardX = (SCREEN_WIDTH - cardW) / 2;
+    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
+
+    char buf[128];
+    Vector2 mouse = GetMousePosition();
+
+    // ─── Title ────────────────────────────────────────────────────────────────
     if (state->adventure.levelFailed) {
         const char *failMsg = "SEVIYE BASARISIZ!";
-        int fw = GameMeasureText(failMsg, 36);
-        GameDrawText(failMsg, (SCREEN_WIDTH - fw) / 2, 280, 36, (Color){255, 80, 80, 255});
-
-        const char *subMsg = "Bir can kaybettiniz!";
-        int sw = GameMeasureText(subMsg, 20);
-        GameDrawText(subMsg, (SCREEN_WIDTH - sw) / 2, 340, 20, (Color){200, 200, 220, 255});
+        int fw = GameMeasureText(failMsg, 32);
+        GameDrawText(failMsg, (SCREEN_WIDTH - fw) / 2, cardY + 30, 32, (Color){255, 80, 80, 255});
     } else {
         const char *successMsg = "SEVIYE TAMAMLANDI!";
-        int sw = GameMeasureText(successMsg, 36);
-        GameDrawText(successMsg, (SCREEN_WIDTH - sw) / 2, 270, 36, (Color){50, 255, 100, 255});
-
-        // Stars earned
-        int stars = state->adventure.earnedStars;
-        int starX = (SCREEN_WIDTH - stars * 36) / 2;
-        for (int i = 0; i < stars; i++) {
-            GameDrawText("*", starX + i * 36, 320, 32, (Color){255, 220, 50, 255});
-        }
+        int sw = GameMeasureText(successMsg, 32);
+        GameDrawText(successMsg, (SCREEN_WIDTH - sw) / 2, cardY + 30, 32, (Color){50, 255, 100, 255});
     }
+
+    // ─── Level info ───────────────────────────────────────────────────────────
+    sprintf(buf, "Level %d", state->adventure.currentLevel + 1);
+    int lw = GameMeasureText(buf, 20);
+    GameDrawText(buf, (SCREEN_WIDTH - lw) / 2, cardY + 75, 20, (Color){180, 150, 255, 255});
+
+    // ─── Stats ────────────────────────────────────────────────────────────────
+    int statY = cardY + 120;
+    int statX = cardX + 30;
+    int statSpacing = 35;
+    int statFontSize = 18;
+
+    // Score
+    Color scoreColor = (state->adventure.levelFailed && level->goalType != GOAL_SCORE && level->goalType != GOAL_MIXED_ALL)
+                       ? (Color){150, 150, 170, 255} : (Color){255, 255, 255, 255};
+    sprintf(buf, "Puan: %d", state->score);
+    GameDrawText(buf, statX, statY, statFontSize, scoreColor);
+    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL) {
+        sprintf(buf, "Hedef: %d", state->adventure.goalScore);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->score >= state->adventure.goalScore ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // Diamonds
+    if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+        statY += statSpacing;
+        sprintf(buf, "Elmas: %d", state->adventure.collectedDiamonds);
+        GameDrawText(buf, statX, statY, statFontSize, (Color){100, 200, 255, 255});
+        sprintf(buf, "Hedef: %d", state->adventure.goalDiamonds);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->adventure.collectedDiamonds >= state->adventure.goalDiamonds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // Emeralds
+    if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+        statY += statSpacing;
+        sprintf(buf, "Zumrut: %d", state->adventure.collectedEmeralds);
+        GameDrawText(buf, statX, statY, statFontSize, (Color){50, 220, 100, 255});
+        sprintf(buf, "Hedef: %d", state->adventure.goalEmeralds);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->adventure.collectedEmeralds >= state->adventure.goalEmeralds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // ─── Buttons (vertical layout) ────────────────────────────────────────────
+    const int btnW = 220, btnH = 50;
+    const int btnGap = 15;
+    const int btnX = (SCREEN_WIDTH - btnW) / 2;
+    const int topBtnY = cardY + cardH - 140;
+    const int botBtnY = topBtnY + btnH + btnGap;
+
+    Rectangle btnTop = { btnX, topBtnY, btnW, btnH };
+    Rectangle btnBot = { btnX, botBtnY, btnW, btnH };
+
+    bool topHover = CheckCollisionPointRec(mouse, btnTop);
+    bool botHover = CheckCollisionPointRec(mouse, btnBot);
+
+    if (state->adventure.levelFailed) {
+        // Top: Tekrar Dene | Bottom: Ana Menü
+        Color topBg  = topHover ? (Color){80, 50, 120, 255} : (Color){55, 40, 85, 255};
+        Color topBdr = topHover ? (Color){180, 120, 255, 255} : (Color){100, 70, 150, 255};
+        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
+        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
+        const char *topText = "Tekrar Dene";
+        int ttw = GameMeasureText(topText, 18);
+        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
+                     topHover ? (Color){255, 255, 255, 255} : (Color){170, 150, 200, 255});
+
+        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
+        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
+        const char *botText = "Ana Menu";
+        int btw = GameMeasureText(botText, 18);
+        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
+                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+    } else {
+        // Top: Sonraki Level | Bottom: Ana Menü
+        Color topBg  = topHover ? (Color){50, 100, 60, 255} : (Color){35, 70, 45, 255};
+        Color topBdr = topHover ? (Color){100, 220, 120, 255} : (Color){60, 140, 80, 255};
+        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
+        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
+        const char *topText = (state->adventure.currentLevel + 1 < TOTAL_LEVELS) ? "Sonraki Level" : "Tamamlandi!";
+        int ttw = GameMeasureText(topText, 18);
+        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
+                     topHover ? (Color){255, 255, 255, 255} : (Color){150, 220, 170, 255});
+
+        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
+        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
+        const char *botText = "Ana Menu";
+        int btw = GameMeasureText(botText, 18);
+        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
+                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+    }
+
+    // Hint at bottom
+    const char *escHint = "ESC: Geri";
+    int ehw = GameMeasureText(escHint, 14);
+    GameDrawText(escHint, (SCREEN_WIDTH - ehw) / 2, SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
 }
