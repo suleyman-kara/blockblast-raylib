@@ -66,6 +66,8 @@ jobs:
       - name: Build the game
         run: python3 build.py --no-run
         shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: Verify binary exists
         run: |
