@@ -1,0 +1,156 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # v1.0.0, v2.1.3, etc.
+      - 'release-*'   # release-1, release-2, etc.
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    strategy:
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            artifact_name: blockblast-linux-x86_64
+            exe_name: blockblast
+            install_deps: |
+              sudo apt-get update -qq
+              sudo apt-get install -y -qq \
+                pkg-config \
+                libgl1-mesa-dev \
+                libx11-dev \
+                libxcursor-dev \
+                libxrandr-dev \
+                libxi-dev \
+                libxinerama-dev \
+                libasound2-dev \
+                libpulse-dev \
+                cmake \
+                build-essential
+
+          - name: macOS
+            os: macos-latest
+            artifact_name: blockblast-macos-x86_64
+            exe_name: blockblast
+            install_deps: |
+              # macOS comes with clang, Xcode tools
+
+          - name: Windows
+            os: windows-latest
+            artifact_name: blockblast-windows-x86_64
+            exe_name: blockblast.exe
+            install_deps: |
+              choco install mingw -y --no-progress
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: ${{ matrix.install_deps }}
+        shell: bash
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build the game
+        run: python3 build.py --no-run
+        shell: bash
+
+      - name: Verify binary exists
+        run: |
+          if [ -f "build/${{ matrix.exe_name }}" ]; then
+            echo "Binary exists: build/${{ matrix.exe_name }}"
+          else
+            echo "Binary not found!"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Package release
+        run: |
+          mkdir -p "release/${{ matrix.artifact_name }}"
+          cp "build/${{ matrix.exe_name }}" "release/${{ matrix.artifact_name }}/"
+          cp -r assets "release/${{ matrix.artifact_name }}/"
+          cp -r data "release/${{ matrix.artifact_name }}/"
+          cp LICENSE "release/${{ matrix.artifact_name }}/"
+          cp README.md "release/${{ matrix.artifact_name }}/"
+          cd release
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a -tzip "../${{ matrix.artifact_name }}.zip" "${{ matrix.artifact_name }}/"
+          else
+            zip -r "../${{ matrix.artifact_name }}.zip" "${{ matrix.artifact_name }}/"
+          fi
+        shell: bash
+
+      - name: Upload release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
+
+  create-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          ls -la downloaded-artifacts/
+          ls -la downloaded-artifacts/*/
+        shell: bash
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Block Blast ${{ github.ref_name }}
+          body: |
+            ## Block Blast ${{ github.ref_name }}
+
+            ### 🎮 Oyun Hakkında
+            Block Blast - raylib ile yazılmış blok patlatma oyunu.
+
+            ### 📦 İndirme
+            Platformunuza uygun zip dosyasını indirin:
+            - **Windows**: `blockblast-windows-x86_64.zip`
+            - **macOS**: `blockblast-macos-x86_64.zip`
+            - **Linux**: `blockblast-linux-x86_64.zip`
+
+            ### 🚀 Çalıştırma
+            1. Zip dosyasını açın
+            2. Klasör içindeki `blockblast` (veya `blockblast.exe`) dosyasını çalıştırın
+            3. Oyunun keyfini çıkarın! 🎉
+
+            ### 🔧 Sistem Gereksinimleri
+            - **Windows**: Windows 10+, OpenGL 3.3+ desteği
+            - **macOS**: macOS 11+, OpenGL 3.3+ desteği
+            - **Linux**: X11/Wayland, OpenGL 3.3+ desteği
+
+            ### Değişiklikler
+            (Release notlarınızı buraya ekleyin)
+          files: |
+            downloaded-artifacts/blockblast-linux-x86_64/blockblast-linux-x86_64.zip
+            downloaded-artifacts/blockblast-macos-x86_64/blockblast-macos-x86_64.zip
+            downloaded-artifacts/blockblast-windows-x86_64/blockblast-windows-x86_64.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
