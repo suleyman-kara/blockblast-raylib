@@ -117,7 +117,6 @@ void GameUpdate(GameState *state)
             if (goalMet && !state->adventure.levelComplete) {
                 state->adventure.levelComplete = true;
                 state->adventure.showResultScreen = true;
-                state->adventure.resultTimer = 2.0f;
 
                 // Save progress
                 int lvl = state->adventure.currentLevel;
@@ -129,6 +128,9 @@ void GameUpdate(GameState *state)
                 }
 
                 AdventureSaveProgress(&state->adventureSave);
+
+                // Go to result screen immediately
+                state->currentScreen = SCREEN_ADVENTURE_RESULT;
             }
 
             // Check if level failed (no valid moves left)
@@ -136,16 +138,9 @@ void GameUpdate(GameState *state)
                 state->adventure.levelFailed = true;
                 state->adventure.levelComplete = true;
                 state->adventure.showResultScreen = true;
-                state->adventure.resultTimer = 2.0f;
-            }
 
-            // Result screen timer
-            if (state->adventure.showResultScreen) {
-                state->adventure.resultTimer -= dt;
-                if (state->adventure.resultTimer <= 0.0f) {
-                    state->currentScreen = SCREEN_ADVENTURE_MAP;
-                    state->adventure.showResultScreen = false;
-                }
+                // Go to result screen immediately
+                state->currentScreen = SCREEN_ADVENTURE_RESULT;
             }
 
             break;
@@ -178,8 +173,69 @@ void GameUpdate(GameState *state)
         }
 
         case SCREEN_ADVENTURE_RESULT: {
-            if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Result screen button definitions (must match render_adventure.c)
+            const int cardH = 400;
+            const int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+            const int btnW = 220, btnH = 50;
+            const int btnGap = 15;
+            const int btnX = (SCREEN_WIDTH - btnW) / 2;
+            const int topBtnY = cardY + cardH - 140;
+            const int botBtnY = topBtnY + btnH + btnGap;
+
+            Rectangle btnTop = { btnX, topBtnY, btnW, btnH };
+            Rectangle btnBot = { btnX, botBtnY, btnW, btnH };
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (state->adventure.levelFailed) {
+                    // Top: Tekrar Dene | Bottom: Ana Menü
+                    if (CheckCollisionPointRec(mouse, btnTop)) {
+                        // Tekrar Dene — restart same level
+                        SoundPlayMenuClick(&state->sound);
+                        state->adventure.showResultScreen = false;
+                        state->adventure.levelFailed = false;
+                        state->adventure.levelComplete = false;
+                        GameResetAdventure(state);
+                        state->currentScreen = SCREEN_ADVENTURE_PLAY;
+                    } else if (CheckCollisionPointRec(mouse, btnBot)) {
+                        // Ana Menü
+                        SoundPlayMenuClick(&state->sound);
+                        state->currentScreen = SCREEN_MENU;
+                        state->adventure.showResultScreen = false;
+                        state->adventure.levelFailed = false;
+                        state->adventure.levelComplete = false;
+                    }
+                } else {
+                    // Top: Sonraki Level | Bottom: Ana Menü
+                    if (CheckCollisionPointRec(mouse, btnTop)) {
+                        // Sonraki Level
+                        SoundPlayMenuClick(&state->sound);
+                        int nextLevel = state->adventure.currentLevel + 1;
+                        state->adventure.showResultScreen = false;
+                        state->adventure.levelComplete = false;
+                        if (nextLevel < TOTAL_LEVELS) {
+                            state->selectedLevel = nextLevel;
+                            GameResetAdventure(state);
+                            state->currentScreen = SCREEN_ADVENTURE_PLAY;
+                        } else {
+                            // All levels completed — go to menu
+                            state->currentScreen = SCREEN_MENU;
+                        }
+                    } else if (CheckCollisionPointRec(mouse, btnBot)) {
+                        // Ana Menü
+                        SoundPlayMenuClick(&state->sound);
+                        state->currentScreen = SCREEN_MENU;
+                        state->adventure.showResultScreen = false;
+                        state->adventure.levelComplete = false;
+                    }
+                }
+            }
+
+            // ESC to go back to adventure map
+            if (IsKeyPressed(KEY_ESCAPE)) {
                 SoundPlayMenuClick(&state->sound);
+                state->adventure.showResultScreen = false;
+                state->adventure.levelFailed = false;
+                state->adventure.levelComplete = false;
                 state->currentScreen = SCREEN_ADVENTURE_MAP;
             }
             break;

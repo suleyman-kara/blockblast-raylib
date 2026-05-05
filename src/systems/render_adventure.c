@@ -184,19 +184,136 @@ void RenderAdventurePlay(GameState *state)
 // ----- Adventure Result Screen -----
 void RenderAdventureResult(GameState *state)
 {
+    const LevelDef *level = AdventureGetLevelDefs();
+    level = &level[state->adventure.currentLevel];
+
+    // Draw the game board underneath (semi-transparent overlay on top)
+    RenderAdventurePlay(state);
+
+    // Semi-transparent dark overlay
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
 
+    // ─── Card background ──────────────────────────────────────────────────────
+    int cardW = 380, cardH = 400;
+    int cardX = (SCREEN_WIDTH - cardW) / 2;
+    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
+
+    char buf[128];
+    Vector2 mouse = GetMousePosition();
+
+    // ─── Title ────────────────────────────────────────────────────────────────
     if (state->adventure.levelFailed) {
         const char *failMsg = "SEVIYE BASARISIZ!";
-        int fw = GameMeasureText(failMsg, 36);
-        GameDrawText(failMsg, (SCREEN_WIDTH - fw) / 2, 280, 36, (Color){255, 80, 80, 255});
-
-        const char *subMsg = "Tekrar deneyin!";
-        int sw = GameMeasureText(subMsg, 20);
-        GameDrawText(subMsg, (SCREEN_WIDTH - sw) / 2, 340, 20, (Color){200, 200, 220, 255});
+        int fw = GameMeasureText(failMsg, 32);
+        GameDrawText(failMsg, (SCREEN_WIDTH - fw) / 2, cardY + 30, 32, (Color){255, 80, 80, 255});
     } else {
         const char *successMsg = "SEVIYE TAMAMLANDI!";
-        int sw = GameMeasureText(successMsg, 36);
-        GameDrawText(successMsg, (SCREEN_WIDTH - sw) / 2, 270, 36, (Color){50, 255, 100, 255});
+        int sw = GameMeasureText(successMsg, 32);
+        GameDrawText(successMsg, (SCREEN_WIDTH - sw) / 2, cardY + 30, 32, (Color){50, 255, 100, 255});
     }
+
+    // ─── Level info ───────────────────────────────────────────────────────────
+    sprintf(buf, "Level %d", state->adventure.currentLevel + 1);
+    int lw = GameMeasureText(buf, 20);
+    GameDrawText(buf, (SCREEN_WIDTH - lw) / 2, cardY + 75, 20, (Color){180, 150, 255, 255});
+
+    // ─── Stats ────────────────────────────────────────────────────────────────
+    int statY = cardY + 120;
+    int statX = cardX + 30;
+    int statSpacing = 35;
+    int statFontSize = 18;
+
+    // Score
+    Color scoreColor = (state->adventure.levelFailed && level->goalType != GOAL_SCORE && level->goalType != GOAL_MIXED_ALL)
+                       ? (Color){150, 150, 170, 255} : (Color){255, 255, 255, 255};
+    sprintf(buf, "Puan: %d", state->score);
+    GameDrawText(buf, statX, statY, statFontSize, scoreColor);
+    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL) {
+        sprintf(buf, "Hedef: %d", state->adventure.goalScore);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->score >= state->adventure.goalScore ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // Diamonds
+    if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+        statY += statSpacing;
+        sprintf(buf, "Elmas: %d", state->adventure.collectedDiamonds);
+        GameDrawText(buf, statX, statY, statFontSize, (Color){100, 200, 255, 255});
+        sprintf(buf, "Hedef: %d", state->adventure.goalDiamonds);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->adventure.collectedDiamonds >= state->adventure.goalDiamonds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // Emeralds
+    if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
+        statY += statSpacing;
+        sprintf(buf, "Zumrut: %d", state->adventure.collectedEmeralds);
+        GameDrawText(buf, statX, statY, statFontSize, (Color){50, 220, 100, 255});
+        sprintf(buf, "Hedef: %d", state->adventure.goalEmeralds);
+        int tw = GameMeasureText(buf, statFontSize);
+        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
+                     state->adventure.collectedEmeralds >= state->adventure.goalEmeralds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+    }
+
+    // ─── Buttons (vertical layout) ────────────────────────────────────────────
+    const int btnW = 220, btnH = 50;
+    const int btnGap = 15;
+    const int btnX = (SCREEN_WIDTH - btnW) / 2;
+    const int topBtnY = cardY + cardH - 140;
+    const int botBtnY = topBtnY + btnH + btnGap;
+
+    Rectangle btnTop = { btnX, topBtnY, btnW, btnH };
+    Rectangle btnBot = { btnX, botBtnY, btnW, btnH };
+
+    bool topHover = CheckCollisionPointRec(mouse, btnTop);
+    bool botHover = CheckCollisionPointRec(mouse, btnBot);
+
+    if (state->adventure.levelFailed) {
+        // Top: Tekrar Dene | Bottom: Ana Menü
+        Color topBg  = topHover ? (Color){80, 50, 120, 255} : (Color){55, 40, 85, 255};
+        Color topBdr = topHover ? (Color){180, 120, 255, 255} : (Color){100, 70, 150, 255};
+        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
+        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
+        const char *topText = "Tekrar Dene";
+        int ttw = GameMeasureText(topText, 18);
+        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
+                     topHover ? (Color){255, 255, 255, 255} : (Color){170, 150, 200, 255});
+
+        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
+        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
+        const char *botText = "Ana Menu";
+        int btw = GameMeasureText(botText, 18);
+        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
+                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+    } else {
+        // Top: Sonraki Level | Bottom: Ana Menü
+        Color topBg  = topHover ? (Color){50, 100, 60, 255} : (Color){35, 70, 45, 255};
+        Color topBdr = topHover ? (Color){100, 220, 120, 255} : (Color){60, 140, 80, 255};
+        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
+        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
+        const char *topText = (state->adventure.currentLevel + 1 < TOTAL_LEVELS) ? "Sonraki Level" : "Tamamlandi!";
+        int ttw = GameMeasureText(topText, 18);
+        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
+                     topHover ? (Color){255, 255, 255, 255} : (Color){150, 220, 170, 255});
+
+        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
+        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
+        const char *botText = "Ana Menu";
+        int btw = GameMeasureText(botText, 18);
+        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
+                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+    }
+
+    // Hint at bottom
+    const char *escHint = "ESC: Geri";
+    int ehw = GameMeasureText(escHint, 14);
+    GameDrawText(escHint, (SCREEN_WIDTH - ehw) / 2, SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
 }
