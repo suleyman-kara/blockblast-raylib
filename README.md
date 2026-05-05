@@ -132,9 +132,3 @@ Teslimat: Kaynak kod, proje raporu, maksimum 5 dakikalık demo videosu ve canlı
 | Yaratıcılık ve Oyun Tasarımı | 15% |
 | Rapor ve Dokümantasyon | 10% |
 | Video Sunumu | 5% |
-
-### Yapılacaklar
-- [ ] Macera modu eklenecek
-- [ ] Toplanan puana göre arka plan renk değişimi
-- [ ] Görsel ve oynanışa bağlı iyileştirmeler
-- [ ] Birlikte patlayanlar kombo sayılmıyor, düzeltilmeli
