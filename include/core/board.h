@@ -22,9 +22,11 @@ bool BoardCanPlace(Board *board, Piece *piece, int row, int col);
 void BoardPlace(Board *board, Piece *piece, int row, int col);
 
 // Scan and clear full rows/columns. Returns number of lines cleared.
-// Also collects gems from cleared cells into the provided counters.
-int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
-                    int *diamondsCollected, int *emeraldsCollected);
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
+
+// Collect gems from cells marked as cleared. Updates counters.
+void BoardCollectGems(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
+                      int *diamondsCollected, int *emeraldsCollected);
 
 // Check if any remaining piece in slots can fit anywhere on the board
 bool BoardHasValidMove(Board *board, PieceSlot slots[3]);

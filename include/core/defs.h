@@ -34,7 +34,6 @@
 #define MAX_PIECE_SIZE     5
 #define PIECE_DEF_COUNT    18
 #define PANEL_PIECE_SCALE  25
-#define DRAG_PIECE_SCALE   CELL_SIZE
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 #define BASE_SCORE         100
@@ -70,21 +69,21 @@
 #define SETTING_RESTART      2
 #define SETTING_QUIT         3
 #define SETTINGS_ICON_SIZE   40
-#define SETTINGS_ICON_GAP    60
-#define SETTINGS_LABEL_OFFSET 50
-#define SETTINGS_BTN_W       200
-#define SETTINGS_BTN_H       45
-#define SETTINGS_BTN_GAP     15
+
+// ─── Buttons (tüm ekranlarda aynı boyut) ──────────────────────────────────────
+#define BTN_W                220
+#define BTN_H                50
+#define BTN_GAP              15
+#define BTN_X                ((SCREEN_WIDTH - BTN_W) / 2)
+#define BTN_CORNER_RADIUS    0.25f
+#define BTN_BORDER_SEGMENTS  8
 
 // ─── Gear Icon ────────────────────────────────────────────────────────────────
 #define GEAR_X               (SCREEN_WIDTH - 50)
 #define GEAR_Y               10
 #define GEAR_SIZE            36
 
-// ─── Menu Buttons ─────────────────────────────────────────────────────────────
-#define MENU_BTN_W           300
-#define MENU_BTN_H           65
-#define MENU_BTN_X           ((SCREEN_WIDTH - MENU_BTN_W) / 2)
+// ─── Menu Buttons (Y pozisyonları) ────────────────────────────────────────────
 #define MENU_STD_Y           360
 #define MENU_ADV_Y           450
 
@@ -92,11 +91,6 @@
 #define TITLE_FONT_SIZE      65
 #define SUBTITLE_FONT_SIZE   32
 
-// ─── Bottom Zone Dragging ─────────────────────────────────────────────────────
-#define BOTTOM_ZONE_Y        PANEL_Y
-#define BOTTOM_ZONE_HEIGHT   (SCREEN_HEIGHT - PANEL_Y)
-#define DRAG_SPEED_BASE      1.0f
-#define DRAG_SPEED_FACTOR    1.0f
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Colour palette — flat constants, no structs
@@ -148,15 +142,11 @@ static const Color PIECE_COLORS[] = {
 #define SETTINGS_CARD_WIDTH      320
 #define SETTINGS_CARD_HEIGHT     400
 #define SETTINGS_TITLE_FONT_SIZE 30
-#define SETTINGS_ITEM_FONT_SIZE  22
-#define SETTINGS_ITEM_SPACING    55
 #define SETTINGS_CARD_PADDING_X  40
-#define SETTINGS_CARD_PADDING_TOP 90
 
 // ─── Effects ──────────────────────────────────────────────────────────────────
 #define COLOR_BANNER_TEXT       ((Color){ 255, 220, 50,  255 })
 #define COLOR_BANNER_SHADOW     ((Color){ 0,   0,   0,   120 })
-#define COLOR_FLOAT_TEXT        ((Color){ 255, 255, 100, 255 })
 #define BANNER_PULSE_BASE_SIZE  40
 
 // ─── Menu Buttons — Classic Mode ──────────────────────────────────────────────
@@ -166,8 +156,6 @@ static const Color PIECE_COLORS[] = {
 #define COLOR_BTN_STD_BORDER_HOVER  ((Color){ 140, 200, 255, 255 })
 #define COLOR_BTN_STD_TEXT          ((Color){ 220, 230, 250, 255 })
 #define COLOR_BTN_STD_TEXT_HOVER    ((Color){ 255, 255, 255, 255 })
-#define BTN_STD_CORNER_RADIUS       0.25f
-#define BTN_STD_BORDER_SEGMENTS     8
 
 // ─── Menu Buttons — Adventure Mode ────────────────────────────────────────────
 #define COLOR_BTN_ADV_BG            ((Color){ 55,  40,  85, 255 })
@@ -176,14 +164,8 @@ static const Color PIECE_COLORS[] = {
 #define COLOR_BTN_ADV_BORDER_HOVER  ((Color){ 180, 120, 255, 255 })
 #define COLOR_BTN_ADV_TEXT          ((Color){ 170, 150, 200, 255 })
 #define COLOR_BTN_ADV_TEXT_HOVER    ((Color){ 230, 210, 255, 255 })
-#define BTN_ADV_CORNER_RADIUS       0.25f
-#define BTN_ADV_BORDER_SEGMENTS     8
 
 // ─── Gems ─────────────────────────────────────────────────────────────────────
-#define COLOR_GEM_DIAMOND_PRIMARY     ((Color){ 100, 200, 255, 255 })
-#define COLOR_GEM_DIAMOND_HIGHLIGHT   ((Color){ 255, 255, 255, 200 })
-#define COLOR_GEM_EMERALD_PRIMARY     ((Color){ 50,  220, 100, 255 })
-#define COLOR_GEM_EMERALD_HIGHLIGHT   ((Color){ 200, 255, 220, 200 })
 #define GEM_SIZE_RATIO                0.50f
 
 // ─── Adventure Map ────────────────────────────────────────────────────────────
@@ -194,8 +176,6 @@ static const Color PIECE_COLORS[] = {
 #define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
 #define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
 #define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
-#define COLOR_AMAP_STAR_FILLED     ((Color){ 255, 220, 50,  255 })
-#define COLOR_AMAP_STAR_EMPTY      ((Color){ 60,  60,  80,  100 })
 #define AMAP_BTN_SIZE              80
 #define AMAP_BTN_GAP               15
 #define AMAP_BTN_LABEL_GAP         30

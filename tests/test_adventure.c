@@ -1,7 +1,7 @@
 #include "adventure/adventure.h"
 #include "core/board.h"
 #include "core/piece.h"
-#include "core/config.h"
+#include "core/defs.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

@@ -42,9 +42,9 @@ void GameUpdate(GameState *state)
     switch (state->currentScreen) {
         case SCREEN_MENU: {
             // Standard Mode button
-            Rectangle stdBtn = { MENU_BTN_X, MENU_STD_Y, MENU_BTN_W, MENU_BTN_H };
+            Rectangle stdBtn = { BTN_X, MENU_STD_Y, BTN_W, BTN_H };
             // Adventure Mode button
-            Rectangle advBtn = { MENU_BTN_X, MENU_ADV_Y, MENU_BTN_W, MENU_BTN_H };
+            Rectangle advBtn = { BTN_X, MENU_ADV_Y, BTN_W, BTN_H };
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, stdBtn)) {
@@ -186,14 +186,11 @@ void GameUpdate(GameState *state)
             // Result screen button definitions (must match render_adventure.c)
             const int cardH = 400;
             const int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
-            const int btnW = 220, btnH = 50;
-            const int btnGap = 15;
-            const int btnX = (SCREEN_WIDTH - btnW) / 2;
             const int topBtnY = cardY + cardH - 140;
-            const int botBtnY = topBtnY + btnH + btnGap;
+            const int botBtnY = topBtnY + BTN_H + BTN_GAP;
 
-            Rectangle btnTop = { btnX, topBtnY, btnW, btnH };
-            Rectangle btnBot = { btnX, botBtnY, btnW, btnH };
+            Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
+            Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (state->adventure.levelFailed) {

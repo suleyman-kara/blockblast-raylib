@@ -36,8 +36,8 @@ static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
     Color cBrd = hover ? borderHover : border;
     Color cTxt = hover ? textHover : textColor;
 
-    DrawRectangleRounded(btn, 0.2f, 6, cBg);
-    DrawRectangleRoundedLines(btn, 0.2f, 6, cBrd);
+    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
+    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
 
     int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
     DrawTextEx(gameFont, text,
@@ -291,14 +291,11 @@ void RenderAdventureResult(GameState *state)
     }
 
     // ─── Buttons (vertical layout) ────────────────────────────────────────────
-    const int btnW = 220, btnH = 50;
-    const int btnGap = 15;
-    const int btnX = (SCREEN_WIDTH - btnW) / 2;
     const int topBtnY = cardY + cardH - 140;
-    const int botBtnY = topBtnY + btnH + btnGap;
+    const int botBtnY = topBtnY + BTN_H + BTN_GAP;
 
-    Rectangle btnTop = { btnX, topBtnY, btnW, btnH };
-    Rectangle btnBot = { btnX, botBtnY, btnW, btnH };
+    Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
+    Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
 
     bool topHover = CheckCollisionPointRec(mouse, btnTop);
     bool botHover = CheckCollisionPointRec(mouse, btnBot);

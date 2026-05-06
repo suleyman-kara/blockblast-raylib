@@ -43,8 +43,7 @@ void BoardPlace(Board *board, Piece *piece, int row, int col)
     }
 }
 
-int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
-                    int *diamondsCollected, int *emeraldsCollected)
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
 {
     int cleared = 0;
     bool rowFull[GRID_SIZE] = {false};
@@ -52,10 +51,6 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
 
     // Initialize clearedCells to false
     memset(clearedCells, false, sizeof(bool) * GRID_SIZE * GRID_SIZE);
-
-    // Reset gem counters
-    if (diamondsCollected) *diamondsCollected = 0;
-    if (emeraldsCollected) *emeraldsCollected = 0;
 
     // Check which rows are full (skip rows with stone blocks)
     for (int r = 0; r < GRID_SIZE; r++) {
@@ -92,11 +87,6 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
         if (!rowFull[r]) continue;
         for (int c = 0; c < GRID_SIZE; c++) {
             clearedCells[r][c] = true;
-            // Collect gems before clearing
-            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
-                (*diamondsCollected)++;
-            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
-                (*emeraldsCollected)++;
             board->cells[r][c] = CELL_EMPTY;
             board->gems[r][c] = GEM_NONE;
         }
@@ -107,17 +97,29 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
         if (!colFull[c]) continue;
         for (int r = 0; r < GRID_SIZE; r++) {
             clearedCells[r][c] = true;
-            // Collect gems before clearing (avoid double-counting row+col intersection)
-            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
-                (*diamondsCollected)++;
-            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
-                (*emeraldsCollected)++;
             board->cells[r][c] = CELL_EMPTY;
             board->gems[r][c] = GEM_NONE;
         }
     }
 
     return cleared;
+}
+
+void BoardCollectGems(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
+                      int *diamondsCollected, int *emeraldsCollected)
+{
+    if (diamondsCollected) *diamondsCollected = 0;
+    if (emeraldsCollected) *emeraldsCollected = 0;
+
+    for (int r = 0; r < GRID_SIZE; r++) {
+        for (int c = 0; c < GRID_SIZE; c++) {
+            if (!clearedCells[r][c]) continue;
+            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
+                (*diamondsCollected)++;
+            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
+                (*emeraldsCollected)++;
+        }
+    }
 }
 
 bool BoardHasValidMove(Board *board, PieceSlot slots[3])
@@ -158,18 +160,15 @@ void BoardPrefillGems(Board *board, int count, int levelIndex)
             int row = rand() % (GRID_SIZE - def->height + 1);
             int col = rand() % (GRID_SIZE - def->width + 1);
 
-            // Check if all cells are empty
-            bool canPlace = true;
-            for (int r = 0; r < def->height && canPlace; r++) {
-                for (int c = 0; c < def->width && canPlace; c++) {
-                    if (def->shape[r][c] == 0) continue;
-                    if (board->cells[row + r][col + c] != CELL_EMPTY) {
-                        canPlace = false;
-                    }
-                }
-            }
+    // Use BoardCanPlace logic via a temporary Piece
+    Piece tempPiece;
+    memset(&tempPiece, 0, sizeof(tempPiece));
+    memcpy(tempPiece.shape, def->shape, sizeof(def->shape));
+    tempPiece.width = def->width;
+    tempPiece.height = def->height;
+    tempPiece.colorIndex = 1;
 
-            if (!canPlace) continue;
+    if (!BoardCanPlace(board, &tempPiece, row, col)) continue;
 
             // Place the piece with a random color
             int colorIdx = (rand() % 7) + 1;

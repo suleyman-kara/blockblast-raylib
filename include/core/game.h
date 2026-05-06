@@ -49,7 +49,6 @@ typedef struct {
     int dragSlotIndex;
     Vector2 dragPos;      // current drag position (screen coords)
     Vector2 dragOffset;   // offset from piece origin to mouse
-    Vector2 dragStartPos; // position where drag started (for speed calculation)
 
     // Animation & effects
     AnimQueue anims;

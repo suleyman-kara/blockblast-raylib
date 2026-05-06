@@ -46,39 +46,39 @@ void RenderMenu(GameState *state)
     Vector2 mouse = GetMousePosition();
 
     // --- Standard Mode Button ---
-    Rectangle stdBtn = { MENU_BTN_X, MENU_STD_Y, MENU_BTN_W, MENU_BTN_H };
+    Rectangle stdBtn = { BTN_X, MENU_STD_Y, BTN_W, BTN_H };
     bool stdHover = CheckCollisionPointRec(mouse, stdBtn);
 
     Color stdBg = stdHover ? COLOR_BTN_STD_BG_HOVER : COLOR_BTN_STD_BG;
     Color stdBorder = stdHover ? COLOR_BTN_STD_BORDER_HOVER : COLOR_BTN_STD_BORDER;
 
-    DrawRectangleRounded(stdBtn, BTN_STD_CORNER_RADIUS, BTN_STD_BORDER_SEGMENTS, stdBg);
-    DrawRectangleRoundedLines(stdBtn, BTN_STD_CORNER_RADIUS, BTN_STD_BORDER_SEGMENTS, stdBorder);
+    DrawRectangleRounded(stdBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, stdBg);
+    DrawRectangleRoundedLines(stdBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, stdBorder);
 
     const char *stdText = "Classic Mode";
     int stw = (int)MeasureTextEx(gameFont, stdText, 22.0f, 1.0f).x;
     Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
     DrawTextEx(gameFont, stdText,
-               (Vector2){(float)(MENU_BTN_X + (MENU_BTN_W - stw) / 2),
-                         (float)(MENU_STD_Y + (MENU_BTN_H - 22) / 2)},
+               (Vector2){(float)(BTN_X + (BTN_W - stw) / 2),
+                         (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
                22.0f, 1.0f, stdTextColor);
 
     // --- Adventure Mode Button ---
-    Rectangle advBtn = { MENU_BTN_X, MENU_ADV_Y, MENU_BTN_W, MENU_BTN_H };
+    Rectangle advBtn = { BTN_X, MENU_ADV_Y, BTN_W, BTN_H };
     bool advHover = CheckCollisionPointRec(mouse, advBtn);
 
     Color advBg = advHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
     Color advBorder = advHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
 
-    DrawRectangleRounded(advBtn, BTN_ADV_CORNER_RADIUS, BTN_ADV_BORDER_SEGMENTS, advBg);
-    DrawRectangleRoundedLines(advBtn, BTN_ADV_CORNER_RADIUS, BTN_ADV_BORDER_SEGMENTS, advBorder);
+    DrawRectangleRounded(advBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, advBg);
+    DrawRectangleRoundedLines(advBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, advBorder);
 
     const char *advText = "Adventure Mode";
     int atw = (int)MeasureTextEx(gameFont, advText, 22.0f, 1.0f).x;
     Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
     DrawTextEx(gameFont, advText,
-               (Vector2){(float)(MENU_BTN_X + (MENU_BTN_W - atw) / 2),
-                         (float)(MENU_ADV_Y + (MENU_BTN_H - 22) / 2)},
+               (Vector2){(float)(BTN_X + (BTN_W - atw) / 2),
+                         (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
                22.0f, 1.0f, advTextColor);
 }
 
@@ -161,51 +161,50 @@ void RenderSettings(GameState *state)
 
     // ─── Replay Button ────────────────────────────────────────────────────────
     int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
-    int btnX = (SCREEN_WIDTH - SETTINGS_BTN_W) / 2;
-    Rectangle replayBtn = { (float)btnX, (float)replayBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    Rectangle replayBtn = { (float)BTN_X, (float)replayBtnY, BTN_W, BTN_H };
     bool replayHover = CheckCollisionPointRec(mouse, replayBtn);
 
     Color replayBg = replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
     Color replayBorder = replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-    DrawRectangleRounded(replayBtn, 0.2f, 6, replayBg);
-    DrawRectangleRoundedLines(replayBtn, 0.2f, 6, replayBorder);
+    DrawRectangleRounded(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayBg);
+    DrawRectangleRoundedLines(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayBorder);
 
     // Replay icon at left of text
     int replayIconSize = 20;
     DrawTexturePro(gameTextures.replay,
         (Rectangle){ 0, 0, (float)gameTextures.replay.width, (float)gameTextures.replay.height },
-        (Rectangle){ (float)(btnX + 15), (float)(replayBtnY + (SETTINGS_BTN_H - replayIconSize) / 2), (float)replayIconSize, (float)replayIconSize },
+        (Rectangle){ (float)(BTN_X + 15), (float)(replayBtnY + (BTN_H - replayIconSize) / 2), (float)replayIconSize, (float)replayIconSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
     const char *replayText = "Replay";
     int replayTextW = (int)MeasureTextEx(gameFont, replayText, 18.0f, 1.0f).x;
     DrawTextEx(gameFont, replayText,
-               (Vector2){(float)(btnX + 15 + replayIconSize + 8 + (SETTINGS_BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
-                         (float)(replayBtnY + (SETTINGS_BTN_H - 18) / 2)},
+               (Vector2){(float)(BTN_X + 15 + replayIconSize + 8 + (BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
+                         (float)(replayBtnY + (BTN_H - 18) / 2)},
                18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // ─── Home Button ──────────────────────────────────────────────────────────
-    int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
-    Rectangle homeBtn = { (float)btnX, (float)homeBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    int homeBtnY = replayBtnY + BTN_H + BTN_GAP;
+    Rectangle homeBtn = { (float)BTN_X, (float)homeBtnY, BTN_W, BTN_H };
     bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
 
     Color homeBg = homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
     Color homeBorder = homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-    DrawRectangleRounded(homeBtn, 0.2f, 6, homeBg);
-    DrawRectangleRoundedLines(homeBtn, 0.2f, 6, homeBorder);
+    DrawRectangleRounded(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeBg);
+    DrawRectangleRoundedLines(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeBorder);
 
     // Home icon at left of text
     int homeIconSize = 20;
     DrawTexturePro(gameTextures.home,
         (Rectangle){ 0, 0, (float)gameTextures.home.width, (float)gameTextures.home.height },
-        (Rectangle){ (float)(btnX + 15), (float)(homeBtnY + (SETTINGS_BTN_H - homeIconSize) / 2), (float)homeIconSize, (float)homeIconSize },
+        (Rectangle){ (float)(BTN_X + 15), (float)(homeBtnY + (BTN_H - homeIconSize) / 2), (float)homeIconSize, (float)homeIconSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
     const char *homeText = "Home";
     int homeTextW = (int)MeasureTextEx(gameFont, homeText, 18.0f, 1.0f).x;
     DrawTextEx(gameFont, homeText,
-               (Vector2){(float)(btnX + 15 + homeIconSize + 8 + (SETTINGS_BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
-                         (float)(homeBtnY + (SETTINGS_BTN_H - 18) / 2)},
+               (Vector2){(float)(BTN_X + 15 + homeIconSize + 8 + (BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
+                         (float)(homeBtnY + (BTN_H - 18) / 2)},
                18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Footer hint

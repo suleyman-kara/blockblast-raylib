@@ -123,7 +123,7 @@ void GenerateRandomPiecesWithGems(PieceSlot slots[3], float panelY, float screen
         slots[i].piece = PieceCreateWithGems(diamondChance, emeraldChance);
         // Center each piece in its section
         if (slots[i].piece) {
-            float piecePixelW = slots[i].piece->width * 25.0f;  // smaller scale in panel
+            float piecePixelW = slots[i].piece->width * (float)PANEL_PIECE_SCALE;
             slots[i].posX = sectionWidth * i + (sectionWidth - piecePixelW) / 2.0f;
             slots[i].posY = panelY + 20.0f;
         }

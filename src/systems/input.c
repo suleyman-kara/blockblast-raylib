@@ -19,8 +19,6 @@ void InputUpdate(GameState *state)
 
     // --- DRAG START ---
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !state->isDragging) {
-        // First check if clicking directly on a piece (original behavior)
-        bool clickedOnPiece = false;
         for (int i = 0; i < 3; i++) {
             PieceSlot *slot = &state->slots[i];
             if (!slot->piece) continue;
@@ -35,52 +33,14 @@ void InputUpdate(GameState *state)
                 state->dragOffset.x = mouse.x - slot->posX;
                 state->dragOffset.y = mouse.y - slot->posY;
                 state->dragPos = mouse;
-                state->dragStartPos = mouse;
-                clickedOnPiece = true;
                 break;
-            }
-        }
-
-        // If not clicked on a piece, check bottom zone (divided by 3)
-        if (!clickedOnPiece && mouse.y >= BOTTOM_ZONE_Y) {
-            float zoneWidth = (float)SCREEN_WIDTH / 3.0f;
-            int slotIndex = (int)(mouse.x / zoneWidth);
-            if (slotIndex < 0) slotIndex = 0;
-            if (slotIndex > 2) slotIndex = 2;
-
-            PieceSlot *slot = &state->slots[slotIndex];
-            if (slot->piece) {
-                state->isDragging = true;
-                state->dragSlotIndex = slotIndex;
-                // Center the drag offset on the piece
-                float pw = slot->piece->width * PANEL_PIECE_SCALE;
-                float ph = slot->piece->height * PANEL_PIECE_SCALE;
-                state->dragOffset.x = pw / 2.0f;
-                state->dragOffset.y = ph / 2.0f;
-                state->dragPos = mouse;
-                state->dragStartPos = mouse;
             }
         }
     }
 
-    // --- DRAG MOVE (with speed increase based on distance from origin) ---
+    // --- DRAG MOVE (piece follows mouse directly) ---
     if (state->isDragging) {
-        // Calculate distance from the initial drag start position
-        float dx = mouse.x - state->dragStartPos.x;
-        float dy = mouse.y - state->dragStartPos.y;
-        float distance = sqrtf(dx * dx + dy * dy);
-
-        // The piece position is determined by applying a speed multiplier
-        // based on distance from the original click point.
-        // speed = base + distance * factor
-        // This means the piece follows the mouse but with an extra offset
-        // that grows as it moves further from its origin.
-        float speedBoost = 1.0f + distance * 0.005f; // half the original acceleration
-        if (speedBoost < 1.0f) speedBoost = 1.0f;
-
-        // Apply the boosted position relative to dragStartPos
-        state->dragPos.x = state->dragStartPos.x + dx * speedBoost;
-        state->dragPos.y = state->dragStartPos.y + dy * speedBoost;
+        state->dragPos = mouse;
     }
 
     // --- DRAG END (drop) ---
@@ -115,10 +75,10 @@ void InputUpdate(GameState *state)
             memcpy(savedColors, state->board.cells, sizeof(savedColors));
 
             bool clearedCells[GRID_SIZE][GRID_SIZE];
+            int linesCleared = BoardClearLines(&state->board, clearedCells);
             int diamondsCollected = 0;
             int emeraldsCollected = 0;
-            int linesCleared = BoardClearLines(&state->board, clearedCells,
-                                                &diamondsCollected, &emeraldsCollected);
+            BoardCollectGems(&state->board, clearedCells, &diamondsCollected, &emeraldsCollected);
 
             if (linesCleared > 0) {
                 state->combo += linesCleared;

@@ -53,11 +53,10 @@ void GameUpdateSettings(GameState *state)
 
     // Replay and Home buttons
     int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
-    int btnX = (SCREEN_WIDTH - SETTINGS_BTN_W) / 2;
-    Rectangle replayRect = { (float)btnX, (float)replayBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    Rectangle replayRect = { (float)BTN_X, (float)replayBtnY, BTN_W, BTN_H };
 
-    int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
-    Rectangle homeRect = { (float)btnX, (float)homeBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    int homeBtnY = replayBtnY + BTN_H + BTN_GAP;
+    Rectangle homeRect = { (float)BTN_X, (float)homeBtnY, BTN_W, BTN_H };
 
     // Hover highlight for visual feedback
     if (CheckCollisionPointRec(mouse, sfxRect)) {
