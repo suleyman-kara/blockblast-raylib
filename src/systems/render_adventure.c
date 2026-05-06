@@ -2,6 +2,7 @@
 #include "font.h"
 #include "adventure.h"
 #include "theme.h"
+#include "textures.h"
 #include <stdio.h>
 
 // ----- Adventure Map -----
@@ -11,14 +12,9 @@ void RenderAdventureMap(GameState *state)
     const TextStyle *txt = &THEME_DEFAULT.text;
 
     // Top Left: Leave icon (logout)
-    static Texture2D logoutTex = {0};
-    if (logoutTex.id == 0) {
-        logoutTex = LoadTexture("assets/images/logout.png");
-        SetTextureFilter(logoutTex, TEXTURE_FILTER_POINT);
-    }
     int iconSize = 32;
-    DrawTexturePro(logoutTex,
-        (Rectangle){ 0, 0, (float)logoutTex.width, (float)logoutTex.height },
+    DrawTexturePro(gameTextures.logout,
+        (Rectangle){ 0, 0, (float)gameTextures.logout.width, (float)gameTextures.logout.height },
         (Rectangle){ 15, 15, (float)iconSize, (float)iconSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -32,12 +28,6 @@ void RenderAdventureMap(GameState *state)
 
     Vector2 mouse = GetMousePosition();
 
-    // Load lock texture once
-    static Texture2D lockTex = {0};
-    if (lockTex.id == 0) {
-        lockTex = LoadTexture("assets/images/lock.png");
-        SetTextureFilter(lockTex, TEXTURE_FILTER_POINT);
-    }
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
@@ -81,8 +71,8 @@ void RenderAdventureMap(GameState *state)
         } else if (!isUnlocked) {
             // Lock icon below the level number
             int lockSize = 24;
-            DrawTexturePro(lockTex,
-                (Rectangle){ 0, 0, (float)lockTex.width, (float)lockTex.height },
+            DrawTexturePro(gameTextures.lock,
+                (Rectangle){ 0, 0, (float)gameTextures.lock.width, (float)gameTextures.lock.height },
                 (Rectangle){ (float)(bx + (m->btnSize - lockSize) / 2), (float)(by + m->btnSize - lockSize - 8), (float)lockSize, (float)lockSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
         }
@@ -119,14 +109,9 @@ void RenderAdventurePlay(GameState *state)
 
         case GOAL_GEMS: {
             // Diamond target is big and centered (just diamond icon and below that the target number)
-            static Texture2D diamondTex = {0};
-            if (diamondTex.id == 0) {
-                diamondTex = LoadTexture("assets/images/diamond.png");
-                SetTextureFilter(diamondTex, TEXTURE_FILTER_POINT);
-            }
             int gemSize = 32;
-            DrawTexturePro(diamondTex,
-                (Rectangle){ 0, 0, (float)diamondTex.width, (float)diamondTex.height },
+            DrawTexturePro(gameTextures.diamond,
+                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
                 (Rectangle){ (float)((SCREEN_WIDTH - gemSize) / 2), (float)midY, (float)gemSize, (float)gemSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -138,24 +123,13 @@ void RenderAdventurePlay(GameState *state)
 
         case GOAL_MIXED_GEMS: {
             // Diamond and emerald at the middle together, with decreasing counters
-            static Texture2D diamondTex2 = {0};
-            static Texture2D emeraldTex2 = {0};
-            if (diamondTex2.id == 0) {
-                diamondTex2 = LoadTexture("assets/images/diamond.png");
-                SetTextureFilter(diamondTex2, TEXTURE_FILTER_POINT);
-            }
-            if (emeraldTex2.id == 0) {
-                emeraldTex2 = LoadTexture("assets/images/emerald.png");
-                SetTextureFilter(emeraldTex2, TEXTURE_FILTER_POINT);
-            }
-
             int gemSize = 28;
             int spacing = 60;
             int centerX = SCREEN_WIDTH / 2;
 
             // Diamond (left)
-            DrawTexturePro(diamondTex2,
-                (Rectangle){ 0, 0, (float)diamondTex2.width, (float)diamondTex2.height },
+            DrawTexturePro(gameTextures.diamond,
+                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
                 (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
@@ -163,8 +137,8 @@ void RenderAdventurePlay(GameState *state)
             GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 4, 18, txt->primary);
 
             // Emerald (right)
-            DrawTexturePro(emeraldTex2,
-                (Rectangle){ 0, 0, (float)emeraldTex2.width, (float)emeraldTex2.height },
+            DrawTexturePro(gameTextures.emerald,
+                (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
                 (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);
@@ -175,17 +149,6 @@ void RenderAdventurePlay(GameState *state)
 
         case GOAL_MIXED_ALL: {
             // Score in the middle, Diamond left, Emerald right
-            static Texture2D diamondTex3 = {0};
-            static Texture2D emeraldTex3 = {0};
-            if (diamondTex3.id == 0) {
-                diamondTex3 = LoadTexture("assets/images/diamond.png");
-                SetTextureFilter(diamondTex3, TEXTURE_FILTER_POINT);
-            }
-            if (emeraldTex3.id == 0) {
-                emeraldTex3 = LoadTexture("assets/images/emerald.png");
-                SetTextureFilter(emeraldTex3, TEXTURE_FILTER_POINT);
-            }
-
             int gemSize = 24;
             int spacing = 80;
             int centerX = SCREEN_WIDTH / 2;
@@ -196,8 +159,8 @@ void RenderAdventurePlay(GameState *state)
             GameDrawText(buf, (SCREEN_WIDTH - sw) / 2, midY + 4, 28, txt->primary);
 
             // Diamond (left)
-            DrawTexturePro(diamondTex3,
-                (Rectangle){ 0, 0, (float)diamondTex3.width, (float)diamondTex3.height },
+            DrawTexturePro(gameTextures.diamond,
+                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
                 (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
@@ -205,8 +168,8 @@ void RenderAdventurePlay(GameState *state)
             GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 6, 16, txt->primary);
 
             // Emerald (right)
-            DrawTexturePro(emeraldTex3,
-                (Rectangle){ 0, 0, (float)emeraldTex3.width, (float)emeraldTex3.height },
+            DrawTexturePro(gameTextures.emerald,
+                (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
                 (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
                 (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);

@@ -1,6 +1,7 @@
 #include "render.h"
 #include "font.h"
 #include "theme.h"
+#include "textures.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -112,42 +113,6 @@ void RenderSettings(GameState *state)
                (Vector2){cardX + s->cardWidth - 40, cardY + 65},
                1.5f, s->separator);
 
-    // Load textures once
-    static Texture2D sfxTex = {0};
-    static Texture2D musicTex = {0};
-    static Texture2D replayTex = {0};
-    static Texture2D homeTex = {0};
-    if (sfxTex.id == 0) {
-        sfxTex = LoadTexture("assets/images/wave-sound.png");
-        SetTextureFilter(sfxTex, TEXTURE_FILTER_POINT);
-    }
-    if (musicTex.id == 0) {
-        musicTex = LoadTexture("assets/images/musical-note.png");
-        SetTextureFilter(musicTex, TEXTURE_FILTER_POINT);
-    }
-    if (replayTex.id == 0) {
-        // Create a simple replay icon (circular arrow)
-        Image replayImg = GenImageColor(32, 32, BLANK);
-        // Draw a simple circle with an arrow
-        for (int a = 0; a < 360; a += 10) {
-            float rad = a * PI / 180.0f;
-            int x1 = 16 + (int)(12 * cosf(rad));
-            int y1 = 16 + (int)(12 * sinf(rad));
-            int x2 = 16 + (int)(12 * cosf(rad + 0.1f));
-            int y2 = 16 + (int)(12 * sinf(rad + 0.1f));
-            ImageDrawLine(&replayImg, x1, y1, x2, y2, WHITE);
-        }
-        // Arrow head
-        ImageDrawLine(&replayImg, 16, 4, 20, 10, WHITE);
-        ImageDrawLine(&replayImg, 16, 4, 12, 10, WHITE);
-        replayTex = LoadTextureFromImage(replayImg);
-        SetTextureFilter(replayTex, TEXTURE_FILTER_POINT);
-        UnloadImage(replayImg);
-    }
-    if (homeTex.id == 0) {
-        homeTex = LoadTexture("assets/images/home.png");
-        SetTextureFilter(homeTex, TEXTURE_FILTER_POINT);
-    }
 
     Vector2 mouse = GetMousePosition();
 
@@ -158,8 +123,8 @@ void RenderSettings(GameState *state)
 
     // SFX icon
     int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
-    DrawTexturePro(sfxTex,
-        (Rectangle){ 0, 0, (float)sfxTex.width, (float)sfxTex.height },
+    DrawTexturePro(gameTextures.waveSound,
+        (Rectangle){ 0, 0, (float)gameTextures.waveSound.width, (float)gameTextures.waveSound.height },
         (Rectangle){ (float)sfxIconX, (float)iconAreaY, (float)SETTINGS_ICON_SIZE, (float)SETTINGS_ICON_SIZE },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -178,8 +143,8 @@ void RenderSettings(GameState *state)
 
     // Music icon
     int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
-    DrawTexturePro(musicTex,
-        (Rectangle){ 0, 0, (float)musicTex.width, (float)musicTex.height },
+    DrawTexturePro(gameTextures.musicalNote,
+        (Rectangle){ 0, 0, (float)gameTextures.musicalNote.width, (float)gameTextures.musicalNote.height },
         (Rectangle){ (float)musicIconX, (float)iconAreaY, (float)SETTINGS_ICON_SIZE, (float)SETTINGS_ICON_SIZE },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -209,8 +174,8 @@ void RenderSettings(GameState *state)
 
     // Replay icon at left of text
     int replayIconSize = 20;
-    DrawTexturePro(replayTex,
-        (Rectangle){ 0, 0, (float)replayTex.width, (float)replayTex.height },
+    DrawTexturePro(gameTextures.replay,
+        (Rectangle){ 0, 0, (float)gameTextures.replay.width, (float)gameTextures.replay.height },
         (Rectangle){ (float)(btnX + 15), (float)(replayBtnY + (SETTINGS_BTN_H - replayIconSize) / 2), (float)replayIconSize, (float)replayIconSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -231,8 +196,8 @@ void RenderSettings(GameState *state)
 
     // Home icon at left of text
     int homeIconSize = 20;
-    DrawTexturePro(homeTex,
-        (Rectangle){ 0, 0, (float)homeTex.width, (float)homeTex.height },
+    DrawTexturePro(gameTextures.home,
+        (Rectangle){ 0, 0, (float)gameTextures.home.width, (float)gameTextures.home.height },
         (Rectangle){ (float)(btnX + 15), (float)(homeBtnY + (SETTINGS_BTN_H - homeIconSize) / 2), (float)homeIconSize, (float)homeIconSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 

@@ -1,6 +1,7 @@
 #include "render.h"
 #include "font.h"
 #include "theme.h"
+#include "textures.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -14,14 +15,9 @@ void RenderScore(GameState *state)
     const TextStyle *txt = &THEME_DEFAULT.text;
 
     // Top Left: Crown icon + Top Score (Yellow, no text label)
-    static Texture2D crownTex = {0};
-    if (crownTex.id == 0) {
-        crownTex = LoadTexture("assets/images/crown.png");
-        SetTextureFilter(crownTex, TEXTURE_FILTER_POINT);
-    }
     int crownSize = 28;
-    DrawTexturePro(crownTex,
-        (Rectangle){ 0, 0, (float)crownTex.width, (float)crownTex.height },
+    DrawTexturePro(gameTextures.crown,
+        (Rectangle){ 0, 0, (float)gameTextures.crown.width, (float)gameTextures.crown.height },
         (Rectangle){ 10, 12, (float)crownSize, (float)crownSize },
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
@@ -128,30 +124,19 @@ void RenderGearIcon(void)
 // ----- Draw a gem icon inside a cell block (using PNG textures) -----
 void DrawGemIcon(int x, int y, int cellSize, int gemType)
 {
-    static Texture2D diamondTex = {0};
-    static Texture2D emeraldTex = {0};
-    if (diamondTex.id == 0) {
-        diamondTex = LoadTexture("assets/images/diamond.png");
-        SetTextureFilter(diamondTex, TEXTURE_FILTER_POINT);
-    }
-    if (emeraldTex.id == 0) {
-        emeraldTex = LoadTexture("assets/images/emerald.png");
-        SetTextureFilter(emeraldTex, TEXTURE_FILTER_POINT);
-    }
-
     const GemStyle *g = &THEME_DEFAULT.gem;
     int gemSize = (int)(cellSize * g->sizeRatio);
     int cx = x + cellSize / 2;
     int cy = y + cellSize / 2;
 
-    if (gemType == GEM_DIAMOND && diamondTex.id != 0) {
-        DrawTexturePro(diamondTex,
-            (Rectangle){ 0, 0, (float)diamondTex.width, (float)diamondTex.height },
+    if (gemType == GEM_DIAMOND) {
+        DrawTexturePro(gameTextures.diamond,
+            (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
             (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
-    } else if (gemType == GEM_EMERALD && emeraldTex.id != 0) {
-        DrawTexturePro(emeraldTex,
-            (Rectangle){ 0, 0, (float)emeraldTex.width, (float)emeraldTex.height },
+    } else if (gemType == GEM_EMERALD) {
+        DrawTexturePro(gameTextures.emerald,
+            (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
             (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
     }

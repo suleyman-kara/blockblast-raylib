@@ -4,6 +4,7 @@
 #include "render.h"
 #include "sound.h"
 #include "font.h"
+#include "textures.h"
 
 #include <stdio.h>
 
@@ -18,6 +19,9 @@ int main(void)
 
     // Load TrueType font for crisp text rendering
     LoadGameFont();
+
+    // Load all textures at startup
+    TexturesLoad();
 
     GameState state;
     GameInit(&state);
@@ -47,6 +51,9 @@ int main(void)
 
     // Cleanup sound system
     SoundClose(&state.sound);
+
+    // Unload all textures
+    TexturesUnload();
 
     // Unload font
     UnloadGameFont();
