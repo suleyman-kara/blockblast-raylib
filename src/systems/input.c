@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 void InputUpdate(GameState *state)
 {
@@ -18,6 +19,8 @@ void InputUpdate(GameState *state)
 
     // --- DRAG START ---
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !state->isDragging) {
+        // First check if clicking directly on a piece (original behavior)
+        bool clickedOnPiece = false;
         for (int i = 0; i < 3; i++) {
             PieceSlot *slot = &state->slots[i];
             if (!slot->piece) continue;
@@ -32,14 +35,52 @@ void InputUpdate(GameState *state)
                 state->dragOffset.x = mouse.x - slot->posX;
                 state->dragOffset.y = mouse.y - slot->posY;
                 state->dragPos = mouse;
+                state->dragStartPos = mouse;
+                clickedOnPiece = true;
                 break;
+            }
+        }
+
+        // If not clicked on a piece, check bottom zone (divided by 3)
+        if (!clickedOnPiece && mouse.y >= BOTTOM_ZONE_Y) {
+            float zoneWidth = (float)SCREEN_WIDTH / 3.0f;
+            int slotIndex = (int)(mouse.x / zoneWidth);
+            if (slotIndex < 0) slotIndex = 0;
+            if (slotIndex > 2) slotIndex = 2;
+
+            PieceSlot *slot = &state->slots[slotIndex];
+            if (slot->piece) {
+                state->isDragging = true;
+                state->dragSlotIndex = slotIndex;
+                // Center the drag offset on the piece
+                float pw = slot->piece->width * PANEL_PIECE_SCALE;
+                float ph = slot->piece->height * PANEL_PIECE_SCALE;
+                state->dragOffset.x = pw / 2.0f;
+                state->dragOffset.y = ph / 2.0f;
+                state->dragPos = mouse;
+                state->dragStartPos = mouse;
             }
         }
     }
 
-    // --- DRAG MOVE ---
+    // --- DRAG MOVE (with speed increase based on distance from origin) ---
     if (state->isDragging) {
-        state->dragPos = mouse;
+        // Calculate distance from the initial drag start position
+        float dx = mouse.x - state->dragStartPos.x;
+        float dy = mouse.y - state->dragStartPos.y;
+        float distance = sqrtf(dx * dx + dy * dy);
+
+        // The piece position is determined by applying a speed multiplier
+        // based on distance from the original click point.
+        // speed = base + distance * factor
+        // This means the piece follows the mouse but with an extra offset
+        // that grows as it moves further from its origin.
+        float speedBoost = 1.0f + distance * 0.005f; // half the original acceleration
+        if (speedBoost < 1.0f) speedBoost = 1.0f;
+
+        // Apply the boosted position relative to dragStartPos
+        state->dragPos.x = state->dragStartPos.x + dx * speedBoost;
+        state->dragPos.y = state->dragStartPos.y + dy * speedBoost;
     }
 
     // --- DRAG END (drop) ---
@@ -60,6 +101,14 @@ void InputUpdate(GameState *state)
         if (BoardCanPlace(&state->board, piece, gridRow, gridCol)) {
             BoardPlace(&state->board, piece, gridRow, gridCol);
             SoundPlayPlace(&state->sound);
+
+            // Emit particles at the placement position
+            float placeCenterX = GRID_DRAW_X + gridCol * CELL_SIZE + (piece->width * CELL_SIZE) / 2.0f;
+            float placeCenterY = GRID_DRAW_Y + gridRow * CELL_SIZE + (piece->height * CELL_SIZE) / 2.0f;
+            int colorIdx = piece->colorIndex;
+            if (colorIdx < 1 || colorIdx > 7) colorIdx = 1;
+            ParticleEmit(&state->particles, placeCenterX, placeCenterY,
+                         PIECE_COLORS[colorIdx], 12);
 
             // Save cell colors BEFORE clearing (needed for particle colors)
             int savedColors[GRID_SIZE][GRID_SIZE];
@@ -92,10 +141,10 @@ void InputUpdate(GameState *state)
                         if (!clearedCells[r][c]) continue;
                         float px = GRID_DRAW_X + c * CELL_SIZE + CELL_SIZE / 2.0f;
                         float py = GRID_DRAW_Y + r * CELL_SIZE + CELL_SIZE / 2.0f;
-                        int colorIdx = savedColors[r][c];
-                        if (colorIdx < 1 || colorIdx > 7) colorIdx = 1;
+                        int colorIdx2 = savedColors[r][c];
+                        if (colorIdx2 < 1 || colorIdx2 > 7) colorIdx2 = 1;
                         ParticleEmit(&state->particles, px, py,
-                                     PIECE_COLORS[colorIdx], 5);
+                                     PIECE_COLORS[colorIdx2], 5);
                     }
                 }
 
@@ -150,6 +199,19 @@ void InputUpdate(GameState *state)
                     GenerateRandomPiecesWithGems(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
                 } else {
                     GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH);
+                }
+
+                // Emit particles for new block generation
+                for (int i = 0; i < 3; i++) {
+                    PieceSlot *newSlot = &state->slots[i];
+                    if (newSlot->piece) {
+                        float slotCenterX = newSlot->posX + (newSlot->piece->width * PANEL_PIECE_SCALE) / 2.0f;
+                        float slotCenterY = newSlot->posY + (newSlot->piece->height * PANEL_PIECE_SCALE) / 2.0f;
+                        int newColorIdx = newSlot->piece->colorIndex;
+                        if (newColorIdx < 1 || newColorIdx > 7) newColorIdx = 1;
+                        ParticleEmit(&state->particles, slotCenterX, slotCenterY,
+                                     PIECE_COLORS[newColorIdx], 8);
+                    }
                 }
             }
 

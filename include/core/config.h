@@ -72,6 +72,14 @@
 #define SETTING_RESTART      2
 #define SETTING_QUIT         3
 
+// Settings layout
+#define SETTINGS_ICON_SIZE   40
+#define SETTINGS_ICON_GAP    60
+#define SETTINGS_LABEL_OFFSET 50
+#define SETTINGS_BTN_W       200
+#define SETTINGS_BTN_H       45
+#define SETTINGS_BTN_GAP     15
+
 // ─── Gear Icon (settings button) ──────────────────────────────────────────────
 #define GEAR_X               (SCREEN_WIDTH - 50)
 #define GEAR_Y               10
@@ -83,6 +91,16 @@
 #define MENU_BTN_X           ((SCREEN_WIDTH - MENU_BTN_W) / 2)
 #define MENU_STD_Y           360
 #define MENU_ADV_Y           450
+
+// ─── Title & Subtitle ─────────────────────────────────────────────────────────
+#define TITLE_FONT_SIZE      65    // 72 - 10% = 64.8 → 65
+#define SUBTITLE_FONT_SIZE   32    // 50% of title size
+
+// ─── Bottom Zone Dragging ─────────────────────────────────────────────────────
+#define BOTTOM_ZONE_Y        PANEL_Y
+#define BOTTOM_ZONE_HEIGHT   (SCREEN_HEIGHT - PANEL_Y)
+#define DRAG_SPEED_BASE      1.0f
+#define DRAG_SPEED_FACTOR    1.0f   // speed increase per pixel of distance
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Piece Colors

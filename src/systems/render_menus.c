@@ -9,40 +9,15 @@
 #define PI 3.14159265358979f
 #endif
 
-// Draw an infinity symbol (∞) at (cx, cy) with given radius and color
-static void DrawInfinitySymbol(int cx, int cy, int r, Color color)
-{
-    int thickness = r / 2;
-    if (thickness < 3) thickness = 3;
-    DrawCircleLines(cx - r/2, cy, r/2, color);
-    DrawCircleLines(cx + r/2, cy, r/2, color);
-    DrawLine(cx - r/2, cy - r/2, cx + r/2, cy - r/2, color);
-    DrawLine(cx - r/2, cy + r/2, cx + r/2, cy + r/2, color);
-}
-
-// Draw a simple hourglass icon at (cx, cy) with given size and color
-static void DrawHourglass(int cx, int cy, int size, Color color)
-{
-    int half = size / 2;
-    DrawTriangle((Vector2){cx - half, cy - half},
-                 (Vector2){cx + half, cy - half},
-                 (Vector2){cx, cy},
-                 color);
-    DrawTriangle((Vector2){cx - half, cy + half},
-                 (Vector2){cx + half, cy + half},
-                 (Vector2){cx, cy},
-                 color);
-}
-
 // ----- Menu screen -----
 void RenderMenu(GameState *state)
 {
     const Theme *t = &THEME_DEFAULT;
 
-    // Title — rainbow gradient per character, font size 72
+    // Title — rainbow gradient per character, font size TITLE_FONT_SIZE
     const char *title = "BLOCK BLAST";
     int titleLen = strlen(title);
-    int titleFontSize = 72;
+    int titleFontSize = TITLE_FONT_SIZE;
 
     float titleTotalW = 0;
     for (int i = 0; i < titleLen; i++) {
@@ -60,6 +35,20 @@ void RenderMenu(GameState *state)
         cursorX += sz.x;
     }
 
+    // Subtitle "Adventure Master" — white with black stroke, 50% of title size
+    const char *subtitle = "Adventure Master";
+    int subFontSize = SUBTITLE_FONT_SIZE;
+    int subW = GameMeasureText(subtitle, subFontSize);
+    int subX = (SCREEN_WIDTH - subW) / 2;
+    int subY = 150 + titleFontSize + 10;
+    // Black stroke (draw 4 times offset)
+    GameDrawText(subtitle, subX - 2, subY, subFontSize, BLACK);
+    GameDrawText(subtitle, subX + 2, subY, subFontSize, BLACK);
+    GameDrawText(subtitle, subX, subY - 2, subFontSize, BLACK);
+    GameDrawText(subtitle, subX, subY + 2, subFontSize, BLACK);
+    // White text on top
+    GameDrawText(subtitle, subX, subY, subFontSize, WHITE);
+
     Vector2 mouse = GetMousePosition();
 
     // --- Standard Mode Button ---
@@ -73,15 +62,10 @@ void RenderMenu(GameState *state)
     DrawRectangleRounded(stdBtn, stdStyle->cornerRadius, stdStyle->borderSegments, stdBg);
     DrawRectangleRoundedLines(stdBtn, stdStyle->cornerRadius, stdStyle->borderSegments, stdBorder);
 
-    int iconY = MENU_STD_Y + MENU_BTN_H / 2;
-    int iconX = MENU_BTN_X + 25;
-    Color iconColor = stdHover ? (Color){180, 220, 255, 255} : (Color){130, 160, 200, 255};
-    DrawInfinitySymbol(iconX, iconY, 16, iconColor);
-
     const char *stdText = "Classic Mode";
     int stw = GameMeasureText(stdText, 22);
     Color stdTextColor = stdHover ? stdStyle->textHover : stdStyle->text;
-    GameDrawText(stdText, MENU_BTN_X + 55 + (MENU_BTN_W - 55 - stw) / 2,
+    GameDrawText(stdText, MENU_BTN_X + (MENU_BTN_W - stw) / 2,
                  MENU_STD_Y + (MENU_BTN_H - 22) / 2, 22, stdTextColor);
 
     // --- Adventure Mode Button ---
@@ -95,13 +79,10 @@ void RenderMenu(GameState *state)
     DrawRectangleRounded(advBtn, advStyle->cornerRadius, advStyle->borderSegments, advBg);
     DrawRectangleRoundedLines(advBtn, advStyle->cornerRadius, advStyle->borderSegments, advBorder);
 
-    Color advIconColor = advHover ? (Color){220, 180, 255, 255} : (Color){160, 120, 200, 255};
-    DrawHourglass(iconX, MENU_ADV_Y + MENU_BTN_H / 2, 22, advIconColor);
-
     const char *advText = "Adventure Mode";
     int atw = GameMeasureText(advText, 22);
     Color advTextColor = advHover ? advStyle->textHover : advStyle->text;
-    GameDrawText(advText, MENU_BTN_X + 55 + (MENU_BTN_W - 55 - atw) / 2,
+    GameDrawText(advText, MENU_BTN_X + (MENU_BTN_W - atw) / 2,
                  MENU_ADV_Y + (MENU_BTN_H - 22) / 2, 22, advTextColor);
 }
 
@@ -131,31 +112,134 @@ void RenderSettings(GameState *state)
                (Vector2){cardX + s->cardWidth - 40, cardY + 65},
                1.5f, s->separator);
 
-    // Build settings labels dynamically based on sound state
-    char sfxLabel[32];
-    char musicLabel[32];
-    sprintf(sfxLabel, "Sound FX: %s", state->sound.sfxEnabled ? "ON" : "OFF");
-    sprintf(musicLabel, "Music: %s", state->sound.musicEnabled ? "ON" : "OFF");
-
-    const char *items[SETTING_COUNT] = {
-        sfxLabel,
-        musicLabel,
-        "Restart",
-        "Main Menu"
-    };
-
-    for (int i = 0; i < SETTING_COUNT; i++) {
-        int itemY = cardY + s->paddingTop + i * s->itemSpacing;
-
-        if (i == state->selectedSetting) {
-            // Selected item: golden with indicator
-            const char *indicator = "> ";
-            GameDrawText(indicator, cardX + 30, itemY, s->itemFontSize, s->selectedText);
-            GameDrawText(items[i], cardX + 55, itemY, s->itemFontSize, s->selectedText);
-        } else {
-            GameDrawText(items[i], cardX + 55, itemY, s->itemFontSize, s->unselectedText);
-        }
+    // Load textures once
+    static Texture2D sfxTex = {0};
+    static Texture2D musicTex = {0};
+    static Texture2D replayTex = {0};
+    static Texture2D homeTex = {0};
+    if (sfxTex.id == 0) {
+        sfxTex = LoadTexture("assets/images/wave-sound.png");
+        SetTextureFilter(sfxTex, TEXTURE_FILTER_POINT);
     }
+    if (musicTex.id == 0) {
+        musicTex = LoadTexture("assets/images/musical-note.png");
+        SetTextureFilter(musicTex, TEXTURE_FILTER_POINT);
+    }
+    if (replayTex.id == 0) {
+        // Create a simple replay icon (circular arrow)
+        Image replayImg = GenImageColor(32, 32, BLANK);
+        // Draw a simple circle with an arrow
+        for (int a = 0; a < 360; a += 10) {
+            float rad = a * PI / 180.0f;
+            int x1 = 16 + (int)(12 * cosf(rad));
+            int y1 = 16 + (int)(12 * sinf(rad));
+            int x2 = 16 + (int)(12 * cosf(rad + 0.1f));
+            int y2 = 16 + (int)(12 * sinf(rad + 0.1f));
+            ImageDrawLine(&replayImg, x1, y1, x2, y2, WHITE);
+        }
+        // Arrow head
+        ImageDrawLine(&replayImg, 16, 4, 20, 10, WHITE);
+        ImageDrawLine(&replayImg, 16, 4, 12, 10, WHITE);
+        replayTex = LoadTextureFromImage(replayImg);
+        SetTextureFilter(replayTex, TEXTURE_FILTER_POINT);
+        UnloadImage(replayImg);
+    }
+    if (homeTex.id == 0) {
+        homeTex = LoadTexture("assets/images/home.png");
+        SetTextureFilter(homeTex, TEXTURE_FILTER_POINT);
+    }
+
+    Vector2 mouse = GetMousePosition();
+
+    // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
+    int iconAreaY = cardY + 85;
+    int iconSpacing = (s->cardWidth - 2 * s->paddingX) / 2;
+    int iconStartX = cardX + s->paddingX;
+
+    // SFX icon
+    int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+    DrawTexturePro(sfxTex,
+        (Rectangle){ 0, 0, (float)sfxTex.width, (float)sfxTex.height },
+        (Rectangle){ (float)sfxIconX, (float)iconAreaY, (float)SETTINGS_ICON_SIZE, (float)SETTINGS_ICON_SIZE },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    // Red cross overlay if SFX is off (single diagonal: bottom-left to top-right)
+    if (!state->sound.sfxEnabled) {
+        int cx = sfxIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2}, (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    // SFX label below icon
+    const char *sfxLabel = "SFX";
+    int sfxLabelW = GameMeasureText(sfxLabel, 14);
+    GameDrawText(sfxLabel, sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2,
+                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, s->unselectedText);
+
+    // Music icon
+    int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+    DrawTexturePro(musicTex,
+        (Rectangle){ 0, 0, (float)musicTex.width, (float)musicTex.height },
+        (Rectangle){ (float)musicIconX, (float)iconAreaY, (float)SETTINGS_ICON_SIZE, (float)SETTINGS_ICON_SIZE },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    // Red cross overlay if Music is off (single diagonal: bottom-left to top-right)
+    if (!state->sound.musicEnabled) {
+        int cx = musicIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2}, (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    // Music label below icon
+    const char *musicLabel = "Music";
+    int musicLabelW = GameMeasureText(musicLabel, 14);
+    GameDrawText(musicLabel, musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2,
+                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, s->unselectedText);
+
+    // ─── Replay Button ────────────────────────────────────────────────────────
+    int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
+    int btnX = (SCREEN_WIDTH - SETTINGS_BTN_W) / 2;
+    Rectangle replayBtn = { (float)btnX, (float)replayBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    bool replayHover = CheckCollisionPointRec(mouse, replayBtn);
+
+    Color replayBg = replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+    Color replayBorder = replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+    DrawRectangleRounded(replayBtn, 0.2f, 6, replayBg);
+    DrawRectangleRoundedLines(replayBtn, 0.2f, 6, replayBorder);
+
+    // Replay icon at left of text
+    int replayIconSize = 20;
+    DrawTexturePro(replayTex,
+        (Rectangle){ 0, 0, (float)replayTex.width, (float)replayTex.height },
+        (Rectangle){ (float)(btnX + 15), (float)(replayBtnY + (SETTINGS_BTN_H - replayIconSize) / 2), (float)replayIconSize, (float)replayIconSize },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    const char *replayText = "Replay";
+    int replayTextW = GameMeasureText(replayText, 18);
+    GameDrawText(replayText, btnX + 15 + replayIconSize + 8 + (SETTINGS_BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2,
+                 replayBtnY + (SETTINGS_BTN_H - 18) / 2, 18, s->unselectedText);
+
+    // ─── Home Button ──────────────────────────────────────────────────────────
+    int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
+    Rectangle homeBtn = { (float)btnX, (float)homeBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+    bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
+
+    Color homeBg = homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+    Color homeBorder = homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+    DrawRectangleRounded(homeBtn, 0.2f, 6, homeBg);
+    DrawRectangleRoundedLines(homeBtn, 0.2f, 6, homeBorder);
+
+    // Home icon at left of text
+    int homeIconSize = 20;
+    DrawTexturePro(homeTex,
+        (Rectangle){ 0, 0, (float)homeTex.width, (float)homeTex.height },
+        (Rectangle){ (float)(btnX + 15), (float)(homeBtnY + (SETTINGS_BTN_H - homeIconSize) / 2), (float)homeIconSize, (float)homeIconSize },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+    const char *homeText = "Home";
+    int homeTextW = GameMeasureText(homeText, 18);
+    GameDrawText(homeText, btnX + 15 + homeIconSize + 8 + (SETTINGS_BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2,
+                 homeBtnY + (SETTINGS_BTN_H - 18) / 2, 18, s->unselectedText);
 
     // Footer hint
     const char *hint = "ESC to go back";

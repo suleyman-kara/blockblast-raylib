@@ -147,8 +147,18 @@ void GameUpdate(GameState *state)
         }
 
         case SCREEN_ADVENTURE_MAP: {
+            // Leave icon (top-left)
+            Rectangle leaveRect = { 15, 15, 32, 32 };
+
             // Level selection via clicking
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                // Check leave icon first
+                if (CheckCollisionPointRec(mouse, leaveRect)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_MENU;
+                    break;
+                }
+
                 for (int i = 0; i < TOTAL_LEVELS; i++) {
                     Rectangle btn = GetLevelButtonRect(i);
 
