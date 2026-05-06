@@ -121,13 +121,13 @@ typedef struct {
 
 // ─── Default theme instance ─────────────────────────────────────────────────
 static const Theme THEME_DEFAULT = {
-    // Menu: Standard Mode button
+    // Menu: Standard Mode button (lighter blue)
     .menuStandard = {
-        .bg          = { 45,  60, 100, 255 },
-        .bgHover     = { 60,  80, 140, 255 },
-        .border      = { 70,  90, 150, 255 },
-        .borderHover = { 120, 180, 255, 255 },
-        .text        = { 200, 210, 230, 255 },
+        .bg          = { 60,  100, 180, 255 },
+        .bgHover     = { 80,  130, 210, 255 },
+        .border      = { 100, 150, 220, 255 },
+        .borderHover = { 140, 200, 255, 255 },
+        .text        = { 220, 230, 250, 255 },
         .textHover   = { 255, 255, 255, 255 },
         .cornerRadius = 0.25f,
         .borderSegments = 8,
@@ -204,7 +204,7 @@ static const Theme THEME_DEFAULT = {
         .unselectedText = { 180, 180, 210, 255 },
         .footerHint     = { 100, 100, 140, 200 },
         .cardWidth      = 320,
-        .cardHeight     = 320,
+        .cardHeight     = 400,
         .titleFontSize  = 30,
         .itemFontSize   = 22,
         .itemSpacing    = 55,

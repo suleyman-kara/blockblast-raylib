@@ -10,6 +10,18 @@ void RenderAdventureMap(GameState *state)
     const AdventureMapStyle *m = &THEME_DEFAULT.adventureMap;
     const TextStyle *txt = &THEME_DEFAULT.text;
 
+    // Top Left: Leave icon (logout)
+    static Texture2D logoutTex = {0};
+    if (logoutTex.id == 0) {
+        logoutTex = LoadTexture("assets/images/logout.png");
+        SetTextureFilter(logoutTex, TEXTURE_FILTER_POINT);
+    }
+    int iconSize = 32;
+    DrawTexturePro(logoutTex,
+        (Rectangle){ 0, 0, (float)logoutTex.width, (float)logoutTex.height },
+        (Rectangle){ 15, 15, (float)iconSize, (float)iconSize },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+
     // Title
     const char *mapTitle = "MACERA MODU";
     GameDrawText(mapTitle, (SCREEN_WIDTH - GameMeasureText(mapTitle, 36)) / 2, 30, 36, txt->primary);
@@ -19,6 +31,13 @@ void RenderAdventureMap(GameState *state)
     int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
 
     Vector2 mouse = GetMousePosition();
+
+    // Load lock texture once
+    static Texture2D lockTex = {0};
+    if (lockTex.id == 0) {
+        lockTex = LoadTexture("assets/images/lock.png");
+        SetTextureFilter(lockTex, TEXTURE_FILTER_POINT);
+    }
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
@@ -60,8 +79,12 @@ void RenderAdventureMap(GameState *state)
             // Green checkmark
             GameDrawText("✓", bx + m->btnSize - 22, by + 5, 18, m->completedText);
         } else if (!isUnlocked) {
-            // Lock icon
-            GameDrawText("K", bx + m->btnSize / 2 - 8, by + m->btnSize - 22, 18, m->lockedNumber);
+            // Lock icon below the level number
+            int lockSize = 24;
+            DrawTexturePro(lockTex,
+                (Rectangle){ 0, 0, (float)lockTex.width, (float)lockTex.height },
+                (Rectangle){ (float)(bx + (m->btnSize - lockSize) / 2), (float)(by + m->btnSize - lockSize - 8), (float)lockSize, (float)lockSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
         }
     }
 
@@ -80,98 +103,117 @@ void RenderAdventurePlay(GameState *state)
 
     char buf[128];
 
-    // Compact top bar: Level (left) | Goal (right)
-    int topY = 8;
-    sprintf(buf, "Level %d", state->adventure.currentLevel + 1);
-    GameDrawText(buf, 10, topY, 20, (Color){180, 150, 255, 255});
+    // No level information shown
 
-    // Goal description (right side)
-    sprintf(buf, "Hedef: %s", level->description);
-    int gw = GameMeasureText(buf, 14);
-    GameDrawText(buf, SCREEN_WIDTH - gw - 10, topY + 2, 14, txt->secondary);
-
-    // Progress bar (compact, above board)
-    int barY = 35;
-    int barWidth = SCREEN_WIDTH - 60;
-    int barHeight = 12;
-    int barX = 30;
-
-    // Calculate overall progress
-    float progress = 0.0f;
-    int metGoals = 0;
+    // Top Middle: Dynamic display based on level objectives
+    int midY = 12;
 
     switch (level->goalType) {
-        case GOAL_SCORE:
-            if (state->adventure.goalScore > 0) {
-                progress = (float)state->score / (float)state->adventure.goalScore;
-            }
-            break;
-
-        case GOAL_GEMS:
-            if (state->adventure.goalDiamonds > 0) {
-                progress = (float)state->adventure.collectedDiamonds / (float)state->adventure.goalDiamonds;
-            }
-            break;
-
-        case GOAL_MIXED_GEMS:
-            if (state->adventure.goalDiamonds > 0) metGoals += state->adventure.collectedDiamonds;
-            if (state->adventure.goalEmeralds > 0) metGoals += state->adventure.collectedEmeralds;
-            progress = (float)metGoals / (float)(state->adventure.goalDiamonds + state->adventure.goalEmeralds);
-            break;
-
-        case GOAL_MIXED_ALL: {
-            float p1 = (float)state->score / (float)state->adventure.goalScore;
-            float p2 = (float)state->adventure.collectedDiamonds / (float)state->adventure.goalDiamonds;
-            float p3 = (float)state->adventure.collectedEmeralds / (float)state->adventure.goalEmeralds;
-            progress = (p1 + p2 + p3) / 3.0f;
+        case GOAL_SCORE: {
+            // Score is big and centered (just score, no text or bar)
+            sprintf(buf, "%d", state->score);
+            int sw = GameMeasureText(buf, 36);
+            GameDrawText(buf, (SCREEN_WIDTH - sw) / 2, midY, 36, txt->primary);
             break;
         }
-    }
-    if (progress > 1.0f) progress = 1.0f;
 
-    // Bar background
-    DrawRectangle(barX, barY, barWidth, barHeight, (Color){40, 40, 60, 255});
-    DrawRectangleLines(barX, barY, barWidth, barHeight, (Color){60, 60, 80, 255});
+        case GOAL_GEMS: {
+            // Diamond target is big and centered (just diamond icon and below that the target number)
+            static Texture2D diamondTex = {0};
+            if (diamondTex.id == 0) {
+                diamondTex = LoadTexture("assets/images/diamond.png");
+                SetTextureFilter(diamondTex, TEXTURE_FILTER_POINT);
+            }
+            int gemSize = 32;
+            DrawTexturePro(diamondTex,
+                (Rectangle){ 0, 0, (float)diamondTex.width, (float)diamondTex.height },
+                (Rectangle){ (float)((SCREEN_WIDTH - gemSize) / 2), (float)midY, (float)gemSize, (float)gemSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
 
-    // Bar fill
-    Color barColor;
-    if (progress < 0.5f)
-        barColor = (Color){255, 100, 100, 255};
-    else if (progress < 0.8f)
-        barColor = (Color){255, 200, 50, 255};
-    else
-        barColor = (Color){50, 255, 100, 255};
-
-    DrawRectangle(barX + 1, barY + 1,
-                  (int)((barWidth - 2) * progress), barHeight - 2, barColor);
-
-    // Progress text inside bar
-    switch (level->goalType) {
-        case GOAL_SCORE:
-            sprintf(buf, "%d / %d", state->score, state->adventure.goalScore);
+            sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
+            int dw = GameMeasureText(buf, 22);
+            GameDrawText(buf, (SCREEN_WIDTH - dw) / 2, midY + gemSize + 4, 22, txt->primary);
             break;
-        case GOAL_GEMS:
-            sprintf(buf, "◆ %d / %d", state->adventure.collectedDiamonds, state->adventure.goalDiamonds);
-            break;
-        case GOAL_MIXED_GEMS:
-            sprintf(buf, "◆ %d/%d  ◆ %d/%d",
-                    state->adventure.collectedDiamonds, state->adventure.goalDiamonds,
-                    state->adventure.collectedEmeralds, state->adventure.goalEmeralds);
-            break;
-        case GOAL_MIXED_ALL:
-            sprintf(buf, "%dp ◆%d ◆%d", state->score,
-                    state->adventure.collectedDiamonds, state->adventure.collectedEmeralds);
-            break;
-    }
-    int pw = GameMeasureText(buf, 12);
-    GameDrawText(buf, (SCREEN_WIDTH - pw) / 2, barY + 1, 12, (Color){220, 220, 240, 255});
+        }
 
-    // Info line: score (compact, below bar)
-    int infoY = barY + barHeight + 4;
-    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL) {
-        sprintf(buf, "Puan: %d", state->score);
-        int sw = GameMeasureText(buf, 14);
-        GameDrawText(buf, SCREEN_WIDTH - sw - 10, infoY, 14, txt->secondary);
+        case GOAL_MIXED_GEMS: {
+            // Diamond and emerald at the middle together, with decreasing counters
+            static Texture2D diamondTex2 = {0};
+            static Texture2D emeraldTex2 = {0};
+            if (diamondTex2.id == 0) {
+                diamondTex2 = LoadTexture("assets/images/diamond.png");
+                SetTextureFilter(diamondTex2, TEXTURE_FILTER_POINT);
+            }
+            if (emeraldTex2.id == 0) {
+                emeraldTex2 = LoadTexture("assets/images/emerald.png");
+                SetTextureFilter(emeraldTex2, TEXTURE_FILTER_POINT);
+            }
+
+            int gemSize = 28;
+            int spacing = 60;
+            int centerX = SCREEN_WIDTH / 2;
+
+            // Diamond (left)
+            DrawTexturePro(diamondTex2,
+                (Rectangle){ 0, 0, (float)diamondTex2.width, (float)diamondTex2.height },
+                (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
+            sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
+            int dw = GameMeasureText(buf, 18);
+            GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 4, 18, txt->primary);
+
+            // Emerald (right)
+            DrawTexturePro(emeraldTex2,
+                (Rectangle){ 0, 0, (float)emeraldTex2.width, (float)emeraldTex2.height },
+                (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
+            sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);
+            int ew = GameMeasureText(buf, 18);
+            GameDrawText(buf, centerX + spacing - ew / 2, midY + gemSize + 4, 18, txt->primary);
+            break;
+        }
+
+        case GOAL_MIXED_ALL: {
+            // Score in the middle, Diamond left, Emerald right
+            static Texture2D diamondTex3 = {0};
+            static Texture2D emeraldTex3 = {0};
+            if (diamondTex3.id == 0) {
+                diamondTex3 = LoadTexture("assets/images/diamond.png");
+                SetTextureFilter(diamondTex3, TEXTURE_FILTER_POINT);
+            }
+            if (emeraldTex3.id == 0) {
+                emeraldTex3 = LoadTexture("assets/images/emerald.png");
+                SetTextureFilter(emeraldTex3, TEXTURE_FILTER_POINT);
+            }
+
+            int gemSize = 24;
+            int spacing = 80;
+            int centerX = SCREEN_WIDTH / 2;
+
+            // Score (middle)
+            sprintf(buf, "%d", state->score);
+            int sw = GameMeasureText(buf, 28);
+            GameDrawText(buf, (SCREEN_WIDTH - sw) / 2, midY + 4, 28, txt->primary);
+
+            // Diamond (left)
+            DrawTexturePro(diamondTex3,
+                (Rectangle){ 0, 0, (float)diamondTex3.width, (float)diamondTex3.height },
+                (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
+            sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
+            int dw = GameMeasureText(buf, 16);
+            GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 6, 16, txt->primary);
+
+            // Emerald (right)
+            DrawTexturePro(emeraldTex3,
+                (Rectangle){ 0, 0, (float)emeraldTex3.width, (float)emeraldTex3.height },
+                (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
+                (Vector2){ 0, 0 }, 0.0f, WHITE);
+            sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);
+            int ew = GameMeasureText(buf, 16);
+            GameDrawText(buf, centerX + spacing - ew / 2, midY + gemSize + 6, 16, txt->primary);
+            break;
+        }
     }
 
     // Render board

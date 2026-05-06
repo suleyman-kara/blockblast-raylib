@@ -32,55 +32,58 @@ static void ExecuteSetting(GameState *state, int index)
     }
 }
 
-// Calculate the card's position and item rects - used both for render and hit test
-static Rectangle GetSettingsItemRect(int index)
-{
-    const SettingsStyle *s = &THEME_DEFAULT.settings;
-    int cardX = (SCREEN_WIDTH - s->cardWidth) / 2;
-    int cardY = (SCREEN_HEIGHT - s->cardHeight) / 2 - 20;
-    int itemY = cardY + s->paddingTop + index * s->itemSpacing;
-    return (Rectangle){ cardX + 30, itemY - 5, (float)(s->cardWidth - 60), 40 };
-}
-
 void GameUpdateSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
 
-    // Navigate settings with keyboard
-    if (IsKeyPressed(KEY_UP)) {
-        state->selectedSetting--;
-        if (state->selectedSetting < 0)
-            state->selectedSetting = SETTING_COUNT - 1;
-        SoundPlayMenuClick(&state->sound);
-    }
-    if (IsKeyPressed(KEY_DOWN)) {
-        state->selectedSetting++;
-        if (state->selectedSetting >= SETTING_COUNT)
-            state->selectedSetting = 0;
-        SoundPlayMenuClick(&state->sound);
+    // Keyboard navigation is removed in the new design since settings items
+    // are now visual icons/buttons. We only handle mouse clicks.
+
+    // Calculate positions matching RenderSettings() in render_menus.c
+    const SettingsStyle *s = &THEME_DEFAULT.settings;
+    int cardX = (SCREEN_WIDTH - s->cardWidth) / 2;
+    int cardY = (SCREEN_HEIGHT - s->cardHeight) / 2 - 20;
+
+    // SFX & Music icon areas
+    int iconAreaY = cardY + 85;
+    int iconSpacing = (s->cardWidth - 2 * s->paddingX) / 2;
+    int iconStartX = cardX + s->paddingX;
+
+    int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+    Rectangle sfxRect = { (float)sfxIconX, (float)iconAreaY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE };
+
+    int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+    Rectangle musicRect = { (float)musicIconX, (float)iconAreaY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE };
+
+    // Replay and Home buttons
+    int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
+    int btnX = (SCREEN_WIDTH - SETTINGS_BTN_W) / 2;
+    Rectangle replayRect = { (float)btnX, (float)replayBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+
+    int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
+    Rectangle homeRect = { (float)btnX, (float)homeBtnY, SETTINGS_BTN_W, SETTINGS_BTN_H };
+
+    // Hover highlight for visual feedback
+    if (CheckCollisionPointRec(mouse, sfxRect)) {
+        state->selectedSetting = SETTING_SFX;
+    } else if (CheckCollisionPointRec(mouse, musicRect)) {
+        state->selectedSetting = SETTING_MUSIC;
+    } else if (CheckCollisionPointRec(mouse, replayRect)) {
+        state->selectedSetting = SETTING_RESTART;
+    } else if (CheckCollisionPointRec(mouse, homeRect)) {
+        state->selectedSetting = SETTING_QUIT;
     }
 
-    // Hover highlight: update selectedSetting based on mouse position
-    for (int i = 0; i < SETTING_COUNT; i++) {
-        Rectangle itemRect = GetSettingsItemRect(i);
-        if (CheckCollisionPointRec(mouse, itemRect)) {
-            state->selectedSetting = i;
-        }
-    }
-
-    // Select setting with ENTER
-    if (IsKeyPressed(KEY_ENTER)) {
-        ExecuteSetting(state, state->selectedSetting);
-    }
-
-    // Click on setting items
+    // Click handling
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        for (int i = 0; i < SETTING_COUNT; i++) {
-            Rectangle itemRect = GetSettingsItemRect(i);
-            if (CheckCollisionPointRec(mouse, itemRect)) {
-                ExecuteSetting(state, i);
-                break;
-            }
+        if (CheckCollisionPointRec(mouse, sfxRect)) {
+            ExecuteSetting(state, SETTING_SFX);
+        } else if (CheckCollisionPointRec(mouse, musicRect)) {
+            ExecuteSetting(state, SETTING_MUSIC);
+        } else if (CheckCollisionPointRec(mouse, replayRect)) {
+            ExecuteSetting(state, SETTING_RESTART);
+        } else if (CheckCollisionPointRec(mouse, homeRect)) {
+            ExecuteSetting(state, SETTING_QUIT);
         }
     }
 

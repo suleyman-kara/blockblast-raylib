@@ -8,29 +8,43 @@
 #define PI 3.14159265358979f
 #endif
 
-// ----- Score display -----
+// ----- Score display (Classic Play HUD) -----
 void RenderScore(GameState *state)
 {
-    char buf[64];
     const TextStyle *txt = &THEME_DEFAULT.text;
 
-    // Score
-    sprintf(buf, "SCORE: %d", state->score);
-    int w = GameMeasureText(buf, 28);
-    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 20, 28, txt->primary);
+    // Top Left: Crown icon + Top Score (Yellow, no text label)
+    static Texture2D crownTex = {0};
+    if (crownTex.id == 0) {
+        crownTex = LoadTexture("assets/images/crown.png");
+        SetTextureFilter(crownTex, TEXTURE_FILTER_POINT);
+    }
+    int crownSize = 28;
+    DrawTexturePro(crownTex,
+        (Rectangle){ 0, 0, (float)crownTex.width, (float)crownTex.height },
+        (Rectangle){ 10, 12, (float)crownSize, (float)crownSize },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
 
-    // High score
-    sprintf(buf, "BEST: %d", state->highScore);
-    w = GameMeasureText(buf, 18);
-    GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 55, 18, txt->secondary);
+    char bestBuf[16];
+    sprintf(bestBuf, "%d", state->highScore);
+    GameDrawText(bestBuf, 10 + crownSize + 6, 14, 20, (Color){255, 220, 50, 255}); // Yellow
+
+    // Top Middle: Score (big, just the number, no text)
+    char scoreBuf[16];
+    sprintf(scoreBuf, "%d", state->score);
+    int scoreW = GameMeasureText(scoreBuf, 36);
+    GameDrawText(scoreBuf, (SCREEN_WIDTH - scoreW) / 2, 8, 36, txt->primary);
 
     // Combo
     if (state->combo > 1) {
-        sprintf(buf, "COMBO x%d", state->combo);
-        w = GameMeasureText(buf, 22);
-        GameDrawText(buf, (SCREEN_WIDTH - w) / 2, 85, 22,
+        char comboBuf[16];
+        sprintf(comboBuf, "COMBO x%d", state->combo);
+        int cw = GameMeasureText(comboBuf, 18);
+        GameDrawText(comboBuf, (SCREEN_WIDTH - cw) / 2, 50, 18,
             (Color){255, 220, 50, 255});
     }
+
+    // Top Right: Gear icon is drawn separately by RenderGearIcon()
 }
 
 // ----- Best Combo banner -----
@@ -111,34 +125,34 @@ void RenderGearIcon(void)
     DrawCircle(cx, cy, holeR - 2, (Color){30, 30, 48, 255});
 }
 
-// ----- Draw a gem icon inside a cell block -----
+// ----- Draw a gem icon inside a cell block (using PNG textures) -----
 void DrawGemIcon(int x, int y, int cellSize, int gemType)
 {
+    static Texture2D diamondTex = {0};
+    static Texture2D emeraldTex = {0};
+    if (diamondTex.id == 0) {
+        diamondTex = LoadTexture("assets/images/diamond.png");
+        SetTextureFilter(diamondTex, TEXTURE_FILTER_POINT);
+    }
+    if (emeraldTex.id == 0) {
+        emeraldTex = LoadTexture("assets/images/emerald.png");
+        SetTextureFilter(emeraldTex, TEXTURE_FILTER_POINT);
+    }
+
     const GemStyle *g = &THEME_DEFAULT.gem;
     int gemSize = (int)(cellSize * g->sizeRatio);
-    int half = gemSize / 2;
     int cx = x + cellSize / 2;
     int cy = y + cellSize / 2;
 
-    if (gemType == GEM_DIAMOND) {
-        // Diamond: cyan/white triangle (pointing down)
-        DrawTriangle((Vector2){cx, cy + half},
-                     (Vector2){cx - half, cy},
-                     (Vector2){cx, cy - half},
-                     g->diamondPrimary);
-        DrawTriangle((Vector2){cx, cy + half},
-                     (Vector2){cx + half, cy},
-                     (Vector2){cx, cy - half},
-                     g->diamondHighlight);
-    } else if (gemType == GEM_EMERALD) {
-        // Emerald: green triangle (pointing down)
-        DrawTriangle((Vector2){cx, cy + half},
-                     (Vector2){cx - half, cy},
-                     (Vector2){cx, cy - half},
-                     g->emeraldPrimary);
-        DrawTriangle((Vector2){cx, cy + half},
-                     (Vector2){cx + half, cy},
-                     (Vector2){cx, cy - half},
-                     g->emeraldHighlight);
+    if (gemType == GEM_DIAMOND && diamondTex.id != 0) {
+        DrawTexturePro(diamondTex,
+            (Rectangle){ 0, 0, (float)diamondTex.width, (float)diamondTex.height },
+            (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
+            (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else if (gemType == GEM_EMERALD && emeraldTex.id != 0) {
+        DrawTexturePro(emeraldTex,
+            (Rectangle){ 0, 0, (float)emeraldTex.width, (float)emeraldTex.height },
+            (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
+            (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
 }

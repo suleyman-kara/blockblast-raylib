@@ -77,4 +77,10 @@ void GameResetAdventure(GameState *state)
     }
 
     GenerateRandomPiecesWithGems(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
+
+    // Add float text for level start
+    const char *startMsg = (level->goalType == GOAL_SCORE) ? "Collect the target score!" : "Collect the target diamonds!";
+    FloatTextAdd(&state->floatTexts, startMsg,
+                 SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f - 80.0f,
+                 28, (Color){255, 255, 100, 255});
 }
