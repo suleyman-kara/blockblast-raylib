@@ -3,10 +3,11 @@
 #include "input.h"
 #include "render.h"
 #include "sound.h"
-#include "font.h"
 #include "textures.h"
 
 #include <stdio.h>
+
+Font gameFont = { 0 };
 
 int main(void)
 {
@@ -18,7 +19,9 @@ int main(void)
     SetTargetFPS(60);
 
     // Load TrueType font for crisp text rendering
-    LoadGameFont();
+    gameFont = LoadFontEx("assets/fonts/RussoOne-Regular.ttf", 200, 0, 0);
+    if (gameFont.texture.id != 0)
+        printf("INFO: FONT: Loaded custom font successfully.\n");
 
     // Load all textures at startup
     TexturesLoad();
@@ -56,7 +59,7 @@ int main(void)
     TexturesUnload();
 
     // Unload font
-    UnloadGameFont();
+    if (gameFont.texture.id != 0) UnloadFont(gameFont);
 
     CloseWindow();
     return 0;

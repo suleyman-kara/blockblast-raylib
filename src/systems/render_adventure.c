@@ -1,5 +1,4 @@
 #include "render.h"
-#include "font.h"
 #include "adventure.h"
 #include "defs.h"
 #include "textures.h"
@@ -21,8 +20,9 @@ static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
 // ── Draw text horizontally centered on screen ──────────────────────────────
 static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
 {
-    int tw = GameMeasureText(text, fontSize);
-    GameDrawText(text, (SCREEN_WIDTH - tw) / 2, y, fontSize, color);
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
+               (float)fontSize, 1.0f, color);
 }
 
 // ── Draw a rounded rectangle button with centered text ─────────────────────
@@ -39,11 +39,11 @@ static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
     DrawRectangleRounded(btn, 0.2f, 6, cBg);
     DrawRectangleRoundedLines(btn, 0.2f, 6, cBrd);
 
-    int tw = GameMeasureText(text, fontSize);
-    GameDrawText(text,
-                 (int)btn.x + (int)((btn.width  - tw)  / 2),
-                 (int)btn.y + (int)((btn.height - fontSize) / 2),
-                 fontSize, cTxt);
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text,
+               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
+                         btn.y + (btn.height - (float)fontSize) / 2.0f},
+               (float)fontSize, 1.0f, cTxt);
 }
 
 // ── Draw a gem icon with a count label centred below it ────────────────────
@@ -53,8 +53,10 @@ static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
 {
     DrawTextureFull(tex, centerX - gemSize / 2, topY, gemSize, gemSize);
 
-    int tw = GameMeasureText(countText, fontSize);
-    GameDrawText(countText, centerX - tw / 2, topY + textYOffset, fontSize, textColor);
+    int tw = (int)MeasureTextEx(gameFont, countText, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, countText,
+               (Vector2){(float)(centerX - tw / 2), (float)(topY + textYOffset)},
+               (float)fontSize, 1.0f, textColor);
 }
 
 // ── Draw a statistics line (label + value on the left, optional goal on right) ─
@@ -64,15 +66,16 @@ static void DrawStatLine(int leftX, int rightEdge, int y, int fontSize,
 {
     char buf[64];
     snprintf(buf, sizeof(buf), "%s: %d", label, value);
-    GameDrawText(buf, leftX, y, fontSize, valueColor);
+    DrawTextEx(gameFont, buf, (Vector2){(float)leftX, (float)y}, (float)fontSize, 1.0f, valueColor);
 
     if (showGoal) {
         snprintf(buf, sizeof(buf), "Hedef: %d", goal);
-        int tw = GameMeasureText(buf, fontSize);
+        int tw = (int)MeasureTextEx(gameFont, buf, (float)fontSize, 1.0f).x;
         Color goalColor = (current >= goal)
             ? (Color){50, 255, 100, 255}
             : (Color){255, 80, 80, 255};
-        GameDrawText(buf, rightEdge - 30 - tw, y, fontSize, goalColor);
+        DrawTextEx(gameFont, buf, (Vector2){(float)(rightEdge - 30 - tw), (float)y},
+                   (float)fontSize, 1.0f, goalColor);
     }
 }
 
@@ -125,13 +128,17 @@ void RenderAdventureMap(GameState *state)
         char lvlBuf[8];
         sprintf(lvlBuf, "%d", i + 1);
         Color lvlColor = isUnlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
-        int lnw = GameMeasureText(lvlBuf, 28);
-        GameDrawText(lvlBuf, bx + (AMAP_BTN_SIZE - lnw) / 2, by + 20, 28, lvlColor);
+        int lnw = (int)MeasureTextEx(gameFont, lvlBuf, 28.0f, 1.0f).x;
+        DrawTextEx(gameFont, lvlBuf,
+                   (Vector2){(float)(bx + (AMAP_BTN_SIZE - lnw) / 2), (float)(by + 20)},
+                   28.0f, 1.0f, lvlColor);
 
         // Status indicator
         if (isCompleted) {
             // Green checkmark
-            GameDrawText("✓", bx + AMAP_BTN_SIZE - 22, by + 5, 18, COLOR_AMAP_COMPLETED_TEXT);
+            DrawTextEx(gameFont, "✓",
+                       (Vector2){(float)(bx + AMAP_BTN_SIZE - 22), (float)(by + 5)},
+                       18.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
         } else if (!isUnlocked) {
             // Lock icon below the level number
             int lockSize = 24;

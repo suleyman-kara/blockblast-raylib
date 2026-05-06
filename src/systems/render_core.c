@@ -1,13 +1,8 @@
 #include "render.h"
-#include "font.h"
 #include "defs.h"
 #include "textures.h"
 #include <stdio.h>
 #include <math.h>
-
-#ifndef PI
-#define PI 3.14159265358979f
-#endif
 
 // ----- Score display (Classic Play HUD) -----
 void RenderScore(GameState *state)
@@ -21,20 +16,20 @@ void RenderScore(GameState *state)
 
     char bestBuf[16];
     sprintf(bestBuf, "%d", state->highScore);
-    GameDrawText(bestBuf, 10 + crownSize + 6, 14, 20, (Color){255, 220, 50, 255}); // Yellow
+    DrawTextEx(gameFont, bestBuf, (Vector2){10 + crownSize + 6, 14}, 20.0f, 1.0f, (Color){255, 220, 50, 255}); // Yellow
 
     // Top Middle: Score (big, just the number, no text)
     char scoreBuf[16];
     sprintf(scoreBuf, "%d", state->score);
-    int scoreW = GameMeasureText(scoreBuf, 36);
-    GameDrawText(scoreBuf, (SCREEN_WIDTH - scoreW) / 2, 8, 36, COLOR_TEXT_PRIMARY);
+    int scoreW = (int)MeasureTextEx(gameFont, scoreBuf, 36.0f, 1.0f).x;
+    DrawTextEx(gameFont, scoreBuf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 8}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
 
     // Combo
     if (state->combo > 1) {
         char comboBuf[16];
         sprintf(comboBuf, "COMBO x%d", state->combo);
-        int cw = GameMeasureText(comboBuf, 18);
-        GameDrawText(comboBuf, (SCREEN_WIDTH - cw) / 2, 50, 18,
+        int cw = (int)MeasureTextEx(gameFont, comboBuf, 18.0f, 1.0f).x;
+        DrawTextEx(gameFont, comboBuf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 50}, 18.0f, 1.0f,
             (Color){255, 220, 50, 255});
     }
 
@@ -67,14 +62,14 @@ void RenderBanner(GameState *state)
     Color shadow = COLOR_BANNER_SHADOW;
     shadow.a = (unsigned char)(alpha * 120.0f);
 
-    int w = GameMeasureText(state->banner.text, pulseSize);
+    int w = (int)MeasureTextEx(gameFont, state->banner.text, (float)pulseSize, 1.0f).x;
     int x = (SCREEN_WIDTH - w) / 2;
     int y = 100;
 
     // Drop shadow
-    GameDrawText(state->banner.text, x + 2, y + 2, pulseSize, shadow);
+    DrawTextEx(gameFont, state->banner.text, (Vector2){(float)(x + 2), (float)(y + 2)}, (float)pulseSize, 1.0f, shadow);
     // Main text
-    GameDrawText(state->banner.text, x, y, pulseSize, clr);
+    DrawTextEx(gameFont, state->banner.text, (Vector2){(float)x, (float)y}, (float)pulseSize, 1.0f, clr);
 }
 
 // ----- Gear icon (settings button, top-right) -----

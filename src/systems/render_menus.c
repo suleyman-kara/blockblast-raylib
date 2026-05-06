@@ -1,14 +1,9 @@
 #include "render.h"
-#include "font.h"
 #include "defs.h"
 #include "textures.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
-#ifndef PI
-#define PI 3.14159265358979f
-#endif
 
 // ----- Menu screen -----
 void RenderMenu(GameState *state)
@@ -37,16 +32,16 @@ void RenderMenu(GameState *state)
     // Subtitle "Adventure Master" — white with black stroke, 50% of title size
     const char *subtitle = "Adventure Master";
     int subFontSize = SUBTITLE_FONT_SIZE;
-    int subW = GameMeasureText(subtitle, subFontSize);
+    int subW = (int)MeasureTextEx(gameFont, subtitle, (float)subFontSize, 1.0f).x;
     int subX = (SCREEN_WIDTH - subW) / 2;
     int subY = 150 + titleFontSize + 10;
     // Black stroke (draw 4 times offset)
-    GameDrawText(subtitle, subX - 2, subY, subFontSize, BLACK);
-    GameDrawText(subtitle, subX + 2, subY, subFontSize, BLACK);
-    GameDrawText(subtitle, subX, subY - 2, subFontSize, BLACK);
-    GameDrawText(subtitle, subX, subY + 2, subFontSize, BLACK);
+    DrawTextEx(gameFont, subtitle, (Vector2){(float)(subX - 2), (float)subY}, (float)subFontSize, 1.0f, BLACK);
+    DrawTextEx(gameFont, subtitle, (Vector2){(float)(subX + 2), (float)subY}, (float)subFontSize, 1.0f, BLACK);
+    DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)(subY - 2)}, (float)subFontSize, 1.0f, BLACK);
+    DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)(subY + 2)}, (float)subFontSize, 1.0f, BLACK);
     // White text on top
-    GameDrawText(subtitle, subX, subY, subFontSize, WHITE);
+    DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)subY}, (float)subFontSize, 1.0f, WHITE);
 
     Vector2 mouse = GetMousePosition();
 
@@ -61,10 +56,12 @@ void RenderMenu(GameState *state)
     DrawRectangleRoundedLines(stdBtn, BTN_STD_CORNER_RADIUS, BTN_STD_BORDER_SEGMENTS, stdBorder);
 
     const char *stdText = "Classic Mode";
-    int stw = GameMeasureText(stdText, 22);
+    int stw = (int)MeasureTextEx(gameFont, stdText, 22.0f, 1.0f).x;
     Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
-    GameDrawText(stdText, MENU_BTN_X + (MENU_BTN_W - stw) / 2,
-                 MENU_STD_Y + (MENU_BTN_H - 22) / 2, 22, stdTextColor);
+    DrawTextEx(gameFont, stdText,
+               (Vector2){(float)(MENU_BTN_X + (MENU_BTN_W - stw) / 2),
+                         (float)(MENU_STD_Y + (MENU_BTN_H - 22) / 2)},
+               22.0f, 1.0f, stdTextColor);
 
     // --- Adventure Mode Button ---
     Rectangle advBtn = { MENU_BTN_X, MENU_ADV_Y, MENU_BTN_W, MENU_BTN_H };
@@ -77,10 +74,12 @@ void RenderMenu(GameState *state)
     DrawRectangleRoundedLines(advBtn, BTN_ADV_CORNER_RADIUS, BTN_ADV_BORDER_SEGMENTS, advBorder);
 
     const char *advText = "Adventure Mode";
-    int atw = GameMeasureText(advText, 22);
+    int atw = (int)MeasureTextEx(gameFont, advText, 22.0f, 1.0f).x;
     Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
-    GameDrawText(advText, MENU_BTN_X + (MENU_BTN_W - atw) / 2,
-                 MENU_ADV_Y + (MENU_BTN_H - 22) / 2, 22, advTextColor);
+    DrawTextEx(gameFont, advText,
+               (Vector2){(float)(MENU_BTN_X + (MENU_BTN_W - atw) / 2),
+                         (float)(MENU_ADV_Y + (MENU_BTN_H - 22) / 2)},
+               22.0f, 1.0f, advTextColor);
 }
 
 // ----- Settings screen (overlay with framed card) -----
@@ -99,8 +98,9 @@ void RenderSettings(GameState *state)
 
     // Title
     const char *title = "SETTINGS";
-    int tw = GameMeasureText(title, SETTINGS_TITLE_FONT_SIZE);
-    GameDrawText(title, (SCREEN_WIDTH - tw) / 2, cardY + 25, SETTINGS_TITLE_FONT_SIZE, WHITE);
+    int tw = (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
+    DrawTextEx(gameFont, title, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
+               (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
 
     // Separator line
     DrawLineEx((Vector2){cardX + 40, cardY + 65},
@@ -131,9 +131,11 @@ void RenderSettings(GameState *state)
 
     // SFX label below icon
     const char *sfxLabel = "SFX";
-    int sfxLabelW = GameMeasureText(sfxLabel, 14);
-    GameDrawText(sfxLabel, sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2,
-                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, COLOR_SETTINGS_UNSELECTED_TEXT);
+    int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, sfxLabel,
+               (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Music icon
     int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
@@ -151,9 +153,11 @@ void RenderSettings(GameState *state)
 
     // Music label below icon
     const char *musicLabel = "Music";
-    int musicLabelW = GameMeasureText(musicLabel, 14);
-    GameDrawText(musicLabel, musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2,
-                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, COLOR_SETTINGS_UNSELECTED_TEXT);
+    int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, musicLabel,
+               (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // ─── Replay Button ────────────────────────────────────────────────────────
     int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
@@ -174,9 +178,11 @@ void RenderSettings(GameState *state)
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
     const char *replayText = "Replay";
-    int replayTextW = GameMeasureText(replayText, 18);
-    GameDrawText(replayText, btnX + 15 + replayIconSize + 8 + (SETTINGS_BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2,
-                 replayBtnY + (SETTINGS_BTN_H - 18) / 2, 18, COLOR_SETTINGS_UNSELECTED_TEXT);
+    int replayTextW = (int)MeasureTextEx(gameFont, replayText, 18.0f, 1.0f).x;
+    DrawTextEx(gameFont, replayText,
+               (Vector2){(float)(btnX + 15 + replayIconSize + 8 + (SETTINGS_BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
+                         (float)(replayBtnY + (SETTINGS_BTN_H - 18) / 2)},
+               18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // ─── Home Button ──────────────────────────────────────────────────────────
     int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
@@ -196,14 +202,17 @@ void RenderSettings(GameState *state)
         (Vector2){ 0, 0 }, 0.0f, WHITE);
 
     const char *homeText = "Home";
-    int homeTextW = GameMeasureText(homeText, 18);
-    GameDrawText(homeText, btnX + 15 + homeIconSize + 8 + (SETTINGS_BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2,
-                 homeBtnY + (SETTINGS_BTN_H - 18) / 2, 18, COLOR_SETTINGS_UNSELECTED_TEXT);
+    int homeTextW = (int)MeasureTextEx(gameFont, homeText, 18.0f, 1.0f).x;
+    DrawTextEx(gameFont, homeText,
+               (Vector2){(float)(btnX + 15 + homeIconSize + 8 + (SETTINGS_BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
+                         (float)(homeBtnY + (SETTINGS_BTN_H - 18) / 2)},
+               18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Footer hint
     const char *hint = "ESC to go back";
-    int hw = GameMeasureText(hint, 14);
-    GameDrawText(hint, (SCREEN_WIDTH - hw) / 2, cardY + SETTINGS_CARD_HEIGHT - 30, 14, COLOR_SETTINGS_FOOTER_HINT);
+    int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, hint, (Vector2){(SCREEN_WIDTH - hw) / 2.0f, (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
+               14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
 
 // ----- Game Over screen -----
@@ -213,20 +222,20 @@ void RenderGameOver(GameState *state)
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0,0,0,160});
 
     const char *go = "GAME OVER";
-    int gw = GameMeasureText(go, 44);
-    GameDrawText(go, (SCREEN_WIDTH - gw)/2, 280, 44, (Color){255,87,87,255});
+    int gw = (int)MeasureTextEx(gameFont, go, 44.0f, 1.0f).x;
+    DrawTextEx(gameFont, go, (Vector2){(SCREEN_WIDTH - gw) / 2.0f, 280}, 44.0f, 1.0f, (Color){255,87,87,255});
 
     char buf[64];
     sprintf(buf, "Score: %d", state->score);
-    int sw = GameMeasureText(buf, 28);
-    GameDrawText(buf, (SCREEN_WIDTH - sw)/2, 350, 28, WHITE);
+    int sw = (int)MeasureTextEx(gameFont, buf, 28.0f, 1.0f).x;
+    DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - sw) / 2.0f, 350}, 28.0f, 1.0f, WHITE);
 
     sprintf(buf, "Best: %d", state->highScore);
-    sw = GameMeasureText(buf, 22);
-    GameDrawText(buf, (SCREEN_WIDTH - sw)/2, 395, 22, (Color){150,150,170,255});
+    sw = (int)MeasureTextEx(gameFont, buf, 22.0f, 1.0f).x;
+    DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - sw) / 2.0f, 395}, 22.0f, 1.0f, (Color){150,150,170,255});
 
     const char *retry = "Press ENTER to play again";
-    int rw = GameMeasureText(retry, 18);
-    GameDrawText(retry, (SCREEN_WIDTH - rw)/2, 460, 18,
+    int rw = (int)MeasureTextEx(gameFont, retry, 18.0f, 1.0f).x;
+    DrawTextEx(gameFont, retry, (Vector2){(SCREEN_WIDTH - rw) / 2.0f, 460}, 18.0f, 1.0f,
         (Color){100,100,130,255});
 }

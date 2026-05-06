@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <math.h>
 
+#ifndef PI
+#define PI 3.14159265358979f
+#endif
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BLOCK BLAST — Single file with all constants and colours
 //  ═══════════════════════════════════════════════════════════════════════════════

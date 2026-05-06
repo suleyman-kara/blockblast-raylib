@@ -1,4 +1,5 @@
 #include "float_text.h"
+#include "game.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -79,7 +80,8 @@ void FloatTextDraw(FloatTextQueue *queue)
         Color clr = ft->color;
         clr.a = alpha;
 
-        int w = MeasureText(ft->text, fontSize);
-        DrawText(ft->text, (int)(ft->x - w / 2.0f), (int)ft->y, fontSize, clr);
+        int w = (int)MeasureTextEx(gameFont, ft->text, (float)fontSize, 1.0f).x;
+        DrawTextEx(gameFont, ft->text, (Vector2){ft->x - w / 2.0f, ft->y},
+                   (float)fontSize, 1.0f, clr);
     }
 }

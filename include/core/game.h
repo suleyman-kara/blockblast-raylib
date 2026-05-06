@@ -13,6 +13,9 @@
 
 #include <math.h>
 
+// Global font loaded from a TrueType file (defined in main.c)
+extern Font gameFont;
+
 // Game screens
 typedef enum {
     SCREEN_MENU,
