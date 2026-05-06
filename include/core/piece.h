@@ -1,7 +1,7 @@
 #ifndef PIECE_H
 #define PIECE_H
 
-#include "core/config.h"
+#include "core/defs.h"
 #include <stdbool.h>
 
 // A block piece with its shape matrix and metadata

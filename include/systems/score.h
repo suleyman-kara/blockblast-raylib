@@ -1,7 +1,7 @@
 #ifndef SCORE_H
 #define SCORE_H
 
-#include "core/config.h"
+#include "core/defs.h"
 
 // Add score: base * linesCleared * comboMultiplier
 int ScoreCalculate(int linesCleared, int combo);

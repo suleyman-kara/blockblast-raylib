@@ -1,6 +1,6 @@
 #include "game.h"
 #include "sound.h"
-#include "theme.h"
+#include "defs.h"
 
 // Execute a setting action for the given index
 static void ExecuteSetting(GameState *state, int index)
@@ -36,18 +36,14 @@ void GameUpdateSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
 
-    // Keyboard navigation is removed in the new design since settings items
-    // are now visual icons/buttons. We only handle mouse clicks.
-
     // Calculate positions matching RenderSettings() in render_menus.c
-    const SettingsStyle *s = &THEME_DEFAULT.settings;
-    int cardX = (SCREEN_WIDTH - s->cardWidth) / 2;
-    int cardY = (SCREEN_HEIGHT - s->cardHeight) / 2 - 20;
+    int cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
+    int cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
 
     // SFX & Music icon areas
     int iconAreaY = cardY + 85;
-    int iconSpacing = (s->cardWidth - 2 * s->paddingX) / 2;
-    int iconStartX = cardX + s->paddingX;
+    int iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
+    int iconStartX = cardX + SETTINGS_CARD_PADDING_X;
 
     int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
     Rectangle sfxRect = { (float)sfxIconX, (float)iconAreaY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE };

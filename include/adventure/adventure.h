@@ -1,7 +1,7 @@
 #ifndef ADVENTURE_H
 #define ADVENTURE_H
 
-#include "core/config.h"
+#include "core/defs.h"
 #include "core/board.h"
 #include "core/piece.h"
 #include <stdbool.h>

@@ -1,40 +1,104 @@
 #include "render.h"
 #include "font.h"
 #include "adventure.h"
-#include "theme.h"
+#include "defs.h"
 #include "textures.h"
 #include <stdio.h>
 
-// ----- Adventure Map -----
+// ============================================================================
+//  Helper utilities (static — file-local only)
+// ============================================================================
+
+// ── Draw a texture using its full source rectangle ──────────────────────────
+static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
+{
+    DrawTexturePro(tex,
+        (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
+        (Rectangle){ (float)x, (float)y, (float)w, (float)h },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+}
+
+// ── Draw text horizontally centered on screen ──────────────────────────────
+static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
+{
+    int tw = GameMeasureText(text, fontSize);
+    GameDrawText(text, (SCREEN_WIDTH - tw) / 2, y, fontSize, color);
+}
+
+// ── Draw a rounded rectangle button with centered text ─────────────────────
+static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
+                              Color bg, Color bgHover,
+                              Color border, Color borderHover,
+                              Color textColor, Color textHover,
+                              bool hover)
+{
+    Color cBg  = hover ? bgHover  : bg;
+    Color cBrd = hover ? borderHover : border;
+    Color cTxt = hover ? textHover : textColor;
+
+    DrawRectangleRounded(btn, 0.2f, 6, cBg);
+    DrawRectangleRoundedLines(btn, 0.2f, 6, cBrd);
+
+    int tw = GameMeasureText(text, fontSize);
+    GameDrawText(text,
+                 (int)btn.x + (int)((btn.width  - tw)  / 2),
+                 (int)btn.y + (int)((btn.height - fontSize) / 2),
+                 fontSize, cTxt);
+}
+
+// ── Draw a gem icon with a count label centred below it ────────────────────
+static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
+                            const char *countText, int fontSize, int textYOffset,
+                            Color textColor)
+{
+    DrawTextureFull(tex, centerX - gemSize / 2, topY, gemSize, gemSize);
+
+    int tw = GameMeasureText(countText, fontSize);
+    GameDrawText(countText, centerX - tw / 2, topY + textYOffset, fontSize, textColor);
+}
+
+// ── Draw a statistics line (label + value on the left, optional goal on right) ─
+static void DrawStatLine(int leftX, int rightEdge, int y, int fontSize,
+                          const char *label, int value, Color valueColor,
+                          bool showGoal, int current, int goal)
+{
+    char buf[64];
+    snprintf(buf, sizeof(buf), "%s: %d", label, value);
+    GameDrawText(buf, leftX, y, fontSize, valueColor);
+
+    if (showGoal) {
+        snprintf(buf, sizeof(buf), "Hedef: %d", goal);
+        int tw = GameMeasureText(buf, fontSize);
+        Color goalColor = (current >= goal)
+            ? (Color){50, 255, 100, 255}
+            : (Color){255, 80, 80, 255};
+        GameDrawText(buf, rightEdge - 30 - tw, y, fontSize, goalColor);
+    }
+}
+
+// ============================================================================
+//  Adventure Map
+// ============================================================================
 void RenderAdventureMap(GameState *state)
 {
-    const AdventureMapStyle *m = &THEME_DEFAULT.adventureMap;
-    const TextStyle *txt = &THEME_DEFAULT.text;
-
     // Top Left: Leave icon (logout)
-    int iconSize = 32;
-    DrawTexturePro(gameTextures.logout,
-        (Rectangle){ 0, 0, (float)gameTextures.logout.width, (float)gameTextures.logout.height },
-        (Rectangle){ 15, 15, (float)iconSize, (float)iconSize },
-        (Vector2){ 0, 0 }, 0.0f, WHITE);
+    DrawTextureFull(gameTextures.logout, 15, 15, 32, 32);
 
     // Title
-    const char *mapTitle = "MACERA MODU";
-    GameDrawText(mapTitle, (SCREEN_WIDTH - GameMeasureText(mapTitle, 36)) / 2, 30, 36, txt->primary);
+    DrawTextCenteredX("ADVENTURE", 30, 36, COLOR_TEXT_PRIMARY);
 
     // Level grid
-    int totalRowWidth = LEVELS_PER_ROW * m->btnSize + (LEVELS_PER_ROW - 1) * m->btnGap;
+    int totalRowWidth = LEVELS_PER_ROW * AMAP_BTN_SIZE + (LEVELS_PER_ROW - 1) * AMAP_BTN_GAP;
     int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
 
     Vector2 mouse = GetMousePosition();
 
-
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
         int col = i % LEVELS_PER_ROW;
-        int bx = mapStartX + col * (m->btnSize + m->btnGap);
-        int by = m->mapStartY + row * (m->btnSize + m->btnGap + m->btnLabelGap);
-        Rectangle btnRect = { bx, by, m->btnSize, m->btnSize };
+        int bx = mapStartX + col * (AMAP_BTN_SIZE + AMAP_BTN_GAP);
+        int by = AMAP_START_Y + row * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP);
+        Rectangle btnRect = { bx, by, AMAP_BTN_SIZE, AMAP_BTN_SIZE };
 
         bool isUnlocked = state->adventureSave.levels[i].unlocked;
         bool isCompleted = state->adventureSave.levels[i].completed;
@@ -44,14 +108,14 @@ void RenderAdventureMap(GameState *state)
         Color btnColor;
         Color borderColor;
         if (!isUnlocked) {
-            btnColor = m->lockedBg;
-            borderColor = m->lockedBorder;
+            btnColor = COLOR_AMAP_LOCKED_BG;
+            borderColor = COLOR_AMAP_LOCKED_BORDER;
         } else if (hover) {
-            btnColor = m->unlockedBgHover;
-            borderColor = m->unlockedBorder;
+            btnColor = COLOR_AMAP_UNLOCKED_HOVER;
+            borderColor = COLOR_AMAP_UNLOCKED_BORDER;
         } else {
-            btnColor = m->unlockedBg;
-            borderColor = m->unlockedBorder;
+            btnColor = COLOR_AMAP_UNLOCKED_BG;
+            borderColor = COLOR_AMAP_UNLOCKED_BORDER;
         }
 
         DrawRectangleRounded(btnRect, 0.2f, 6, btnColor);
@@ -60,121 +124,89 @@ void RenderAdventureMap(GameState *state)
         // Level number
         char lvlBuf[8];
         sprintf(lvlBuf, "%d", i + 1);
+        Color lvlColor = isUnlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
         int lnw = GameMeasureText(lvlBuf, 28);
-        Color lvlColor = isUnlocked ? txt->primary : m->lockedNumber;
-        GameDrawText(lvlBuf, bx + (m->btnSize - lnw) / 2, by + 20, 28, lvlColor);
+        GameDrawText(lvlBuf, bx + (AMAP_BTN_SIZE - lnw) / 2, by + 20, 28, lvlColor);
 
         // Status indicator
         if (isCompleted) {
             // Green checkmark
-            GameDrawText("✓", bx + m->btnSize - 22, by + 5, 18, m->completedText);
+            GameDrawText("✓", bx + AMAP_BTN_SIZE - 22, by + 5, 18, COLOR_AMAP_COMPLETED_TEXT);
         } else if (!isUnlocked) {
             // Lock icon below the level number
             int lockSize = 24;
-            DrawTexturePro(gameTextures.lock,
-                (Rectangle){ 0, 0, (float)gameTextures.lock.width, (float)gameTextures.lock.height },
-                (Rectangle){ (float)(bx + (m->btnSize - lockSize) / 2), (float)(by + m->btnSize - lockSize - 8), (float)lockSize, (float)lockSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
+            DrawTextureFull(gameTextures.lock,
+                bx + (AMAP_BTN_SIZE - lockSize) / 2,
+                by + AMAP_BTN_SIZE - lockSize - 8,
+                lockSize, lockSize);
         }
     }
 
     // Hint at bottom
-    const char *escHint = "ESC: Ana Menu";
-    GameDrawText(escHint, (SCREEN_WIDTH - GameMeasureText(escHint, 16)) / 2,
-             SCREEN_HEIGHT - 30, 16, txt->muted);
+    DrawTextCenteredX("ESC: Ana Menu", SCREEN_HEIGHT - 30, 16, COLOR_TEXT_MUTED);
 }
 
-// ----- Adventure Play HUD -----
+// ============================================================================
+//  Adventure Play HUD
+// ============================================================================
 void RenderAdventurePlay(GameState *state)
 {
     const LevelDef *level = AdventureGetLevelDefs();
     level = &level[state->adventure.currentLevel];
-    const TextStyle *txt = &THEME_DEFAULT.text;
 
     char buf[128];
-
-    // No level information shown
 
     // Top Middle: Dynamic display based on level objectives
     int midY = 12;
 
     switch (level->goalType) {
         case GOAL_SCORE: {
-            // Score is big and centered (just score, no text or bar)
             sprintf(buf, "%d", state->score);
-            int sw = GameMeasureText(buf, 36);
-            GameDrawText(buf, (SCREEN_WIDTH - sw) / 2, midY, 36, txt->primary);
+            DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
             break;
         }
 
         case GOAL_GEMS: {
-            // Diamond target is big and centered (just diamond icon and below that the target number)
             int gemSize = 32;
-            DrawTexturePro(gameTextures.diamond,
-                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
-                (Rectangle){ (float)((SCREEN_WIDTH - gemSize) / 2), (float)midY, (float)gemSize, (float)gemSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
-
             sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
-            int dw = GameMeasureText(buf, 22);
-            GameDrawText(buf, (SCREEN_WIDTH - dw) / 2, midY + gemSize + 4, 22, txt->primary);
+            DrawGemCounter(gameTextures.diamond, SCREEN_WIDTH / 2, midY,
+                           gemSize, buf, 22, gemSize + 4, COLOR_TEXT_PRIMARY);
             break;
         }
 
         case GOAL_MIXED_GEMS: {
-            // Diamond and emerald at the middle together, with decreasing counters
             int gemSize = 28;
             int spacing = 60;
             int centerX = SCREEN_WIDTH / 2;
 
-            // Diamond (left)
-            DrawTexturePro(gameTextures.diamond,
-                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
-                (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
-            int dw = GameMeasureText(buf, 18);
-            GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 4, 18, txt->primary);
+            DrawGemCounter(gameTextures.diamond, centerX - spacing, midY,
+                           gemSize, buf, 18, gemSize + 4, COLOR_TEXT_PRIMARY);
 
-            // Emerald (right)
-            DrawTexturePro(gameTextures.emerald,
-                (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
-                (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)midY, (float)gemSize, (float)gemSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);
-            int ew = GameMeasureText(buf, 18);
-            GameDrawText(buf, centerX + spacing - ew / 2, midY + gemSize + 4, 18, txt->primary);
+            DrawGemCounter(gameTextures.emerald, centerX + spacing, midY,
+                           gemSize, buf, 18, gemSize + 4, COLOR_TEXT_PRIMARY);
             break;
         }
 
         case GOAL_MIXED_ALL: {
-            // Score in the middle, Diamond left, Emerald right
             int gemSize = 24;
             int spacing = 80;
             int centerX = SCREEN_WIDTH / 2;
 
             // Score (middle)
             sprintf(buf, "%d", state->score);
-            int sw = GameMeasureText(buf, 28);
-            GameDrawText(buf, (SCREEN_WIDTH - sw) / 2, midY + 4, 28, txt->primary);
+            DrawTextCenteredX(buf, midY + 4, 28, COLOR_TEXT_PRIMARY);
 
             // Diamond (left)
-            DrawTexturePro(gameTextures.diamond,
-                (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
-                (Rectangle){ (float)(centerX - spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalDiamonds - state->adventure.collectedDiamonds);
-            int dw = GameMeasureText(buf, 16);
-            GameDrawText(buf, centerX - spacing - dw / 2, midY + gemSize + 6, 16, txt->primary);
+            DrawGemCounter(gameTextures.diamond, centerX - spacing, midY + 2,
+                           gemSize, buf, 16, gemSize + 6, COLOR_TEXT_PRIMARY);
 
             // Emerald (right)
-            DrawTexturePro(gameTextures.emerald,
-                (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
-                (Rectangle){ (float)(centerX + spacing - gemSize / 2), (float)(midY + 2), (float)gemSize, (float)gemSize },
-                (Vector2){ 0, 0 }, 0.0f, WHITE);
             sprintf(buf, "%d", state->adventure.goalEmeralds - state->adventure.collectedEmeralds);
-            int ew = GameMeasureText(buf, 16);
-            GameDrawText(buf, centerX + spacing - ew / 2, midY + gemSize + 6, 16, txt->primary);
+            DrawGemCounter(gameTextures.emerald, centerX + spacing, midY + 2,
+                           gemSize, buf, 16, gemSize + 6, COLOR_TEXT_PRIMARY);
             break;
         }
     }
@@ -186,7 +218,9 @@ void RenderAdventurePlay(GameState *state)
     RenderPieceSlots(state);
 }
 
-// ----- Adventure Result Screen -----
+// ============================================================================
+//  Adventure Result Screen
+// ============================================================================
 void RenderAdventureResult(GameState *state)
 {
     const LevelDef *level = AdventureGetLevelDefs();
@@ -210,58 +244,43 @@ void RenderAdventureResult(GameState *state)
 
     // ─── Title ────────────────────────────────────────────────────────────────
     if (state->adventure.levelFailed) {
-        const char *failMsg = "SEVIYE BASARISIZ!";
-        int fw = GameMeasureText(failMsg, 32);
-        GameDrawText(failMsg, (SCREEN_WIDTH - fw) / 2, cardY + 30, 32, (Color){255, 80, 80, 255});
+        DrawTextCenteredX("SEVIYE BASARISIZ!", cardY + 30, 32, (Color){255, 80, 80, 255});
     } else {
-        const char *successMsg = "SEVIYE TAMAMLANDI!";
-        int sw = GameMeasureText(successMsg, 32);
-        GameDrawText(successMsg, (SCREEN_WIDTH - sw) / 2, cardY + 30, 32, (Color){50, 255, 100, 255});
+        DrawTextCenteredX("SEVIYE TAMAMLANDI!", cardY + 30, 32, (Color){50, 255, 100, 255});
     }
 
     // ─── Level info ───────────────────────────────────────────────────────────
     sprintf(buf, "Level %d", state->adventure.currentLevel + 1);
-    int lw = GameMeasureText(buf, 20);
-    GameDrawText(buf, (SCREEN_WIDTH - lw) / 2, cardY + 75, 20, (Color){180, 150, 255, 255});
+    DrawTextCenteredX(buf, cardY + 75, 20, (Color){180, 150, 255, 255});
 
     // ─── Stats ────────────────────────────────────────────────────────────────
     int statY = cardY + 120;
     int statX = cardX + 30;
+    int cardRight = cardX + cardW;
     int statSpacing = 35;
     int statFontSize = 18;
 
     // Score
-    Color scoreColor = (state->adventure.levelFailed && level->goalType != GOAL_SCORE && level->goalType != GOAL_MIXED_ALL)
-                       ? (Color){150, 150, 170, 255} : (Color){255, 255, 255, 255};
-    sprintf(buf, "Puan: %d", state->score);
-    GameDrawText(buf, statX, statY, statFontSize, scoreColor);
-    if (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL) {
-        sprintf(buf, "Hedef: %d", state->adventure.goalScore);
-        int tw = GameMeasureText(buf, statFontSize);
-        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
-                     state->score >= state->adventure.goalScore ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
-    }
+    bool scoreGoalShown = (level->goalType == GOAL_SCORE || level->goalType == GOAL_MIXED_ALL);
+    Color scoreColor = (!scoreGoalShown && state->adventure.levelFailed)
+        ? (Color){150, 150, 170, 255} : (Color){255, 255, 255, 255};
+    DrawStatLine(statX, cardRight, statY, statFontSize, "Puan", state->score, scoreColor,
+                 scoreGoalShown, state->score, state->adventure.goalScore);
 
     // Diamonds
     if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
         statY += statSpacing;
-        sprintf(buf, "Elmas: %d", state->adventure.collectedDiamonds);
-        GameDrawText(buf, statX, statY, statFontSize, (Color){100, 200, 255, 255});
-        sprintf(buf, "Hedef: %d", state->adventure.goalDiamonds);
-        int tw = GameMeasureText(buf, statFontSize);
-        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
-                     state->adventure.collectedDiamonds >= state->adventure.goalDiamonds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+        DrawStatLine(statX, cardRight, statY, statFontSize, "Elmas", state->adventure.collectedDiamonds,
+                     (Color){100, 200, 255, 255}, true,
+                     state->adventure.collectedDiamonds, state->adventure.goalDiamonds);
     }
 
     // Emeralds
     if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
         statY += statSpacing;
-        sprintf(buf, "Zumrut: %d", state->adventure.collectedEmeralds);
-        GameDrawText(buf, statX, statY, statFontSize, (Color){50, 220, 100, 255});
-        sprintf(buf, "Hedef: %d", state->adventure.goalEmeralds);
-        int tw = GameMeasureText(buf, statFontSize);
-        GameDrawText(buf, cardX + cardW - 30 - tw, statY, statFontSize,
-                     state->adventure.collectedEmeralds >= state->adventure.goalEmeralds ? (Color){50, 255, 100, 255} : (Color){255, 80, 80, 255});
+        DrawStatLine(statX, cardRight, statY, statFontSize, "Zumrut", state->adventure.collectedEmeralds,
+                     (Color){50, 220, 100, 255}, true,
+                     state->adventure.collectedEmeralds, state->adventure.goalEmeralds);
     }
 
     // ─── Buttons (vertical layout) ────────────────────────────────────────────
@@ -278,47 +297,31 @@ void RenderAdventureResult(GameState *state)
     bool botHover = CheckCollisionPointRec(mouse, btnBot);
 
     if (state->adventure.levelFailed) {
-        // Top: Tekrar Dene | Bottom: Ana Menü
-        Color topBg  = topHover ? (Color){80, 50, 120, 255} : (Color){55, 40, 85, 255};
-        Color topBdr = topHover ? (Color){180, 120, 255, 255} : (Color){100, 70, 150, 255};
-        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
-        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
-        const char *topText = "Tekrar Dene";
-        int ttw = GameMeasureText(topText, 18);
-        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
-                     topHover ? (Color){255, 255, 255, 255} : (Color){170, 150, 200, 255});
-
-        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
-        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
-        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
-        const char *botText = "Ana Menu";
-        int btw = GameMeasureText(botText, 18);
-        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
-                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+        DrawButtonStyled(btnTop, "Try Again", 18,
+            (Color){55, 40, 85, 255}, (Color){80, 50, 120, 255},
+            (Color){100, 70, 150, 255}, (Color){180, 120, 255, 255},
+            (Color){170, 150, 200, 255}, (Color){255, 255, 255, 255},
+            topHover);
+        DrawButtonStyled(btnBot, "Main Menu", 18,
+            (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+            (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+            (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+            botHover);
     } else {
-        // Top: Sonraki Level | Bottom: Ana Menü
-        Color topBg  = topHover ? (Color){50, 100, 60, 255} : (Color){35, 70, 45, 255};
-        Color topBdr = topHover ? (Color){100, 220, 120, 255} : (Color){60, 140, 80, 255};
-        DrawRectangleRounded(btnTop, 0.2f, 6, topBg);
-        DrawRectangleRoundedLines(btnTop, 0.2f, 6, topBdr);
-        const char *topText = (state->adventure.currentLevel + 1 < TOTAL_LEVELS) ? "Sonraki Level" : "Tamamlandi!";
-        int ttw = GameMeasureText(topText, 18);
-        GameDrawText(topText, btnX + (btnW - ttw) / 2, topBtnY + (btnH - 18) / 2, 18,
-                     topHover ? (Color){255, 255, 255, 255} : (Color){150, 220, 170, 255});
-
-        Color botBg  = botHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
-        Color botBdr = botHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-        DrawRectangleRounded(btnBot, 0.2f, 6, botBg);
-        DrawRectangleRoundedLines(btnBot, 0.2f, 6, botBdr);
-        const char *botText = "Ana Menu";
-        int btw = GameMeasureText(botText, 18);
-        GameDrawText(botText, btnX + (btnW - btw) / 2, botBtnY + (btnH - 18) / 2, 18,
-                     botHover ? (Color){255, 255, 255, 255} : (Color){180, 180, 210, 255});
+        const char *topText = (state->adventure.currentLevel + 1 < TOTAL_LEVELS)
+                              ? "Next Level" : "Completed!";
+        DrawButtonStyled(btnTop, topText, 18,
+            (Color){35, 70, 45, 255}, (Color){50, 100, 60, 255},
+            (Color){60, 140, 80, 255}, (Color){100, 220, 120, 255},
+            (Color){150, 220, 170, 255}, (Color){255, 255, 255, 255},
+            topHover);
+        DrawButtonStyled(btnBot, "Main Menu", 18,
+            (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+            (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+            (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+            botHover);
     }
 
     // Hint at bottom
-    const char *escHint = "ESC: Geri";
-    int ehw = GameMeasureText(escHint, 14);
-    GameDrawText(escHint, (SCREEN_WIDTH - ehw) / 2, SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
+    DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
 }

@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include "raylib.h"
-#include "core/config.h"
+#include "core/defs.h"
 #include "board.h"
 #include "piece.h"
 #include "anim.h"

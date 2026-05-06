@@ -1,6 +1,6 @@
 #include "render.h"
 #include "font.h"
-#include "theme.h"
+#include "defs.h"
 #include "textures.h"
 #include <stdio.h>
 #include <string.h>
@@ -13,8 +13,6 @@
 // ----- Menu screen -----
 void RenderMenu(GameState *state)
 {
-    const Theme *t = &THEME_DEFAULT;
-
     // Title — rainbow gradient per character, font size TITLE_FONT_SIZE
     const char *title = "BLOCK BLAST";
     int titleLen = strlen(title);
@@ -55,34 +53,32 @@ void RenderMenu(GameState *state)
     // --- Standard Mode Button ---
     Rectangle stdBtn = { MENU_BTN_X, MENU_STD_Y, MENU_BTN_W, MENU_BTN_H };
     bool stdHover = CheckCollisionPointRec(mouse, stdBtn);
-    const ButtonStyle *stdStyle = &t->menuStandard;
 
-    Color stdBg = stdHover ? stdStyle->bgHover : stdStyle->bg;
-    Color stdBorder = stdHover ? stdStyle->borderHover : stdStyle->border;
+    Color stdBg = stdHover ? COLOR_BTN_STD_BG_HOVER : COLOR_BTN_STD_BG;
+    Color stdBorder = stdHover ? COLOR_BTN_STD_BORDER_HOVER : COLOR_BTN_STD_BORDER;
 
-    DrawRectangleRounded(stdBtn, stdStyle->cornerRadius, stdStyle->borderSegments, stdBg);
-    DrawRectangleRoundedLines(stdBtn, stdStyle->cornerRadius, stdStyle->borderSegments, stdBorder);
+    DrawRectangleRounded(stdBtn, BTN_STD_CORNER_RADIUS, BTN_STD_BORDER_SEGMENTS, stdBg);
+    DrawRectangleRoundedLines(stdBtn, BTN_STD_CORNER_RADIUS, BTN_STD_BORDER_SEGMENTS, stdBorder);
 
     const char *stdText = "Classic Mode";
     int stw = GameMeasureText(stdText, 22);
-    Color stdTextColor = stdHover ? stdStyle->textHover : stdStyle->text;
+    Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
     GameDrawText(stdText, MENU_BTN_X + (MENU_BTN_W - stw) / 2,
                  MENU_STD_Y + (MENU_BTN_H - 22) / 2, 22, stdTextColor);
 
     // --- Adventure Mode Button ---
     Rectangle advBtn = { MENU_BTN_X, MENU_ADV_Y, MENU_BTN_W, MENU_BTN_H };
     bool advHover = CheckCollisionPointRec(mouse, advBtn);
-    const ButtonStyle *advStyle = &t->menuAdventure;
 
-    Color advBg = advHover ? advStyle->bgHover : advStyle->bg;
-    Color advBorder = advHover ? advStyle->borderHover : advStyle->border;
+    Color advBg = advHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
+    Color advBorder = advHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
 
-    DrawRectangleRounded(advBtn, advStyle->cornerRadius, advStyle->borderSegments, advBg);
-    DrawRectangleRoundedLines(advBtn, advStyle->cornerRadius, advStyle->borderSegments, advBorder);
+    DrawRectangleRounded(advBtn, BTN_ADV_CORNER_RADIUS, BTN_ADV_BORDER_SEGMENTS, advBg);
+    DrawRectangleRoundedLines(advBtn, BTN_ADV_CORNER_RADIUS, BTN_ADV_BORDER_SEGMENTS, advBorder);
 
     const char *advText = "Adventure Mode";
     int atw = GameMeasureText(advText, 22);
-    Color advTextColor = advHover ? advStyle->textHover : advStyle->text;
+    Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
     GameDrawText(advText, MENU_BTN_X + (MENU_BTN_W - atw) / 2,
                  MENU_ADV_Y + (MENU_BTN_H - 22) / 2, 22, advTextColor);
 }
@@ -90,36 +86,34 @@ void RenderMenu(GameState *state)
 // ----- Settings screen (overlay with framed card) -----
 void RenderSettings(GameState *state)
 {
-    const SettingsStyle *s = &THEME_DEFAULT.settings;
-
     // Semi-transparent dark overlay
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, s->overlayBg);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
 
     // Settings card frame
-    int cardX = (SCREEN_WIDTH - s->cardWidth) / 2;
-    int cardY = (SCREEN_HEIGHT - s->cardHeight) / 2 - 20;
+    int cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
+    int cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
 
     // Card background
-    DrawRectangleRounded((Rectangle){cardX, cardY, s->cardWidth, s->cardHeight}, 0.15f, 8, s->cardBg);
-    DrawRectangleRoundedLines((Rectangle){cardX, cardY, s->cardWidth, s->cardHeight}, 0.15f, 8, s->cardBorder);
+    DrawRectangleRounded((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
 
     // Title
     const char *title = "SETTINGS";
-    int tw = GameMeasureText(title, s->titleFontSize);
-    GameDrawText(title, (SCREEN_WIDTH - tw) / 2, cardY + 25, s->titleFontSize, WHITE);
+    int tw = GameMeasureText(title, SETTINGS_TITLE_FONT_SIZE);
+    GameDrawText(title, (SCREEN_WIDTH - tw) / 2, cardY + 25, SETTINGS_TITLE_FONT_SIZE, WHITE);
 
     // Separator line
     DrawLineEx((Vector2){cardX + 40, cardY + 65},
-               (Vector2){cardX + s->cardWidth - 40, cardY + 65},
-               1.5f, s->separator);
+               (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65},
+               1.5f, COLOR_SETTINGS_SEPARATOR);
 
 
     Vector2 mouse = GetMousePosition();
 
     // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
     int iconAreaY = cardY + 85;
-    int iconSpacing = (s->cardWidth - 2 * s->paddingX) / 2;
-    int iconStartX = cardX + s->paddingX;
+    int iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
+    int iconStartX = cardX + SETTINGS_CARD_PADDING_X;
 
     // SFX icon
     int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
@@ -139,7 +133,7 @@ void RenderSettings(GameState *state)
     const char *sfxLabel = "SFX";
     int sfxLabelW = GameMeasureText(sfxLabel, 14);
     GameDrawText(sfxLabel, sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2,
-                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, s->unselectedText);
+                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Music icon
     int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
@@ -159,7 +153,7 @@ void RenderSettings(GameState *state)
     const char *musicLabel = "Music";
     int musicLabelW = GameMeasureText(musicLabel, 14);
     GameDrawText(musicLabel, musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2,
-                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, s->unselectedText);
+                 iconAreaY + SETTINGS_ICON_SIZE + 4, 14, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // ─── Replay Button ────────────────────────────────────────────────────────
     int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
@@ -182,7 +176,7 @@ void RenderSettings(GameState *state)
     const char *replayText = "Replay";
     int replayTextW = GameMeasureText(replayText, 18);
     GameDrawText(replayText, btnX + 15 + replayIconSize + 8 + (SETTINGS_BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2,
-                 replayBtnY + (SETTINGS_BTN_H - 18) / 2, 18, s->unselectedText);
+                 replayBtnY + (SETTINGS_BTN_H - 18) / 2, 18, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // ─── Home Button ──────────────────────────────────────────────────────────
     int homeBtnY = replayBtnY + SETTINGS_BTN_H + SETTINGS_BTN_GAP;
@@ -204,12 +198,12 @@ void RenderSettings(GameState *state)
     const char *homeText = "Home";
     int homeTextW = GameMeasureText(homeText, 18);
     GameDrawText(homeText, btnX + 15 + homeIconSize + 8 + (SETTINGS_BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2,
-                 homeBtnY + (SETTINGS_BTN_H - 18) / 2, 18, s->unselectedText);
+                 homeBtnY + (SETTINGS_BTN_H - 18) / 2, 18, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Footer hint
     const char *hint = "ESC to go back";
     int hw = GameMeasureText(hint, 14);
-    GameDrawText(hint, (SCREEN_WIDTH - hw) / 2, cardY + s->cardHeight - 30, 14, s->footerHint);
+    GameDrawText(hint, (SCREEN_WIDTH - hw) / 2, cardY + SETTINGS_CARD_HEIGHT - 30, 14, COLOR_SETTINGS_FOOTER_HINT);
 }
 
 // ----- Game Over screen -----

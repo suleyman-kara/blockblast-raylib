@@ -2,7 +2,7 @@
 #define ANIM_H
 
 #include "raylib.h"
-#include "core/config.h"
+#include "core/defs.h"
 #include <stdbool.h>
 
 // A single cell-clear animation

@@ -1,7 +1,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "core/config.h"
+#include "core/defs.h"
 #include "core/piece.h"
 #include <stdbool.h>
 

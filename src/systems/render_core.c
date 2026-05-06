@@ -1,6 +1,6 @@
 #include "render.h"
 #include "font.h"
-#include "theme.h"
+#include "defs.h"
 #include "textures.h"
 #include <stdio.h>
 #include <math.h>
@@ -12,8 +12,6 @@
 // ----- Score display (Classic Play HUD) -----
 void RenderScore(GameState *state)
 {
-    const TextStyle *txt = &THEME_DEFAULT.text;
-
     // Top Left: Crown icon + Top Score (Yellow, no text label)
     int crownSize = 28;
     DrawTexturePro(gameTextures.crown,
@@ -29,7 +27,7 @@ void RenderScore(GameState *state)
     char scoreBuf[16];
     sprintf(scoreBuf, "%d", state->score);
     int scoreW = GameMeasureText(scoreBuf, 36);
-    GameDrawText(scoreBuf, (SCREEN_WIDTH - scoreW) / 2, 8, 36, txt->primary);
+    GameDrawText(scoreBuf, (SCREEN_WIDTH - scoreW) / 2, 8, 36, COLOR_TEXT_PRIMARY);
 
     // Combo
     if (state->combo > 1) {
@@ -52,8 +50,7 @@ void RenderBanner(GameState *state)
     float progress = 1.0f - t; // 0.0 -> 1.0
 
     // Pulse effect on font size
-    int baseSize = THEME_DEFAULT.effects.bannerPulseBaseSize;
-    int pulseSize = baseSize + (int)(8.0f * sinf(progress * PI * 4.0f));
+    int pulseSize = BANNER_PULSE_BASE_SIZE + (int)(8.0f * sinf(progress * PI * 4.0f));
 
     // Alpha: fade in quickly, stay, fade out at the end
     float alpha;
@@ -65,9 +62,9 @@ void RenderBanner(GameState *state)
         alpha = 1.0f;                       // fully visible
     }
 
-    Color clr = THEME_DEFAULT.effects.bannerText;
+    Color clr = COLOR_BANNER_TEXT;
     clr.a = (unsigned char)(alpha * 255.0f);
-    Color shadow = THEME_DEFAULT.effects.bannerShadow;
+    Color shadow = COLOR_BANNER_SHADOW;
     shadow.a = (unsigned char)(alpha * 120.0f);
 
     int w = GameMeasureText(state->banner.text, pulseSize);
@@ -124,8 +121,7 @@ void RenderGearIcon(void)
 // ----- Draw a gem icon inside a cell block (using PNG textures) -----
 void DrawGemIcon(int x, int y, int cellSize, int gemType)
 {
-    const GemStyle *g = &THEME_DEFAULT.gem;
-    int gemSize = (int)(cellSize * g->sizeRatio);
+    int gemSize = (int)(cellSize * GEM_SIZE_RATIO);
     int cx = x + cellSize / 2;
     int cy = y + cellSize / 2;
 
