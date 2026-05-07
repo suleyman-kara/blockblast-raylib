@@ -11,7 +11,7 @@ Font gameFont = { 0 };
 
 int main(void)
 {
-    // Ensure data directory exists for highscore file
+    // Ensure data directory exists for save files
     MakeDirectory("data");
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Block Blast");
@@ -36,8 +36,8 @@ int main(void)
         // Update music stream
         SoundUpdate(&state.sound);
 
-        // Input (during play screens)
-        if (state.currentScreen == SCREEN_PLAY || state.currentScreen == SCREEN_ADVENTURE_PLAY) {
+        // Input (during play screen only)
+        if (state.currentScreen == SCREEN_PLAY) {
             InputUpdate(&state);
         }
 

@@ -1,8 +1,8 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "core/defs.h"
-#include "core/piece.h"
+#include "defs.h"
+#include "piece.h"
 #include <stdbool.h>
 
 // Board: 8x8 grid where blocks are placed

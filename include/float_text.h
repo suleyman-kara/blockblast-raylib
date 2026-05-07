@@ -2,7 +2,7 @@
 #define FLOAT_TEXT_H
 
 #include "raylib.h"
-#include "core/defs.h"
+#include "defs.h"
 #include <stdbool.h>
 
 // A single floating text element (e.g. "+300")

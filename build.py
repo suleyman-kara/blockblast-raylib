@@ -11,7 +11,6 @@ Usage:
     python build.py --clean      # Clean build artifacts
     python build.py --no-run     # Build without auto-running
     python build.py --no-make    # Build without using raylib's Makefile
-    python build.py --test       # Build and run tests instead of the game
 """
 
 import os
@@ -29,7 +28,7 @@ SRC_DIR = os.path.join(PROJECT_DIR, "src")
 INCLUDE_DIR = os.path.join(PROJECT_DIR, "include")
 BUILD_DIR = os.path.join(PROJECT_DIR, "build")
 RAYLIB_BUILD_DIR = os.path.join(BUILD_DIR, "raylib_build")
-TESTS_DIR = os.path.join(PROJECT_DIR, "tests")
+
 
 # ─── Detect OS and toolchain ────────────────────────────────────────────────
 SYSTEM = platform.system()  # 'Windows', 'Linux', 'Darwin'
@@ -150,26 +149,14 @@ def get_project_source_files():
     return files
 
 
-def get_test_source_files():
-    """Dynamically find all .c files in the tests/ directory."""
-    pattern = os.path.join(TESTS_DIR, "*.c")
-    files = sorted(glob.glob(pattern))
-    if not files:
-        print("ERROR: No .c source files found in tests/")
-        sys.exit(1)
-    return files
 
 
 def get_include_dirs():
-    """Get all include directories needed (recursive for subdirs)."""
+    """Get all include directories needed."""
     dirs = [
         f"-I{RAYLIB_SRC_DIR}",
         f"-I{INCLUDE_DIR}",
     ]
-    # Add all subdirectories of include/ recursively
-    for root, dirnames, filenames in os.walk(INCLUDE_DIR):
-        for d in dirnames:
-            dirs.append(f"-I{os.path.join(root, d)}")
     dirs.extend(get_platform_include_dirs())
     return dirs
 
@@ -288,76 +275,6 @@ def build_project(raylib_lib, debug=False):
     return exe_path
 
 
-def build_tests(raylib_lib, debug=False):
-    """Compile test files and link with raylib and project objects."""
-    print("=" * 60)
-    print("  Building tests...")
-    print("=" * 60)
-
-    os.makedirs(BUILD_DIR, exist_ok=True)
-
-    # First compile all project source files (as objects), excluding main.c
-    src_files = [f for f in get_project_source_files() if not f.endswith('main.c')]
-    cflags = get_platform_cflags()
-    if debug:
-        cflags.append("-g")
-        cflags.append("-D_DEBUG")
-    else:
-        cflags.append("-O2")
-
-    include_dirs = get_include_dirs()
-
-    project_obj_files = []
-    for src in src_files:
-        rel_path = os.path.relpath(src, PROJECT_DIR)
-        safe_name = rel_path.replace(os.sep, "_").replace("/", "_").replace("\\", "_")
-        obj = os.path.join(BUILD_DIR, f"{safe_name}.o")
-        project_obj_files.append(obj)
-
-        # Only compile if object doesn't exist or source is newer
-        if not os.path.isfile(obj) or os.path.getmtime(src) > os.path.getmtime(obj):
-            cmd = [CC] + cflags + include_dirs + ["-c", src, "-o", obj]
-            print(f"    CC {rel_path}")
-            result = subprocess.run(cmd, cwd=PROJECT_DIR)
-            if result.returncode != 0:
-                print(f"ERROR: Compilation failed for {src}")
-                sys.exit(1)
-
-    # Compile and link each test file separately (each has its own main())
-    test_files = get_test_source_files()
-    exe_paths = []
-    for src in test_files:
-        rel_path = os.path.relpath(src, PROJECT_DIR)
-        safe_name = rel_path.replace(os.sep, "_").replace("/", "_").replace("\\", "_")
-        obj = os.path.join(BUILD_DIR, f"{safe_name}.o")
-
-        cmd = [CC] + cflags + include_dirs + ["-c", src, "-o", obj]
-        print(f"    CC {rel_path}")
-        result = subprocess.run(cmd, cwd=PROJECT_DIR)
-        if result.returncode != 0:
-            print(f"ERROR: Compilation failed for {src}")
-            sys.exit(1)
-
-        # Link this test individually
-        test_exe_name = safe_name.replace(".c", "")
-        if SYSTEM == "Windows":
-            test_exe_name += ".exe"
-        test_exe_path = os.path.join(BUILD_DIR, test_exe_name)
-
-        link_cmd = [CC, "-o", test_exe_path, obj] + project_obj_files + [raylib_lib]
-        link_cmd.extend(get_platform_link_libs())
-
-        print(f"  Linking: {test_exe_name}")
-        result = subprocess.run(link_cmd, cwd=PROJECT_DIR)
-        if result.returncode != 0:
-            print(f"ERROR: Linking {test_exe_name} failed!")
-            sys.exit(1)
-
-        exe_paths.append(test_exe_path)
-        print(f"  ✓ {test_exe_name} built: file://{test_exe_path}")
-
-    print(f"\n  ✓ All tests built successfully!")
-    return exe_paths
 
 
 def run_executable(exe_path):
@@ -448,7 +365,6 @@ def main():
     do_clean = "--clean" in sys.argv
     do_debug = "--debug" in sys.argv
     do_no_run = "--no-run" in sys.argv
-    do_test = "--test" in sys.argv
     use_make = "--no-make" not in sys.argv
 
     if do_clean:
@@ -470,37 +386,15 @@ def main():
 
     if use_make and shutil.which("make"):
         raylib_lib = build_raylib_static()
-        if do_test:
-            exe_path = build_tests(raylib_lib, debug=do_debug)
-        else:
-            exe_path = build_project(raylib_lib, debug=do_debug)
+        exe_path = build_project(raylib_lib, debug=do_debug)
     else:
         if not use_make:
             print("  (Skipping raylib Makefile as requested)")
         else:
             print("  (make not found, using direct compilation)")
-        if do_test:
-            print("  (Tests not supported in no-make mode yet)")
-            sys.exit(1)
         exe_path = build_without_make(debug=do_debug)
 
-    if do_test:
-        print("=" * 60)
-        print("  Running tests...")
-        print("=" * 60)
-        os.chdir(PROJECT_DIR)
-        all_passed = True
-        for test_exe in exe_path:
-            test_name = os.path.basename(test_exe)
-            print(f"\n  --- {test_name} ---")
-            result = subprocess.run([test_exe])
-            if result.returncode != 0:
-                all_passed = False
-                print(f"  {test_name} FAILED (exit code {result.returncode})")
-            else:
-                print(f"  {test_name} PASSED")
-        print(f"\n  All tests {'PASSED' if all_passed else 'FAILED'}")
-    elif not do_no_run:
+    if not do_no_run:
         run_executable(exe_path)
 
 

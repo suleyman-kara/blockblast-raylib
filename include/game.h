@@ -2,14 +2,14 @@
 #define GAME_H
 
 #include "raylib.h"
-#include "core/defs.h"
+#include "defs.h"
 #include "board.h"
 #include "piece.h"
 #include "anim.h"
 #include "float_text.h"
 #include "particle.h"
 #include "sound.h"
-#include "adventure.h"
+#include "level.h"
 
 #include <math.h>
 
@@ -19,21 +19,11 @@ extern Font gameFont;
 // Game screens
 typedef enum {
     SCREEN_MENU,
-    SCREEN_PLAY,
-    SCREEN_SETTINGS,
-    SCREEN_GAMEOVER,
-    SCREEN_ADVENTURE_MAP,
-    SCREEN_ADVENTURE_PLAY,
-    SCREEN_ADVENTURE_RESULT
+    SCREEN_PLAY,          // unified classic + adventure
+    SCREEN_LEVEL_SELECT,
+    SCREEN_RESULT,        // adaptive win/lose
+    SCREEN_SETTINGS
 } Screen;
-
-// "BEST COMBO!" banner animation
-typedef struct {
-    bool active;
-    float timer;
-    float duration;
-    char text[32];
-} BannerAnim;
 
 // Central game state — passed by pointer to all modules
 typedef struct {
@@ -54,7 +44,6 @@ typedef struct {
     AnimQueue anims;
     FloatTextQueue floatTexts;
     ParticleSystem particles;
-    BannerAnim banner;
 
     // Settings menu
     int selectedSetting;
@@ -62,12 +51,10 @@ typedef struct {
     // Sound system
     SoundSystem sound;
 
-    bool gameOver;
-
-    // Adventure mode
-    AdventureState adventure;
-    AdventureSaveData adventureSave;
-    int selectedLevel;  // which level is selected on the map
+    // Level
+    LevelState level;
+    int selectedLevel;              // 0 = classic, 1-10 = adventure
+    bool levelCompleted[TOTAL_LEVELS]; // which adventure levels are completed (persisted)
 
     Screen prevScreen;  // screen before settings overlay
 } GameState;
@@ -78,13 +65,14 @@ void GameInit(GameState *state);
 // Update game logic for one frame
 void GameUpdate(GameState *state);
 
-// Reset board and slots for a new game (keeps highscore)
+// Reset board and slots for a new game (uses selectedLevel to determine behavior)
 void GameReset(GameState *state);
-
-// Reset board and slots for adventure mode (loads level obstacles)
-void GameResetAdventure(GameState *state);
 
 // Update settings screen logic (keyboard/mouse navigation)
 void GameUpdateSettings(GameState *state);
+
+// High score save/load (moved from deleted score module)
+int ScoreLoadHigh(void);
+void ScoreSaveHigh(int score);
 
 #endif // GAME_H

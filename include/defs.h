@@ -24,8 +24,6 @@
 // ─── Grid ─────────────────────────────────────────────────────────────────────
 #define GRID_SIZE          8
 #define CELL_EMPTY         0
-#define CELL_ICE           8
-#define CELL_STONE         9
 #define GEM_NONE           0
 #define GEM_DIAMOND        1
 #define GEM_EMERALD        2
@@ -37,6 +35,7 @@
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 #define BASE_SCORE         100
+#define ScoreCalculate(lines, combo) (BASE_SCORE * (lines) * (combo))
 
 // ─── Banner ───────────────────────────────────────────────────────────────────
 #define BANNER_DURATION    1.8f
@@ -58,7 +57,6 @@
 // ─── Adventure Mode ───────────────────────────────────────────────────────────
 #define TOTAL_LEVELS         10
 #define LEVELS_PER_ROW       3
-#define MAX_OBSTACLES        9
 #define DIAMOND_SPAWN_CHANCE  0.15f
 #define EMERALD_SPAWN_CHANCE  0.12f
 
@@ -120,11 +118,7 @@ static const Color PIECE_COLORS[] = {
 // ─── Grid & Board ─────────────────────────────────────────────────────────────
 #define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
 #define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
-#define COLOR_GRID_ICE_OVERLAY  ((Color){ 200, 230, 255, 200 })
 #define COLOR_GRID_HIGHLIGHT    ((Color){ 255, 255, 255, 40  })
-#define COLOR_STONE_BASE        ((Color){ 80,  80,  90, 255 })
-#define COLOR_STONE_MID         ((Color){ 90,  90,  100, 255 })
-#define COLOR_STONE_DARK        ((Color){ 70,  70,  80, 255 })
 
 // ─── Panel (bottom piece slot area) ───────────────────────────────────────────
 #define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })

@@ -6,20 +6,17 @@
 // Draw the entire game frame based on current state
 void RenderFrame(GameState *state);
 
-// Sub-render functions (called by RenderFrame or directly)
+// Sub-render functions (called by RenderFrame)
 void RenderBoard(GameState *state);
 void RenderGhost(GameState *state);
 void RenderPieceSlots(GameState *state);
 void RenderDraggedPiece(GameState *state);
-void RenderScore(GameState *state);
-void RenderBanner(GameState *state);
+void RenderPlayHUD(GameState *state);
 void RenderGearIcon(void);
 void DrawGemIcon(int x, int y, int cellSize, int gemType);
 void RenderMenu(GameState *state);
 void RenderSettings(GameState *state);
-void RenderGameOver(GameState *state);
-void RenderAdventureMap(GameState *state);
-void RenderAdventurePlay(GameState *state);
-void RenderAdventureResult(GameState *state);
+void RenderLevelSelect(GameState *state);
+void RenderResult(GameState *state);
 
 #endif // RENDER_H

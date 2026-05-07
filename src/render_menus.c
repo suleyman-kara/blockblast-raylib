@@ -213,28 +213,3 @@ void RenderSettings(GameState *state)
     DrawTextEx(gameFont, hint, (Vector2){(SCREEN_WIDTH - hw) / 2.0f, (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
                14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
-
-// ----- Game Over screen -----
-void RenderGameOver(GameState *state)
-{
-    // Semi-transparent overlay
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0,0,0,160});
-
-    const char *go = "GAME OVER";
-    int gw = (int)MeasureTextEx(gameFont, go, 44.0f, 1.0f).x;
-    DrawTextEx(gameFont, go, (Vector2){(SCREEN_WIDTH - gw) / 2.0f, 280}, 44.0f, 1.0f, (Color){255,87,87,255});
-
-    char buf[64];
-    sprintf(buf, "Score: %d", state->score);
-    int sw = (int)MeasureTextEx(gameFont, buf, 28.0f, 1.0f).x;
-    DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - sw) / 2.0f, 350}, 28.0f, 1.0f, WHITE);
-
-    sprintf(buf, "Best: %d", state->highScore);
-    sw = (int)MeasureTextEx(gameFont, buf, 22.0f, 1.0f).x;
-    DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - sw) / 2.0f, 395}, 22.0f, 1.0f, (Color){150,150,170,255});
-
-    const char *retry = "Press ENTER to play again";
-    int rw = (int)MeasureTextEx(gameFont, retry, 18.0f, 1.0f).x;
-    DrawTextEx(gameFont, retry, (Vector2){(SCREEN_WIDTH - rw) / 2.0f, 460}, 18.0f, 1.0f,
-        (Color){100,100,130,255});
-}

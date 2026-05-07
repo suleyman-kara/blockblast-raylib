@@ -50,12 +50,7 @@ const PieceDef *GetPieceDefinitions(void)
     return PIECE_DEFS;
 }
 
-Piece *PieceCreate(void)
-{
-    return PieceCreateWithGems(0.0f, 0.0f);
-}
-
-Piece *PieceCreateWithGems(float diamondChance, float emeraldChance)
+Piece *PieceCreate(float diamondChance, float emeraldChance)
 {
     if (!seeded) {
         srand((unsigned int)time(NULL));
@@ -108,19 +103,14 @@ void PieceFree(Piece **piece)
     }
 }
 
-void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth)
-{
-    GenerateRandomPiecesWithGems(slots, panelY, screenWidth, 0.0f, 0.0f);
-}
-
-void GenerateRandomPiecesWithGems(PieceSlot slots[3], float panelY, float screenWidth,
-                                   float diamondChance, float emeraldChance)
+void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
+                           float diamondChance, float emeraldChance)
 {
     // Divide the bottom panel into 3 equal sections
     float sectionWidth = screenWidth / 3.0f;
 
     for (int i = 0; i < 3; i++) {
-        slots[i].piece = PieceCreateWithGems(diamondChance, emeraldChance);
+        slots[i].piece = PieceCreate(diamondChance, emeraldChance);
         // Center each piece in its section
         if (slots[i].piece) {
             float piecePixelW = slots[i].piece->width * (float)PANEL_PIECE_SCALE;

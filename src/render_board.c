@@ -1,5 +1,4 @@
 #include "render.h"
-#include "adventure.h"
 #include "defs.h"
 
 // ----- Board -----
@@ -24,23 +23,6 @@ void RenderBoard(GameState *state)
                 Color clr = PIECE_COLORS[val > 0 ? val : 1];
                 clr.a = (unsigned char)(alpha * 255);
                 DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, clr);
-            } else if (val == CELL_ICE) {
-                // Ice block: translucent blue with color underneath
-                int underColor = AdventureGetIceUnderColor(&state->adventure, r, c);
-                if (underColor >= 1 && underColor <= 7) {
-                    DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, PIECE_COLORS[underColor]);
-                }
-                // Draw ice overlay
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, COLOR_GRID_ICE_OVERLAY);
-                // Ice crystal effect
-                DrawRectangle(x + 15, y + 15, CELL_SIZE - 30, CELL_SIZE - 30, (Color){255,255,255,60});
-                DrawRectangle(x + 20, y + 20, CELL_SIZE - 40, CELL_SIZE - 40, (Color){255,255,255,40});
-            } else if (val == CELL_STONE) {
-                // Stone block: gray with rock texture
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, COLOR_STONE_BASE);
-                DrawRectangle(x + 3, y + 3, CELL_SIZE - 6, CELL_SIZE - 6, COLOR_STONE_MID);
-                DrawRectangle(x + 8, y + 8, CELL_SIZE - 16, CELL_SIZE - 16, COLOR_STONE_DARK);
-                DrawRectangle(x + 10, y + 10, 5, 5, (Color){120, 120, 130, 100});
             } else if (val != CELL_EMPTY) {
                 // Normal filled cell
                 Color clr = PIECE_COLORS[val];

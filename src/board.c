@@ -52,31 +52,25 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
     // Initialize clearedCells to false
     memset(clearedCells, false, sizeof(bool) * GRID_SIZE * GRID_SIZE);
 
-    // Check which rows are full (skip rows with stone blocks)
+    // Check which rows are full
     for (int r = 0; r < GRID_SIZE; r++) {
         rowFull[r] = true;
         for (int c = 0; c < GRID_SIZE; c++) {
-            if (board->cells[r][c] == CELL_STONE) {
+            if (board->cells[r][c] == CELL_EMPTY) {
                 rowFull[r] = false;
                 break;
-            }
-            if (board->cells[r][c] == CELL_EMPTY || board->cells[r][c] == CELL_ICE) {
-                rowFull[r] = false;
             }
         }
         if (rowFull[r]) cleared++;
     }
 
-    // Check which columns are full (skip columns with stone blocks)
+    // Check which columns are full
     for (int c = 0; c < GRID_SIZE; c++) {
         colFull[c] = true;
         for (int r = 0; r < GRID_SIZE; r++) {
-            if (board->cells[r][c] == CELL_STONE) {
+            if (board->cells[r][c] == CELL_EMPTY) {
                 colFull[c] = false;
                 break;
-            }
-            if (board->cells[r][c] == CELL_EMPTY || board->cells[r][c] == CELL_ICE) {
-                colFull[c] = false;
             }
         }
         if (colFull[c]) cleared++;

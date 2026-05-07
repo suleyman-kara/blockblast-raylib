@@ -14,20 +14,12 @@ static void ExecuteSetting(GameState *state, int index)
             SoundToggleMusic(&state->sound);
             break;
         case SETTING_RESTART:
-            if (state->prevScreen == SCREEN_ADVENTURE_PLAY) {
-                state->currentScreen = SCREEN_ADVENTURE_PLAY;
-                GameResetAdventure(state);
-            } else {
-                state->currentScreen = SCREEN_PLAY;
-                GameReset(state);
-            }
+            state->currentScreen = SCREEN_PLAY;
+            GameReset(state);
             break;
         case SETTING_QUIT:
-            if (state->prevScreen == SCREEN_ADVENTURE_PLAY) {
-                state->currentScreen = SCREEN_ADVENTURE_MAP;
-            } else {
-                state->currentScreen = SCREEN_MENU;
-            }
+            // Use selectedLevel to decide where Home goes
+            state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
             break;
     }
 }

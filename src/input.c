@@ -1,10 +1,9 @@
 #include "input.h"
 #include "sound.h"
 #include "board.h"
-#include "score.h"
 #include "float_text.h"
 #include "particle.h"
-#include "adventure.h"
+#include "level.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -13,7 +12,7 @@
 void InputUpdate(GameState *state)
 {
     if (AnimIsActive(&state->anims)) return;
-    if (state->gameOver) return;
+    if (state->level.levelFailed || state->level.levelComplete) return;
 
     Vector2 mouse = GetMousePosition();
 
@@ -38,7 +37,7 @@ void InputUpdate(GameState *state)
         }
     }
 
-    // --- DRAG MOVE (piece follows mouse directly) ---
+    // --- DRAG MOVE ---
     if (state->isDragging) {
         state->dragPos = mouse;
     }
@@ -85,10 +84,7 @@ void InputUpdate(GameState *state)
                 int points = ScoreCalculate(linesCleared, state->combo);
                 state->score += points;
 
-                // Play line clear sound
                 SoundPlayLineClear(&state->sound, linesCleared);
-
-                // Play combo sound (combo >= 2)
                 if (state->combo >= 2)
                     SoundPlayCombo(&state->sound, state->combo);
 
@@ -115,24 +111,24 @@ void InputUpdate(GameState *state)
                              SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f - 40.0f,
                              36, (Color){255, 255, 100, 255});
 
-                // Best Combo banner (combo >= 3)
+                // Combo banner (using float text instead of separate BannerAnim)
                 if (state->combo >= 3) {
-                    state->banner.active = true;
-                    state->banner.timer = BANNER_DURATION;
-                    state->banner.duration = BANNER_DURATION;
+                    char comboBanner[32];
                     if (state->combo >= 5)
-                        sprintf(state->banner.text, "MUHTESEM! x%d", state->combo);
+                        sprintf(comboBanner, "AMAZING! x%d", state->combo);
                     else if (state->combo >= 4)
-                        sprintf(state->banner.text, "SUPER COMBO! x%d", state->combo);
+                        sprintf(comboBanner, "SUPER COMBO! x%d", state->combo);
                     else
-                        sprintf(state->banner.text, "BEST COMBO! x%d", state->combo);
+                        sprintf(comboBanner, "BEST COMBO! x%d", state->combo);
+                    FloatTextAdd(&state->floatTexts, comboBanner,
+                                 SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f - 100.0f,
+                                 40, (Color){255, 220, 50, 255});
                 }
 
-                // Update adventure progress if in adventure mode
-                if (state->currentScreen == SCREEN_ADVENTURE_PLAY) {
-                    AdventureUpdateProgress(&state->adventure, &state->board,
-                                            linesCleared, state->combo, points,
-                                            diamondsCollected, emeraldsCollected);
+                // Update level progress (gems collected)
+                if (state->selectedLevel > 0) {
+                    state->level.collectedDiamonds += diamondsCollected;
+                    state->level.collectedEmeralds += emeraldsCollected;
                 }
             } else {
                 state->combo = 0;
@@ -144,22 +140,11 @@ void InputUpdate(GameState *state)
             PieceFree(&slot->piece);
 
             if (AllSlotsEmpty(state->slots)) {
-                // Generate new pieces (with gems if in adventure mode)
-                if (state->currentScreen == SCREEN_ADVENTURE_PLAY) {
-                    const LevelDef *level = AdventureGetLevelDefs();
-                    level = &level[state->adventure.currentLevel];
-                    float diamondChance = 0.0f;
-                    float emeraldChance = 0.0f;
-                    if (level->goalType == GOAL_GEMS || level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
-                        diamondChance = DIAMOND_SPAWN_CHANCE;
-                        if (level->goalType == GOAL_MIXED_GEMS || level->goalType == GOAL_MIXED_ALL) {
-                            emeraldChance = EMERALD_SPAWN_CHANCE;
-                        }
-                    }
-                    GenerateRandomPiecesWithGems(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
-                } else {
-                    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH);
-                }
+                // Generate new pieces with gem chances based on level
+                const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+                float diamondChance = (def->targetDiamonds > 0) ? DIAMOND_SPAWN_CHANCE : 0.0f;
+                float emeraldChance = (def->targetEmeralds > 0) ? EMERALD_SPAWN_CHANCE : 0.0f;
+                GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
 
                 // Emit particles for new block generation
                 for (int i = 0; i < 3; i++) {
@@ -173,11 +158,6 @@ void InputUpdate(GameState *state)
                                      PIECE_COLORS[newColorIdx], 8);
                     }
                 }
-            }
-
-            if (!BoardHasValidMove(&state->board, state->slots)) {
-                state->gameOver = true;
-                ScoreSaveHigh(state->highScore);
             }
         }
     }
