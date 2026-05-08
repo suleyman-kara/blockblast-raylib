@@ -47,7 +47,7 @@ void LevelSaveProgress(bool completed[TOTAL_LEVELS]);
 // Helper: a level is unlocked if it's level 1, or the previous level is completed
 static inline bool LevelIsUnlocked(bool completed[TOTAL_LEVELS], int lvl) {
     if (lvl <= 1) return true;               // level 0 (classic) and 1 always unlocked
-    return (lvl <= TOTAL_LEVELS && completed[lvl - 1]);
+    return (lvl <= TOTAL_LEVELS && completed[lvl - 2]);
 }
 
 #endif // LEVEL_H
