@@ -1,6 +1,15 @@
 #include "render.h"
 #include "defs.h"
 
+// ─── Grid & Board Colors ────────────────────────────────────────────────────────
+#define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
+#define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
+#define COLOR_GRID_HIGHLIGHT    ((Color){ 255, 255, 255, 40  })
+
+#define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })
+#define COLOR_PANEL_TOP_BORDER  ((Color){ 50,  50,  70, 255 })
+#define PANEL_TOP_BORDER_WIDTH  2.0f
+
 // ----- Board -----
 void RenderBoard(GameState *state)
 {
