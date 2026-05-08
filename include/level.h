@@ -1,0 +1,53 @@
+#ifndef LEVEL_H
+#define LEVEL_H
+
+#include "defs.h"
+#include "board.h"
+#include "piece.h"
+#include <stdbool.h>
+
+// ─── Level Definition (immutable, const array) ────────────────────────────────
+// Level 0 = classic (infinite play, all targets 0)
+// Levels 1-10 = adventure levels
+typedef struct {
+    int level;
+    int targetScore;      // 0 = no score target
+    int targetDiamonds;   // 0 = no diamond target
+    int targetEmeralds;   // 0 = no emerald target
+    int prefillCount;     // random pieces to pre-place on board
+} LevelDef;
+
+// ─── Level State (mutable, runtime) ──────────────────────────────────────────
+typedef struct {
+    int currentLevel;         // index into level defs (0 = classic)
+    int collectedDiamonds;
+    int collectedEmeralds;
+    bool levelComplete;
+    bool levelFailed;
+} LevelState;
+
+// ─── Public Functions ─────────────────────────────────────────────────────────
+
+// Get the level definitions array (index 0 = classic, 1-10 = adventure)
+const LevelDef *LevelGetDefs(void);
+
+// Initialize level state + board for a given level
+void LevelInit(LevelState *state, int levelIndex, Board *board);
+
+// Check if all goals are met. Returns false for classic (level 0).
+bool LevelCheckGoal(LevelState *state, int currentScore);
+
+// Check if no valid moves remain
+bool LevelCheckFailure(Board *board, PieceSlot slots[3]);
+
+// ─── Progress Save/Load ───────────────────────────────────────────────────────
+void LevelLoadProgress(bool completed[TOTAL_LEVELS]);
+void LevelSaveProgress(bool completed[TOTAL_LEVELS]);
+
+// Helper: a level is unlocked if it's level 1, or the previous level is completed
+static inline bool LevelIsUnlocked(bool completed[TOTAL_LEVELS], int lvl) {
+    if (lvl <= 1) return true;               // level 0 (classic) and 1 always unlocked
+    return (lvl <= TOTAL_LEVELS && completed[lvl - 2]);
+}
+
+#endif // LEVEL_H
