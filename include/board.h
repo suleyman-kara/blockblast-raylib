@@ -7,8 +7,9 @@
 
 // Board: 8x8 grid where blocks are placed
 typedef struct {
-    int cells[GRID_SIZE][GRID_SIZE]; // 0 = empty, 1-7 = color index, 8=ice, 9=stone
-    int gems[GRID_SIZE][GRID_SIZE];  // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
+  int cells[GRID_SIZE]
+           [GRID_SIZE]; // 0 = empty, 1-7 = color index, 8=ice, 9=stone
+  int gems[GRID_SIZE][GRID_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
 } Board;
 
 // Initialize all cells to CELL_EMPTY and gems to GEM_NONE
@@ -23,10 +24,6 @@ void BoardPlace(Board *board, Piece *piece, int row, int col);
 
 // Scan and clear full rows/columns. Returns number of lines cleared.
 int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
-
-// Collect gems from cells marked as cleared. Updates counters.
-void BoardCollectGems(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
-                      int *diamondsCollected, int *emeraldsCollected);
 
 // Check if any remaining piece in slots can fit anywhere on the board
 bool BoardHasValidMove(Board *board, PieceSlot slots[3]);

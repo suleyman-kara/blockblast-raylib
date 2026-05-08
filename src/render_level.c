@@ -4,6 +4,19 @@
 #include "textures.h"
 #include <stdio.h>
 
+// ─── Adventure Map UI Constants ───────────────────────────────────────────────
+#define COLOR_AMAP_LOCKED_BG       ((Color){ 25,  25,  40,  255 })
+#define COLOR_AMAP_LOCKED_BORDER   ((Color){ 40,  40,  55,  255 })
+#define COLOR_AMAP_UNLOCKED_BG     ((Color){ 40,  35,  60,  255 })
+#define COLOR_AMAP_UNLOCKED_HOVER  ((Color){ 60,  50,  80,  255 })
+#define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
+#define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
+#define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
+#define AMAP_BTN_SIZE              80
+#define AMAP_BTN_GAP               15
+#define AMAP_BTN_LABEL_GAP         30
+#define AMAP_START_Y               150
+
 // ─── Helper: draw texture full ───────────────────────────────────────────────
 static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
 {
@@ -91,7 +104,7 @@ void RenderPlayHUD(GameState *state)
 
         if (hasScore && !hasDiamond && !hasEmerald) {
             // Score only
-            sprintf(buf, "%d", state->score);
+            sprintf(buf, "%d / %d", state->score, def->targetScore);
             DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
         } else if (!hasScore && hasDiamond && !hasEmerald) {
             // Diamond only
@@ -108,7 +121,7 @@ void RenderPlayHUD(GameState *state)
             int centerX = SCREEN_WIDTH / 2;
 
             if (hasScore) {
-                sprintf(buf, "%d", state->score);
+                sprintf(buf, "%d / %d", state->score, def->targetScore);
                 DrawTextCenteredX(buf, midY + 4, 28, COLOR_TEXT_PRIMARY);
             }
 

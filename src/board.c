@@ -99,22 +99,6 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
     return cleared;
 }
 
-void BoardCollectGems(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE],
-                      int *diamondsCollected, int *emeraldsCollected)
-{
-    if (diamondsCollected) *diamondsCollected = 0;
-    if (emeraldsCollected) *emeraldsCollected = 0;
-
-    for (int r = 0; r < GRID_SIZE; r++) {
-        for (int c = 0; c < GRID_SIZE; c++) {
-            if (!clearedCells[r][c]) continue;
-            if (board->gems[r][c] == GEM_DIAMOND && diamondsCollected)
-                (*diamondsCollected)++;
-            else if (board->gems[r][c] == GEM_EMERALD && emeraldsCollected)
-                (*emeraldsCollected)++;
-        }
-    }
-}
 
 bool BoardHasValidMove(Board *board, PieceSlot slots[3])
 {
