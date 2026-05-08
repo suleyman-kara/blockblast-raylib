@@ -104,7 +104,7 @@ void RenderPlayHUD(GameState *state)
 
         if (hasScore && !hasDiamond && !hasEmerald) {
             // Score only
-            sprintf(buf, "%d", state->score);
+            sprintf(buf, "%d / %d", state->score, def->targetScore);
             DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
         } else if (!hasScore && hasDiamond && !hasEmerald) {
             // Diamond only
@@ -121,7 +121,7 @@ void RenderPlayHUD(GameState *state)
             int centerX = SCREEN_WIDTH / 2;
 
             if (hasScore) {
-                sprintf(buf, "%d", state->score);
+                sprintf(buf, "%d / %d", state->score, def->targetScore);
                 DrawTextCenteredX(buf, midY + 4, 28, COLOR_TEXT_PRIMARY);
             }
 
