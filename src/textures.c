@@ -16,6 +16,8 @@ void TexturesLoad(void)
     gameTextures.musicalNote = LoadTexture("assets/images/musical-note.png");
     gameTextures.waveSound = LoadTexture("assets/images/wave-sound.png");
     gameTextures.replay = LoadTexture("assets/images/replay.png");
+    gameTextures.completed = LoadTexture("assets/images/completed.png");
+    gameTextures.logo = LoadTexture("assets/images/logo.png");
 }
 
 void TexturesUnload(void)
@@ -30,4 +32,6 @@ void TexturesUnload(void)
     UnloadTexture(gameTextures.musicalNote);
     UnloadTexture(gameTextures.waveSound);
     UnloadTexture(gameTextures.replay);
+    UnloadTexture(gameTextures.completed);
+    UnloadTexture(gameTextures.logo);
 }

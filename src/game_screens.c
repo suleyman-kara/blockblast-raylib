@@ -45,6 +45,28 @@ void GameUpdate(GameState *state)
                     SoundPlayMenuClick(&state->sound);
                     state->currentScreen = SCREEN_LEVEL_SELECT;
                 }
+                
+                // Debug buttons
+                Rectangle dbgCompleteBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
+                Rectangle dbgResetBtn = {SCREEN_WIDTH - 110, SCREEN_HEIGHT - 40, 100, 30};
+                
+                if (CheckCollisionPointRec(mouse, dbgCompleteBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    for (int i = 0; i < TOTAL_LEVELS; i++) {
+                        state->levelCompleted[i] = true;
+                    }
+                    LevelSaveProgress(state->levelCompleted);
+                } else if (CheckCollisionPointRec(mouse, dbgResetBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    for (int i = 0; i < TOTAL_LEVELS; i++) {
+                        state->levelCompleted[i] = false;
+                    }
+                    LevelSaveProgress(state->levelCompleted);
+                    
+                    // Reset classic mode high score
+                    state->highScore = 0;
+                    ScoreSaveHigh(state->highScore);
+                }
             }
             break;
         }

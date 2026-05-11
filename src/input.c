@@ -127,8 +127,12 @@ void InputUpdate(GameState *state) {
         }
 
         // Floating score text
-        char scoreBuf[32];
-        sprintf(scoreBuf, "+%d", points);
+        char scoreBuf[64];
+        if (state->combo > 1) {
+            sprintf(scoreBuf, "+%d (x%d Combo)", points, state->combo);
+        } else {
+            sprintf(scoreBuf, "+%d", points);
+        }
         FloatTextAdd(&state->floatTexts, scoreBuf, SCREEN_WIDTH / 2.0f,
                      SCREEN_HEIGHT / 2.0f - 40.0f, 36,
                      (Color){255, 255, 100, 255});

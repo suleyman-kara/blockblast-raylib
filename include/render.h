@@ -11,6 +11,7 @@ void RenderBoard(GameState *state);
 void RenderGhost(GameState *state);
 void RenderPieceSlots(GameState *state);
 void RenderDraggedPiece(GameState *state);
+void DrawBlockBeveled(int x, int y, int size, Color baseColor);
 void RenderPlayHUD(GameState *state);
 void RenderGearIcon(void);
 void DrawGemIcon(int x, int y, int cellSize, int gemType);

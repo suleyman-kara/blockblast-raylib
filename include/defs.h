@@ -96,7 +96,7 @@
 // ─── Menu Buttons (Y pozisyonları)
 // ────────────────────────────────────────────
 #define MENU_STD_Y 360
-#define MENU_ADV_Y 450
+#define MENU_ADV_Y 430
 
 // ─── Title & Subtitle
 // ─────────────────────────────────────────────────────────
