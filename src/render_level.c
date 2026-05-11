@@ -84,7 +84,7 @@ void RenderPlayHUD(GameState *state)
             (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(gameFont, buf, (Vector2){10 + crownSize + 6, 14}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+        DrawTextEx(gameFont, buf, (Vector2){10 + crownSize + 6, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
 
         sprintf(buf, "%d", state->score);
         int scoreW = (int)MeasureTextEx(gameFont, buf, 36.0f, 1.0f).x;
@@ -195,6 +195,20 @@ void RenderLevelSelect(GameState *state)
                 by + AMAP_BTN_SIZE - lockSize - 8,
                 lockSize, lockSize);
         }
+    }
+
+    bool allCompleted = true;
+    for (int i = 0; i < TOTAL_LEVELS; i++) {
+        if (!state->levelCompleted[i]) {
+            allCompleted = false;
+            break;
+        }
+    }
+
+    if (allCompleted) {
+        int lastRow = (TOTAL_LEVELS - 1) / LEVELS_PER_ROW;
+        int botY = AMAP_START_Y + lastRow * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP) + AMAP_BTN_SIZE + 40;
+        DrawTextCenteredX("Completed!", botY, 28, COLOR_AMAP_COMPLETED_TEXT);
     }
 
     DrawTextCenteredX("ESC: Main Menu", SCREEN_HEIGHT - 30, 16, COLOR_TEXT_MUTED);

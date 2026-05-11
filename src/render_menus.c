@@ -35,46 +35,16 @@
 
 // ----- Menu screen -----
 void RenderMenu(GameState *state) {
-  // Title — rainbow gradient per character, font size TITLE_FONT_SIZE
-  const char *title = "BLOCK BLAST";
-  int titleLen = strlen(title);
-  int titleFontSize = TITLE_FONT_SIZE;
-
-  float titleTotalW = 0;
-  for (int i = 0; i < titleLen; i++) {
-    char ch[2] = {title[i], '\0'};
-    titleTotalW += MeasureTextEx(gameFont, ch, (float)titleFontSize, 1.0f).x;
-  }
-  float titleX = (SCREEN_WIDTH - titleTotalW) / 2.0f;
-  float cursorX = titleX;
-  for (int i = 0; i < titleLen; i++) {
-    char ch[2] = {title[i], '\0'};
-    float hue = (i / (float)titleLen) * 300.0f;
-    Color c = ColorFromHSV(hue, 0.6f, 0.9f);
-    Vector2 sz = MeasureTextEx(gameFont, ch, (float)titleFontSize, 1.0f);
-    DrawTextEx(gameFont, ch, (Vector2){cursorX, 150}, (float)titleFontSize,
-               1.0f, c);
-    cursorX += sz.x;
-  }
-
-  // Subtitle "Adventure Master" — white with black stroke, 50% of title size
-  const char *subtitle = "Adventure Master";
-  int subFontSize = SUBTITLE_FONT_SIZE;
-  int subW = (int)MeasureTextEx(gameFont, subtitle, (float)subFontSize, 1.0f).x;
-  int subX = (SCREEN_WIDTH - subW) / 2;
-  int subY = 150 + titleFontSize + 10;
-  // Black stroke (draw 4 times offset)
-  DrawTextEx(gameFont, subtitle, (Vector2){(float)(subX - 2), (float)subY},
-             (float)subFontSize, 1.0f, BLACK);
-  DrawTextEx(gameFont, subtitle, (Vector2){(float)(subX + 2), (float)subY},
-             (float)subFontSize, 1.0f, BLACK);
-  DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)(subY - 2)},
-             (float)subFontSize, 1.0f, BLACK);
-  DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)(subY + 2)},
-             (float)subFontSize, 1.0f, BLACK);
-  // White text on top
-  DrawTextEx(gameFont, subtitle, (Vector2){(float)subX, (float)subY},
-             (float)subFontSize, 1.0f, WHITE);
+  // Draw Logo (Scaled to fit the screen)
+  float targetW = SCREEN_WIDTH - 80.0f; // 40px margin on each side
+  float scale = targetW / (float)gameTextures.logo.width;
+  float targetH = (float)gameTextures.logo.height * scale;
+  float logoX = (SCREEN_WIDTH - targetW) / 2.0f;
+  float logoY = 50.0f; // Slightly higher to account for scaling
+  DrawTexturePro(gameTextures.logo,
+                 (Rectangle){0, 0, (float)gameTextures.logo.width, (float)gameTextures.logo.height},
+                 (Rectangle){logoX, logoY, targetW, targetH},
+                 (Vector2){0, 0}, 0.0f, WHITE);
 
   Vector2 mouse = GetMousePosition();
 
@@ -117,6 +87,90 @@ void RenderMenu(GameState *state) {
              (Vector2){(float)(BTN_X + (BTN_W - atw) / 2),
                        (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, advTextColor);
+
+  bool allCompleted = true;
+  for (int i = 0; i < TOTAL_LEVELS; i++) {
+      if (!state->levelCompleted[i]) {
+          allCompleted = false;
+          break;
+      }
+  }
+
+  if (allCompleted) {
+      const char *compText = "Completed";
+      int ctw = (int)MeasureTextEx(gameFont, compText, 14.0f, 1.0f).x;
+      DrawTextEx(gameFont, compText,
+                 (Vector2){(float)(BTN_X + (BTN_W - ctw) / 2),
+                           (float)(MENU_ADV_Y + BTN_H + 5)},
+                 14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
+  }
+
+  // --- Game Simulation Decoration ---
+  int s = 35; // Block size for mini grid
+  int startX = (SCREEN_WIDTH - (4 * s)) / 2;
+  int startY = 580; // Slightly lower so the hovering piece fits
+
+  // 1. Draw Grid Background
+  DrawRectangle(startX - 4, startY - 4, 4*s + 8, 4*s + 8, (Color){ 50,  50,  70, 255 });
+
+  // 2. Draw empty cells
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 4; c++) {
+      DrawRectangle(startX + c*s + 1, startY + r*s + 1, s - 2, s - 2, (Color){ 40,  40,  60, 255 });
+    }
+  }
+
+  // 3. Placed Piece: Blue L-shape (left side)
+  Color colBlue = PIECE_COLORS[4];
+  DrawBlockBeveled(startX + 0*s, startY + 1*s, s, colBlue); // Row 1, Col 0
+  DrawBlockBeveled(startX + 0*s, startY + 2*s, s, colBlue); // Row 2, Col 0
+  DrawBlockBeveled(startX + 0*s, startY + 3*s, s, colBlue); // Row 3, Col 0
+  DrawBlockBeveled(startX + 1*s, startY + 3*s, s, colBlue); // Row 3, Col 1
+
+  // 4. Placed Piece: Yellow 2x2 Square (bottom right)
+  Color colYellow = PIECE_COLORS[2];
+  DrawBlockBeveled(startX + 2*s, startY + 2*s, s, colYellow); // Row 2, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 2*s, s, colYellow); // Row 2, Col 3
+  DrawBlockBeveled(startX + 2*s, startY + 3*s, s, colYellow); // Row 3, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 3*s, s, colYellow); // Row 3, Col 3
+
+  // 5. Hovering Piece: Red 3x1 horizontal
+  Color colRed = PIECE_COLORS[1];
+  Color ghostRed = colRed;
+  ghostRed.a = 80;
+
+  // Ghost indicator on the grid
+  DrawBlockBeveled(startX + 1*s, startY + 0*s, s, ghostRed); // Row 0, Col 1
+  DrawBlockBeveled(startX + 2*s, startY + 0*s, s, ghostRed); // Row 0, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 0*s, s, ghostRed); // Row 0, Col 3
+
+  // Actual hovering piece (offset upwards to simulate dragging)
+  int hoverOffsetY = -18;
+  int hoverOffsetX = 6;
+  DrawBlockBeveled(startX + 1*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+  DrawBlockBeveled(startX + 2*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+  DrawBlockBeveled(startX + 3*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+
+  // --- Debug Buttons (Complete and Reset) ---
+  Rectangle dbgCompleteBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
+  Rectangle dbgResetBtn = {SCREEN_WIDTH - 110, SCREEN_HEIGHT - 40, 100, 30};
+
+  bool hoverComplete = CheckCollisionPointRec(mouse, dbgCompleteBtn);
+  bool hoverReset = CheckCollisionPointRec(mouse, dbgResetBtn);
+
+  // Complete Button (Green)
+  Color compColor = hoverComplete ? (Color){ 80, 220, 80, 255 } : (Color){ 40, 180, 40, 255 };
+  DrawRectangleRec(dbgCompleteBtn, compColor);
+  DrawRectangleLinesEx(dbgCompleteBtn, 1, DARKGRAY);
+  int compW = MeasureText("Complete", 12);
+  DrawText("Complete", dbgCompleteBtn.x + (dbgCompleteBtn.width - compW) / 2, dbgCompleteBtn.y + (dbgCompleteBtn.height - 12) / 2, 12, WHITE);
+
+  // Reset Button (Red)
+  Color resetColor = hoverReset ? (Color){ 240, 80, 80, 255 } : (Color){ 200, 40, 40, 255 };
+  DrawRectangleRec(dbgResetBtn, resetColor);
+  DrawRectangleLinesEx(dbgResetBtn, 1, DARKGRAY);
+  int resetW = MeasureText("Reset", 12);
+  DrawText("Reset", dbgResetBtn.x + (dbgResetBtn.width - resetW) / 2, dbgResetBtn.y + (dbgResetBtn.height - 12) / 2, 12, WHITE);
 }
 
 // ----- Settings screen (overlay with framed card) -----
