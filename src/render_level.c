@@ -80,24 +80,24 @@ void RenderPlayHUD(GameState *state)
         int crownSize = 28;
         DrawTexturePro(gameTextures.crown,
             (Rectangle){ 0, 0, (float)gameTextures.crown.width, (float)gameTextures.crown.height },
-            (Rectangle){ 10, 12, (float)crownSize, (float)crownSize },
+            (Rectangle){ 15, 12, (float)crownSize, (float)crownSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(gameFont, buf, (Vector2){10 + crownSize + 6, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+        DrawTextEx(gameFont, buf, (Vector2){15 + crownSize + 8, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
 
         sprintf(buf, "%d", state->score);
-        int scoreW = (int)MeasureTextEx(gameFont, buf, 36.0f, 1.0f).x;
-        DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 8}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        int scoreW = (int)MeasureTextEx(gameFont, buf, 40.0f, 1.0f).x;
+        DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
 
         if (state->combo > 1) {
             sprintf(buf, "COMBO x%d", state->combo);
             int cw = (int)MeasureTextEx(gameFont, buf, 18.0f, 1.0f).x;
-            DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 50}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
+            DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
         }
     } else {
         // Adventure mode: show only non-zero targets
-        int midY = 12;
+        int midY = 45;
         bool hasScore = (def->targetScore > 0);
         bool hasDiamond = (def->targetDiamonds > 0);
         bool hasEmerald = (def->targetEmeralds > 0);
@@ -108,16 +108,16 @@ void RenderPlayHUD(GameState *state)
             DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
         } else if (!hasScore && hasDiamond && !hasEmerald) {
             // Diamond only
-            int gemSize = 32;
+            int gemSize = 36;
             int remaining = def->targetDiamonds - state->level.collectedDiamonds;
             if (remaining < 0) remaining = 0;
             sprintf(buf, "%d", remaining);
-            DrawGemCounter(gameTextures.diamond, SCREEN_WIDTH / 2, midY,
-                           gemSize, buf, 22, gemSize + 4, COLOR_TEXT_PRIMARY);
+            DrawGemCounter(gameTextures.diamond, SCREEN_WIDTH / 2, midY - 6,
+                           gemSize, buf, 26, gemSize + 4, COLOR_TEXT_PRIMARY);
         } else {
             // Mixed: show all non-zero targets
-            int gemSize = 24;
-            int spacing = 80;
+            int gemSize = 32;
+            int spacing = 125; // increased spacing
             int centerX = SCREEN_WIDTH / 2;
 
             if (hasScore) {
@@ -129,16 +129,16 @@ void RenderPlayHUD(GameState *state)
                 int remaining = def->targetDiamonds - state->level.collectedDiamonds;
                 if (remaining < 0) remaining = 0;
                 sprintf(buf, "%d", remaining);
-                DrawGemCounter(gameTextures.diamond, centerX - spacing, midY + 2,
-                               gemSize, buf, 16, gemSize + 6, COLOR_TEXT_PRIMARY);
+                DrawGemCounter(gameTextures.diamond, centerX - spacing, midY - 4,
+                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
             }
 
             if (hasEmerald) {
                 int remaining = def->targetEmeralds - state->level.collectedEmeralds;
                 if (remaining < 0) remaining = 0;
                 sprintf(buf, "%d", remaining);
-                DrawGemCounter(gameTextures.emerald, centerX + spacing, midY + 2,
-                               gemSize, buf, 16, gemSize + 6, COLOR_TEXT_PRIMARY);
+                DrawGemCounter(gameTextures.emerald, centerX + spacing, midY - 4,
+                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
             }
         }
     }
