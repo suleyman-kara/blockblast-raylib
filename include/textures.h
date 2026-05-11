@@ -16,6 +16,7 @@ typedef struct {
     Texture2D musicalNote;
     Texture2D waveSound;
     Texture2D replay;
+    Texture2D completed;
 } GameTextures;
 
 // Global instance

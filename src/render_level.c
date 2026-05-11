@@ -183,9 +183,11 @@ void RenderLevelSelect(GameState *state)
                    28.0f, 1.0f, lvlColor);
 
         if (isCompleted) {
-            DrawTextEx(gameFont, "✓",
-                       (Vector2){(float)(bx + AMAP_BTN_SIZE - 22), (float)(by + 5)},
-                       18.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
+            int compSize = 28;
+            DrawTextureFull(gameTextures.completed,
+                bx + AMAP_BTN_SIZE - compSize + 6,
+                by - 6,
+                compSize, compSize);
         } else if (!isUnlocked) {
             int lockSize = 24;
             DrawTextureFull(gameTextures.lock,
