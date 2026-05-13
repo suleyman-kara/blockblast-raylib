@@ -124,8 +124,8 @@ void RenderGhost(GameState *state)
     if (!state->isDragging) return;
 
     PieceSlot *slot = &state->slots[state->dragSlotIndex];
-    Piece *piece = slot->piece;
-    if (!piece) return;
+    if (!SlotIsOccupied(slot)) return;
+    Piece *piece = &slot->piece;
 
     float pieceScreenX = state->dragPos.x - state->dragOffset.x;
     float pieceScreenY = state->dragPos.y - state->dragOffset.y;
@@ -160,9 +160,9 @@ void RenderPieceSlots(GameState *state)
         if (state->isDragging && state->dragSlotIndex == i) continue;
 
         PieceSlot *slot = &state->slots[i];
-        if (!slot->piece) continue;
+        if (!SlotIsOccupied(slot)) continue;
 
-        Piece *p = slot->piece;
+        Piece *p = &slot->piece;
         Color clr = PIECE_COLORS[p->colorIndex];
 
         for (int r = 0; r < p->height; r++) {
@@ -187,8 +187,8 @@ void RenderDraggedPiece(GameState *state)
     if (!state->isDragging) return;
 
     PieceSlot *slot = &state->slots[state->dragSlotIndex];
-    Piece *p = slot->piece;
-    if (!p) return;
+    if (!SlotIsOccupied(slot)) return;
+    Piece *p = &slot->piece;
 
     float baseX = state->dragPos.x - state->dragOffset.x;
     float baseY = state->dragPos.y - state->dragOffset.y;

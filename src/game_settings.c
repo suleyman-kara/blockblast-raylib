@@ -1,6 +1,8 @@
 #include "game.h"
 #include "sound.h"
 #include "defs.h"
+#include "ui_layout.h"
+#include <string.h>
 
 // Execute a setting action for the given index
 static void ExecuteSetting(GameState *state, int index)
@@ -27,49 +29,28 @@ static void ExecuteSetting(GameState *state, int index)
 void GameUpdateSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
-
-    // Calculate positions matching RenderSettings() in render_menus.c
-    int cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
-    int cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
-
-    // SFX & Music icon areas
-    int iconAreaY = cardY + 85;
-    int iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
-    int iconStartX = cardX + SETTINGS_CARD_PADDING_X;
-
-    int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
-    Rectangle sfxRect = { (float)sfxIconX, (float)iconAreaY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE };
-
-    int musicIconX = iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
-    Rectangle musicRect = { (float)musicIconX, (float)iconAreaY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE };
-
-    // Replay and Home buttons
-    int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
-    Rectangle replayRect = { (float)BTN_X, (float)replayBtnY, BTN_W, BTN_H };
-
-    int homeBtnY = replayBtnY + BTN_H + BTN_GAP;
-    Rectangle homeRect = { (float)BTN_X, (float)homeBtnY, BTN_W, BTN_H };
+    SettingsLayout layout = GetSettingsLayout(false);
 
     // Hover highlight for visual feedback
-    if (CheckCollisionPointRec(mouse, sfxRect)) {
+    if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
         state->selectedSetting = SETTING_SFX;
-    } else if (CheckCollisionPointRec(mouse, musicRect)) {
+    } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
         state->selectedSetting = SETTING_MUSIC;
-    } else if (CheckCollisionPointRec(mouse, replayRect)) {
+    } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
         state->selectedSetting = SETTING_RESTART;
-    } else if (CheckCollisionPointRec(mouse, homeRect)) {
+    } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
         state->selectedSetting = SETTING_QUIT;
     }
 
     // Click handling
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (CheckCollisionPointRec(mouse, sfxRect)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
             ExecuteSetting(state, SETTING_SFX);
-        } else if (CheckCollisionPointRec(mouse, musicRect)) {
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
             ExecuteSetting(state, SETTING_MUSIC);
-        } else if (CheckCollisionPointRec(mouse, replayRect)) {
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
             ExecuteSetting(state, SETTING_RESTART);
-        } else if (CheckCollisionPointRec(mouse, homeRect)) {
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
             ExecuteSetting(state, SETTING_QUIT);
         }
     }
@@ -78,5 +59,48 @@ void GameUpdateSettings(GameState *state)
     if (IsKeyPressed(KEY_ESCAPE)) {
         SoundPlayMenuClick(&state->sound);
         state->currentScreen = state->prevScreen;
+    }
+}
+
+// Menu settings: SFX, Music, Change Nickname, Home (no Replay)
+void GameUpdateMenuSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    SettingsLayout layout = GetSettingsLayout(true);
+
+    // Click handling
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleSfx(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleMusic(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+            SoundPlayMenuClick(&state->sound);
+            strcpy(state->nicknameInput, state->nickname);
+            state->nicknameCursorPos = strlen(state->nicknameInput);
+            state->prevScreen = SCREEN_MENU_SETTINGS;
+            state->currentScreen = SCREEN_NICKNAME;
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+            SoundPlayMenuClick(&state->sound);
+            // Reset level progress
+            for (int i = 0; i < TOTAL_LEVELS; i++) {
+                state->levelCompleted[i] = false;
+            }
+            LevelSaveProgress(state->levelCompleted);
+            // Reset classic mode high score
+            state->highScore = 0;
+            ScoreSaveHigh(state->highScore);
+        } else if (CheckCollisionPointRec(mouse, layout.thirdButton)) {
+            SoundPlayMenuClick(&state->sound);
+            state->currentScreen = SCREEN_MENU;
+        }
+    }
+
+    // Back to menu with ESC
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        SoundPlayMenuClick(&state->sound);
+        state->currentScreen = SCREEN_MENU;
     }
 }

@@ -1,6 +1,8 @@
 #include "game.h"
 #include "level.h"
 #include "sound.h"
+#include <string.h>
+#include <ctype.h>
 
 // Helper: get the rectangle for a level button on the level select screen
 static Rectangle GetLevelButtonRect(int levelIndex)
@@ -34,38 +36,37 @@ void GameUpdate(GameState *state)
         case SCREEN_MENU: {
             Rectangle stdBtn = { BTN_X, MENU_STD_Y, BTN_W, BTN_H };
             Rectangle advBtn = { BTN_X, MENU_ADV_Y, BTN_W, BTN_H };
+            Rectangle quitBtn = { BTN_X, MENU_QUIT_Y, BTN_W, BTN_H };
+            Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+            Rectangle sbBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, stdBtn)) {
                     SoundPlayMenuClick(&state->sound);
                     state->selectedLevel = 0;
-                    state->currentScreen = SCREEN_PLAY;
-                    GameReset(state);
+                    // Check if nickname is set
+                    if (strlen(state->nickname) == 0) {
+                        // No nickname yet, ask for one
+                        strcpy(state->nicknameInput, "");
+                        state->nicknameCursorPos = 0;
+                        state->prevScreen = SCREEN_MENU;
+                        state->currentScreen = SCREEN_NICKNAME;
+                    } else {
+                        state->currentScreen = SCREEN_PLAY;
+                        GameReset(state);
+                    }
                 } else if (CheckCollisionPointRec(mouse, advBtn)) {
                     SoundPlayMenuClick(&state->sound);
                     state->currentScreen = SCREEN_LEVEL_SELECT;
-                }
-                
-                // Debug buttons
-                Rectangle dbgCompleteBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
-                Rectangle dbgResetBtn = {SCREEN_WIDTH - 110, SCREEN_HEIGHT - 40, 100, 30};
-                
-                if (CheckCollisionPointRec(mouse, dbgCompleteBtn)) {
+                } else if (CheckCollisionPointRec(mouse, quitBtn)) {
                     SoundPlayMenuClick(&state->sound);
-                    for (int i = 0; i < TOTAL_LEVELS; i++) {
-                        state->levelCompleted[i] = true;
-                    }
-                    LevelSaveProgress(state->levelCompleted);
-                } else if (CheckCollisionPointRec(mouse, dbgResetBtn)) {
+                    CloseWindow();
+                } else if (CheckCollisionPointRec(mouse, gearRect)) {
                     SoundPlayMenuClick(&state->sound);
-                    for (int i = 0; i < TOTAL_LEVELS; i++) {
-                        state->levelCompleted[i] = false;
-                    }
-                    LevelSaveProgress(state->levelCompleted);
-                    
-                    // Reset classic mode high score
-                    state->highScore = 0;
-                    ScoreSaveHigh(state->highScore);
+                    state->currentScreen = SCREEN_MENU_SETTINGS;
+                } else if (CheckCollisionPointRec(mouse, sbBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_SCOREBOARD;
                 }
             }
             break;
@@ -104,10 +105,17 @@ void GameUpdate(GameState *state)
                 state->level.levelFailed = true;
 
                 if (state->selectedLevel == 0) {
-                    // Classic mode: save high score
+                    // Classic mode: save high score and add to scoreboard
                     if (state->score > state->highScore)
                         state->highScore = state->score;
                     ScoreSaveHigh(state->highScore);
+
+                    // Add to scoreboard if nickname is set
+                    if (strlen(state->nickname) > 0) {
+                        ScoreboardAddEntry(state->scoreboardScores, state->scoreboardNames,
+                                           &state->scoreboardCount, state->nickname, state->score);
+                    }
+
                     SoundPlayLose(&state->sound);
                 }
 
@@ -206,5 +214,107 @@ void GameUpdate(GameState *state)
         case SCREEN_SETTINGS:
             GameUpdateSettings(state);
             break;
+
+        case SCREEN_MENU_SETTINGS:
+            GameUpdateMenuSettings(state);
+            break;
+
+        case SCREEN_NICKNAME: {
+            // Handle keyboard input for nickname
+            int key = GetCharPressed();
+            while (key > 0) {
+                // Only allow printable ASCII characters
+                if (key >= 32 && key <= 126) {
+                    int len = strlen(state->nicknameInput);
+                    if (len < 30) {
+                        state->nicknameInput[len] = (char)key;
+                        state->nicknameInput[len + 1] = '\0';
+                    }
+                }
+                key = GetCharPressed();
+            }
+
+            // Backspace
+            if (IsKeyPressed(KEY_BACKSPACE)) {
+                int len = strlen(state->nicknameInput);
+                if (len > 0) {
+                    state->nicknameInput[len - 1] = '\0';
+                }
+            }
+
+            // Confirm with Enter
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+                if (strlen(state->nicknameInput) > 0) {
+                    SoundPlayMenuClick(&state->sound);
+                    strncpy(state->nickname, state->nicknameInput, 31);
+                    state->nickname[31] = '\0';
+                    NicknameSave(state->nickname);
+                    if (state->prevScreen == SCREEN_MENU && state->selectedLevel == 0) {
+                        state->currentScreen = SCREEN_PLAY;
+                        GameReset(state);
+                    } else {
+                        state->currentScreen = state->prevScreen;
+                    }
+                }
+            }
+
+            // Confirm with mouse click on button
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                int inputH = 50;
+                int cardH = 300;
+                int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+                int inputY = cardY + 100;
+                Rectangle confirmBtn = { BTN_X, inputY + inputH + 30, BTN_W, BTN_H };
+
+                if (CheckCollisionPointRec(mouse, confirmBtn) && strlen(state->nicknameInput) > 0) {
+                    SoundPlayMenuClick(&state->sound);
+                    strncpy(state->nickname, state->nicknameInput, 31);
+                    state->nickname[31] = '\0';
+                    NicknameSave(state->nickname);
+                    if (state->prevScreen == SCREEN_MENU && state->selectedLevel == 0) {
+                        state->currentScreen = SCREEN_PLAY;
+                        GameReset(state);
+                    } else {
+                        state->currentScreen = state->prevScreen;
+                    }
+                }
+            }
+
+            // ESC to go back to previous screen
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                SoundPlayMenuClick(&state->sound);
+                state->currentScreen = state->prevScreen;
+            }
+            break;
+        }
+
+        case SCREEN_SCOREBOARD: {
+            int cardH = 480;
+            int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+            int btnY = cardY + cardH - 120;
+            Rectangle resetSBBtn = { BTN_X, btnY, BTN_W, BTN_H };
+            Rectangle backBtn = { BTN_X, btnY + BTN_H + BTN_GAP, BTN_W, BTN_H };
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (CheckCollisionPointRec(mouse, resetSBBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->scoreboardCount = 0;
+                    for (int i = 0; i < 10; i++) {
+                        state->scoreboardScores[i] = 0;
+                        state->scoreboardNames[i][0] = '\0';
+                    }
+                    ScoreboardSave(state->scoreboardScores, state->scoreboardNames, 0);
+                } else if (CheckCollisionPointRec(mouse, backBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_MENU;
+                }
+            }
+
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                SoundPlayMenuClick(&state->sound);
+                state->currentScreen = SCREEN_MENU;
+            }
+            break;
+        }
     }
 }

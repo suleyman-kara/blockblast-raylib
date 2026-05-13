@@ -31,6 +31,10 @@ typedef struct {
 // Get the level definitions array (index 0 = classic, 1-10 = adventure)
 const LevelDef *LevelGetDefs(void);
 
+// Load editable level definitions from data/levels.txt.
+// Missing or invalid lines keep the built-in defaults.
+void LevelLoadDefinitions(void);
+
 // Initialize level state + board for a given level
 void LevelInit(LevelState *state, int levelIndex, Board *board);
 

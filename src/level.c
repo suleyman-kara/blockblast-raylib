@@ -1,14 +1,17 @@
 #include "level.h"
 #include "board.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#define LEVELS_FILE "data/levels.txt"
+#define PROGRESS_FILE "data/progress.txt"
 
 // ─── Level Definitions ────────────────────────────────────────────────────────
 // Index 0 = classic mode (infinite, no targets)
 // Index 1-10 = adventure levels
-static const LevelDef levelDefs[TOTAL_LEVELS + 1] = {
+static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
     // Classic mode — no targets, no prefill
     { .level = 0,  .targetScore = 0, .targetDiamonds = 0, .targetEmeralds = 0, .prefillCount = 0 },
 
@@ -25,9 +28,76 @@ static const LevelDef levelDefs[TOTAL_LEVELS + 1] = {
     { .level = 10, .targetScore = 1500, .targetDiamonds = 6, .targetEmeralds = 5, .prefillCount = 8 },
 };
 
+static LevelDef levelDefs[TOTAL_LEVELS + 1];
+
 const LevelDef *LevelGetDefs(void)
 {
     return levelDefs;
+}
+
+static void LevelUseDefaults(void)
+{
+    memcpy(levelDefs, defaultLevelDefs, sizeof(levelDefs));
+}
+
+static void LevelWriteExampleFile(void)
+{
+    FILE *f = fopen(LEVELS_FILE, "w");
+    if (!f) return;
+
+    fprintf(f, "# level targetScore targetDiamonds targetEmeralds prefillCount\n");
+    fprintf(f, "# 0 means this target is disabled.\n");
+    for (int i = 1; i <= TOTAL_LEVELS; i++) {
+        const LevelDef *def = &levelDefs[i];
+        fprintf(f, "%d %d %d %d %d\n",
+                def->level,
+                def->targetScore,
+                def->targetDiamonds,
+                def->targetEmeralds,
+                def->prefillCount);
+    }
+
+    fclose(f);
+}
+
+void LevelLoadDefinitions(void)
+{
+    char line[160];
+    FILE *f;
+
+    LevelUseDefaults();
+
+    f = fopen(LEVELS_FILE, "r");
+    if (!f) {
+        LevelWriteExampleFile();
+        return;
+    }
+
+    while (fgets(line, sizeof(line), f)) {
+        LevelDef def;
+        int readCount;
+
+        if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+            continue;
+
+        readCount = sscanf(line, "%d %d %d %d %d",
+                           &def.level,
+                           &def.targetScore,
+                           &def.targetDiamonds,
+                           &def.targetEmeralds,
+                           &def.prefillCount);
+        if (readCount != 5)
+            continue;
+        if (def.level < 1 || def.level > TOTAL_LEVELS)
+            continue;
+        if (def.targetScore < 0 || def.targetDiamonds < 0 ||
+            def.targetEmeralds < 0 || def.prefillCount < 0)
+            continue;
+
+        levelDefs[def.level] = def;
+    }
+
+    fclose(f);
 }
 
 // ─── Level Init ───────────────────────────────────────────────────────────────
@@ -77,18 +147,36 @@ void LevelLoadProgress(bool completed[TOTAL_LEVELS])
     // Default: nothing completed
     memset(completed, 0, sizeof(bool) * TOTAL_LEVELS);
 
-    FILE *f = fopen("data/level_progress.dat", "rb");
+    FILE *f = fopen(PROGRESS_FILE, "r");
     if (f) {
-        fread(completed, sizeof(bool), TOTAL_LEVELS, f);
+        char line[80];
+        while (fgets(line, sizeof(line), f)) {
+            int level = 0;
+            int done = 0;
+
+            if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+                continue;
+
+            if (sscanf(line, "%d %d", &level, &done) == 2) {
+                if (level >= 1 && level <= TOTAL_LEVELS)
+                    completed[level - 1] = (done != 0);
+            } else if (sscanf(line, "%d", &level) == 1) {
+                if (level >= 1 && level <= TOTAL_LEVELS)
+                    completed[level - 1] = true;
+            }
+        }
         fclose(f);
     }
 }
 
 void LevelSaveProgress(bool completed[TOTAL_LEVELS])
 {
-    FILE *f = fopen("data/level_progress.dat", "wb");
+    FILE *f = fopen(PROGRESS_FILE, "w");
     if (f) {
-        fwrite(completed, sizeof(bool), TOTAL_LEVELS, f);
+        fprintf(f, "# level completed\n");
+        for (int i = 0; i < TOTAL_LEVELS; i++) {
+            fprintf(f, "%d %d\n", i + 1, completed[i] ? 1 : 0);
+        }
         fclose(f);
     }
 }

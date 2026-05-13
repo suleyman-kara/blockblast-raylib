@@ -1,6 +1,6 @@
 #include "piece.h"
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <time.h>
 
 // ---- All piece shape definitions ----
@@ -50,15 +50,15 @@ const PieceDef *GetPieceDefinitions(void)
     return PIECE_DEFS;
 }
 
-Piece *PieceCreate(float diamondChance, float emeraldChance)
+void PieceGenerate(Piece *p, float diamondChance, float emeraldChance)
 {
     if (!seeded) {
         srand((unsigned int)time(NULL));
         seeded = true;
     }
 
-    Piece *p = (Piece *)malloc(sizeof(Piece));
-    if (!p) return NULL;
+    if (!p) return;
+    memset(p, 0, sizeof(Piece));
 
     int defIndex = rand() % PIECE_DEF_COUNT;
     const PieceDef *def = &PIECE_DEFS[defIndex];
@@ -92,15 +92,18 @@ Piece *PieceCreate(float diamondChance, float emeraldChance)
         }
     }
 
-    return p;
 }
 
-void PieceFree(Piece **piece)
+void SlotClear(PieceSlot *slot)
 {
-    if (piece && *piece) {
-        free(*piece);
-        *piece = NULL;
-    }
+    if (!slot) return;
+    memset(&slot->piece, 0, sizeof(Piece));
+    slot->occupied = false;
+}
+
+bool SlotIsOccupied(const PieceSlot *slot)
+{
+    return slot && slot->occupied;
 }
 
 void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
@@ -110,20 +113,20 @@ void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
     float sectionWidth = screenWidth / 3.0f;
 
     for (int i = 0; i < 3; i++) {
-        slots[i].piece = PieceCreate(diamondChance, emeraldChance);
+        PieceGenerate(&slots[i].piece, diamondChance, emeraldChance);
+        slots[i].occupied = true;
+
         // Center each piece in its section
-        if (slots[i].piece) {
-            float piecePixelW = slots[i].piece->width * (float)PANEL_PIECE_SCALE;
-            slots[i].posX = sectionWidth * i + (sectionWidth - piecePixelW) / 2.0f;
-            slots[i].posY = panelY + 20.0f;
-        }
+        float piecePixelW = slots[i].piece.width * (float)PANEL_PIECE_SCALE;
+        slots[i].posX = sectionWidth * i + (sectionWidth - piecePixelW) / 2.0f;
+        slots[i].posY = panelY + 20.0f;
     }
 }
 
 bool AllSlotsEmpty(PieceSlot slots[3])
 {
     for (int i = 0; i < 3; i++) {
-        if (slots[i].piece != NULL) return false;
+        if (SlotIsOccupied(&slots[i])) return false;
     }
     return true;
 }

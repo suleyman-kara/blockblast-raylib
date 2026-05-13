@@ -37,6 +37,15 @@ void RenderFrame(GameState *state)
         case SCREEN_RESULT:
             RenderResult(state);
             break;
+        case SCREEN_NICKNAME:
+            RenderNickname(state);
+            break;
+        case SCREEN_SCOREBOARD:
+            RenderScoreboard(state);
+            break;
+        case SCREEN_MENU_SETTINGS:
+            RenderMenuSettings(state);
+            break;
     }
 
     EndDrawing();

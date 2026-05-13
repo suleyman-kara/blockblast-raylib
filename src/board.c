@@ -103,9 +103,9 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
 bool BoardHasValidMove(Board *board, PieceSlot slots[3])
 {
     for (int s = 0; s < 3; s++) {
-        if (slots[s].piece == NULL) continue;
+        if (!SlotIsOccupied(&slots[s])) continue;
 
-        Piece *p = slots[s].piece;
+        Piece *p = &slots[s].piece;
         for (int r = 0; r <= GRID_SIZE - p->height; r++) {
             for (int c = 0; c <= GRID_SIZE - p->width; c++) {
                 if (BoardCanPlace(board, p, r, c))

@@ -48,10 +48,6 @@ int main(void)
         RenderFrame(&state);
     }
 
-    // Cleanup: free any remaining pieces
-    for (int i = 0; i < 3; i++)
-        PieceFree(&state.slots[i].piece);
-
     // Cleanup sound system
     SoundClose(&state.sound);
 

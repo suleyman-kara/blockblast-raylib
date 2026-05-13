@@ -22,7 +22,10 @@ typedef enum {
     SCREEN_PLAY,          // unified classic + adventure
     SCREEN_LEVEL_SELECT,
     SCREEN_RESULT,        // adaptive win/lose
-    SCREEN_SETTINGS
+    SCREEN_SETTINGS,
+    SCREEN_NICKNAME,      // nickname input
+    SCREEN_SCOREBOARD,    // scoreboard display
+    SCREEN_MENU_SETTINGS  // settings from main menu (no replay, has change nickname)
 } Screen;
 
 // Central game state — passed by pointer to all modules
@@ -57,6 +60,16 @@ typedef struct {
     bool levelCompleted[TOTAL_LEVELS]; // which adventure levels are completed (persisted)
 
     Screen prevScreen;  // screen before settings overlay
+
+    // Nickname
+    char nickname[32];
+    char nicknameInput[32];  // temporary buffer for nickname entry
+    int nicknameCursorPos;
+
+    // Scoreboard
+    int scoreboardScores[10];
+    char scoreboardNames[10][32];
+    int scoreboardCount;
 } GameState;
 
 // Initialize a new game state
@@ -70,9 +83,19 @@ void GameReset(GameState *state);
 
 // Update settings screen logic (keyboard/mouse navigation)
 void GameUpdateSettings(GameState *state);
+void GameUpdateMenuSettings(GameState *state);
 
 // High score save/load (moved from deleted score module)
 int ScoreLoadHigh(void);
 void ScoreSaveHigh(int score);
+
+// Nickname save/load
+void NicknameLoad(char *out, int maxLen);
+void NicknameSave(const char *name);
+
+// Scoreboard save/load
+void ScoreboardLoad(int scores[10], char names[10][32], int *count);
+void ScoreboardSave(int scores[10], char names[10][32], int count);
+void ScoreboardAddEntry(int scores[10], char names[10][32], int *count, const char *name, int score);
 
 #endif // GAME_H

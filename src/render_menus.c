@@ -1,6 +1,7 @@
 #include "defs.h"
 #include "render.h"
 #include "textures.h"
+#include "ui_layout.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +34,44 @@
 #define COLOR_BTN_ADV_TEXT ((Color){170, 150, 200, 255})
 #define COLOR_BTN_ADV_TEXT_HOVER ((Color){230, 210, 255, 255})
 
+// ─── Menu Buttons — Quit colors
+// ──────────────────────────────
+#define COLOR_BTN_QUIT_BG ((Color){140, 40, 40, 255})
+#define COLOR_BTN_QUIT_BG_HOVER ((Color){180, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER ((Color){160, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER_HOVER ((Color){220, 80, 80, 255})
+#define COLOR_BTN_QUIT_TEXT ((Color){220, 180, 180, 255})
+#define COLOR_BTN_QUIT_TEXT_HOVER ((Color){255, 220, 220, 255})
+
+// ─── Helper: draw text centered X ────────────────────────────────────────────
+static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
+{
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
+               (float)fontSize, 1.0f, color);
+}
+
+// ─── Helper: draw styled button ──────────────────────────────────────────────
+static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
+                              Color bg, Color bgHover,
+                              Color border, Color borderHover,
+                              Color textColor, Color textHover,
+                              bool hover)
+{
+    Color cBg  = hover ? bgHover  : bg;
+    Color cBrd = hover ? borderHover : border;
+    Color cTxt = hover ? textHover : textColor;
+
+    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
+    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
+
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text,
+               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
+                         btn.y + (btn.height - (float)fontSize) / 2.0f},
+               (float)fontSize, 1.0f, cTxt);
+}
+
 // ----- Menu screen -----
 void RenderMenu(GameState *state) {
   // Draw Logo (Scaled to fit the screen)
@@ -47,6 +86,14 @@ void RenderMenu(GameState *state) {
                  (Vector2){0, 0}, 0.0f, WHITE);
 
   Vector2 mouse = GetMousePosition();
+
+  // --- Nickname (top-left) ---
+  if (strlen(state->nickname) > 0) {
+      DrawTextEx(gameFont, state->nickname, (Vector2){10, 10}, 14.0f, 1.0f, COLOR_TEXT_MUTED);
+  }
+
+  // --- Gear Icon (top-right) for menu settings ---
+  RenderGearIcon();
 
   // --- Standard Mode Button ---
   Rectangle stdBtn = {BTN_X, MENU_STD_Y, BTN_W, BTN_H};
@@ -105,10 +152,28 @@ void RenderMenu(GameState *state) {
                  14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
   }
 
+  // --- Quit Button ---
+  Rectangle quitBtn = {BTN_X, MENU_QUIT_Y, BTN_W, BTN_H};
+  bool quitHover = CheckCollisionPointRec(mouse, quitBtn);
+  DrawButtonStyled(quitBtn, "Quit", 22,
+                   COLOR_BTN_QUIT_BG, COLOR_BTN_QUIT_BG_HOVER,
+                   COLOR_BTN_QUIT_BORDER, COLOR_BTN_QUIT_BORDER_HOVER,
+                   COLOR_BTN_QUIT_TEXT, COLOR_BTN_QUIT_TEXT_HOVER,
+                   quitHover);
+
+  // --- Scoreboard Button (bottom-left) ---
+  Rectangle sbBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
+  bool sbHover = CheckCollisionPointRec(mouse, sbBtn);
+  Color sbBg = sbHover ? (Color){60, 90, 140, 255} : (Color){40, 60, 100, 255};
+  DrawRectangleRec(sbBtn, sbBg);
+  DrawRectangleLinesEx(sbBtn, 1, (Color){60, 80, 130, 255});
+  int sbW = MeasureText("Scoreboard", 12);
+  DrawText("Scoreboard", sbBtn.x + (sbBtn.width - sbW) / 2, sbBtn.y + (sbBtn.height - 12) / 2, 12, WHITE);
+
   // --- Game Simulation Decoration ---
   int s = 35; // Block size for mini grid
   int startX = (SCREEN_WIDTH - (4 * s)) / 2;
-  int startY = 580; // Slightly lower so the hovering piece fits
+  int startY = 560;
 
   // 1. Draw Grid Background
   DrawRectangle(startX - 4, startY - 4, 4*s + 8, 4*s + 8, (Color){ 50,  50,  70, 255 });
@@ -150,37 +215,18 @@ void RenderMenu(GameState *state) {
   DrawBlockBeveled(startX + 1*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
   DrawBlockBeveled(startX + 2*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
   DrawBlockBeveled(startX + 3*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
-
-  // --- Debug Buttons (Complete and Reset) ---
-  Rectangle dbgCompleteBtn = {10, SCREEN_HEIGHT - 40, 100, 30};
-  Rectangle dbgResetBtn = {SCREEN_WIDTH - 110, SCREEN_HEIGHT - 40, 100, 30};
-
-  bool hoverComplete = CheckCollisionPointRec(mouse, dbgCompleteBtn);
-  bool hoverReset = CheckCollisionPointRec(mouse, dbgResetBtn);
-
-  // Complete Button (Green)
-  Color compColor = hoverComplete ? (Color){ 80, 220, 80, 255 } : (Color){ 40, 180, 40, 255 };
-  DrawRectangleRec(dbgCompleteBtn, compColor);
-  DrawRectangleLinesEx(dbgCompleteBtn, 1, DARKGRAY);
-  int compW = MeasureText("Complete", 12);
-  DrawText("Complete", dbgCompleteBtn.x + (dbgCompleteBtn.width - compW) / 2, dbgCompleteBtn.y + (dbgCompleteBtn.height - 12) / 2, 12, WHITE);
-
-  // Reset Button (Red)
-  Color resetColor = hoverReset ? (Color){ 240, 80, 80, 255 } : (Color){ 200, 40, 40, 255 };
-  DrawRectangleRec(dbgResetBtn, resetColor);
-  DrawRectangleLinesEx(dbgResetBtn, 1, DARKGRAY);
-  int resetW = MeasureText("Reset", 12);
-  DrawText("Reset", dbgResetBtn.x + (dbgResetBtn.width - resetW) / 2, dbgResetBtn.y + (dbgResetBtn.height - 12) / 2, 12, WHITE);
 }
 
-// ----- Settings screen (overlay with framed card) -----
+// ----- Settings screen (overlay with framed card) - for in-game settings -----
 void RenderSettings(GameState *state) {
+  SettingsLayout layout = GetSettingsLayout(false);
+
   // Semi-transparent dark overlay
   DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
 
   // Settings card frame
-  int cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
-  int cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
+  int cardX = layout.cardX;
+  int cardY = layout.cardY;
 
   // Card background
   DrawRectangleRounded(
@@ -207,12 +253,9 @@ void RenderSettings(GameState *state) {
   Vector2 mouse = GetMousePosition();
 
   // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
-  int iconAreaY = cardY + 85;
-  int iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
-  int iconStartX = cardX + SETTINGS_CARD_PADDING_X;
-
   // SFX icon
-  int sfxIconX = iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+  int sfxIconX = (int)layout.sfxIcon.x;
+  int iconAreaY = (int)layout.sfxIcon.y;
   DrawTexturePro(gameTextures.waveSound,
                  (Rectangle){0, 0, (float)gameTextures.waveSound.width,
                              (float)gameTextures.waveSound.height},
@@ -238,8 +281,7 @@ void RenderSettings(GameState *state) {
              14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
   // Music icon
-  int musicIconX =
-      iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2;
+  int musicIconX = (int)layout.musicIcon.x;
   DrawTexturePro(gameTextures.musicalNote,
                  (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
                              (float)gameTextures.musicalNote.height},
@@ -267,8 +309,8 @@ void RenderSettings(GameState *state) {
       14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
   // ─── Replay Button ────────────────────────────────────────────────────────
-  int replayBtnY = iconAreaY + SETTINGS_ICON_SIZE + 40;
-  Rectangle replayBtn = {(float)BTN_X, (float)replayBtnY, BTN_W, BTN_H};
+  int replayBtnY = (int)layout.firstButton.y;
+  Rectangle replayBtn = layout.firstButton;
   bool replayHover = CheckCollisionPointRec(mouse, replayBtn);
 
   Color replayBg =
@@ -300,8 +342,8 @@ void RenderSettings(GameState *state) {
       18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
   // ─── Home Button ──────────────────────────────────────────────────────────
-  int homeBtnY = replayBtnY + BTN_H + BTN_GAP;
-  Rectangle homeBtn = {(float)BTN_X, (float)homeBtnY, BTN_W, BTN_H};
+  int homeBtnY = (int)layout.secondButton.y;
+  Rectangle homeBtn = layout.secondButton;
   bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
 
   Color homeBg =
@@ -337,4 +379,240 @@ void RenderSettings(GameState *state) {
              (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
                        (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
              14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+}
+
+// ----- Menu Settings screen (from main menu gear icon) -----
+void RenderMenuSettings(GameState *state)
+{
+    SettingsLayout layout = GetSettingsLayout(true);
+
+    // Semi-transparent dark overlay
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+
+    // Settings card frame
+    int cardX = layout.cardX;
+    int cardY = layout.cardY;
+
+    // Card background
+    DrawRectangleRounded(
+        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+        0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines(
+        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+        0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+
+    // Title
+    const char *title = "SETTINGS";
+    int tw = (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
+    DrawTextEx(gameFont, title,
+               (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
+               (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
+
+    // Separator line
+    DrawLineEx((Vector2){cardX + 40, cardY + 65},
+               (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65}, 1.5f,
+               COLOR_SETTINGS_SEPARATOR);
+
+    Vector2 mouse = GetMousePosition();
+
+    // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
+    // SFX icon
+    int sfxIconX = (int)layout.sfxIcon.x;
+    int iconAreaY = (int)layout.sfxIcon.y;
+    DrawTexturePro(gameTextures.waveSound,
+                   (Rectangle){0, 0, (float)gameTextures.waveSound.width,
+                               (float)gameTextures.waveSound.height},
+                   (Rectangle){(float)sfxIconX, (float)iconAreaY,
+                               (float)SETTINGS_ICON_SIZE,
+                               (float)SETTINGS_ICON_SIZE},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+
+    if (!state->sound.sfxEnabled) {
+        int cx = sfxIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    const char *sfxLabel = "SFX";
+    int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, sfxLabel,
+               (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+    // Music icon
+    int musicIconX = (int)layout.musicIcon.x;
+    DrawTexturePro(gameTextures.musicalNote,
+                   (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
+                               (float)gameTextures.musicalNote.height},
+                   (Rectangle){(float)musicIconX, (float)iconAreaY,
+                               (float)SETTINGS_ICON_SIZE,
+                               (float)SETTINGS_ICON_SIZE},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+
+    if (!state->sound.musicEnabled) {
+        int cx = musicIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    const char *musicLabel = "Music";
+    int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, musicLabel,
+               (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+    // ─── Change Nickname Button ──────────────────────────────────────────────
+    Rectangle nickBtn = layout.firstButton;
+    bool nickHover = CheckCollisionPointRec(mouse, nickBtn);
+    DrawButtonStyled(nickBtn, "Change Nickname", 18,
+                     (Color){55, 40, 85, 255}, (Color){80, 50, 120, 255},
+                     (Color){100, 70, 150, 255}, (Color){180, 120, 255, 255},
+                     (Color){170, 150, 200, 255}, (Color){255, 255, 255, 255},
+                     nickHover);
+
+    // ─── Reset Button (progress + high score, no scoreboard) ─────────────────
+    Rectangle resetBtn = layout.secondButton;
+    bool resetHover = CheckCollisionPointRec(mouse, resetBtn);
+    DrawButtonStyled(resetBtn, "Reset Progress", 18,
+                     (Color){140, 40, 40, 255}, (Color){180, 60, 60, 255},
+                     (Color){160, 60, 60, 255}, (Color){220, 80, 80, 255},
+                     (Color){220, 180, 180, 255}, (Color){255, 220, 220, 255},
+                     resetHover);
+
+    // ─── Home Button ─────────────────────────────────────────────────────────
+    Rectangle homeBtn = layout.thirdButton;
+    bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
+    DrawButtonStyled(homeBtn, "Home", 18,
+                     (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+                     (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+                     (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+                     homeHover);
+
+    // Footer hint
+    const char *hint = "ESC to go back";
+    int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, hint,
+               (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
+                         (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
+               14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+}
+
+// ----- Nickname Input Screen -----
+void RenderNickname(GameState *state)
+{
+    // Dark overlay
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
+
+    // Card
+    int cardW = 380, cardH = 300;
+    int cardX = (SCREEN_WIDTH - cardW) / 2;
+    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
+
+    DrawTextCenteredX("Enter Your Nickname", cardY + 30, 28, WHITE);
+
+    // Input box
+    int inputW = 280, inputH = 50;
+    int inputX = (SCREEN_WIDTH - inputW) / 2;
+    int inputY = cardY + 100;
+    Rectangle inputRect = {inputX, inputY, inputW, inputH};
+    DrawRectangleRounded(inputRect, 0.1f, 6, (Color){30, 35, 60, 255});
+    DrawRectangleRoundedLines(inputRect, 0.1f, 6, (Color){80, 90, 140, 255});
+
+    // Draw nickname text with blinking cursor
+    char displayBuf[64];
+    sprintf(displayBuf, "%s%c", state->nicknameInput, (GetTime() * 2.0f < 1.0f) ? '_' : ' ');
+    int textW = (int)MeasureTextEx(gameFont, displayBuf, 24.0f, 1.0f).x;
+    DrawTextEx(gameFont, displayBuf,
+               (Vector2){(float)(inputX + (inputW - textW) / 2), (float)(inputY + (inputH - 24) / 2)},
+               24.0f, 1.0f, COLOR_TEXT_PRIMARY);
+
+    // Confirm button
+    Rectangle confirmBtn = {BTN_X, inputY + inputH + 30, BTN_W, BTN_H};
+    bool confirmHover = CheckCollisionPointRec(GetMousePosition(), confirmBtn);
+    bool hasText = (strlen(state->nicknameInput) > 0);
+    DrawButtonStyled(confirmBtn, "Confirm", 20,
+                     hasText ? (Color){35, 70, 45, 255} : (Color){40, 40, 60, 255},
+                     hasText ? (Color){50, 100, 60, 255} : (Color){60, 60, 80, 255},
+                     hasText ? (Color){60, 140, 80, 255} : (Color){80, 80, 100, 255},
+                     hasText ? (Color){100, 220, 120, 255} : (Color){150, 150, 180, 255},
+                     hasText ? (Color){150, 220, 170, 255} : (Color){180, 180, 210, 255},
+                     hasText ? (Color){255, 255, 255, 255} : (Color){255, 255, 255, 255},
+                     confirmHover && hasText);
+
+    DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 30, 14, (Color){100, 100, 140, 200});
+}
+
+// ----- Scoreboard Screen -----
+void RenderScoreboard(GameState *state)
+{
+    // Dark overlay
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
+
+    // Card
+    int cardW = 380, cardH = 480;
+    int cardX = (SCREEN_WIDTH - cardW) / 2;
+    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
+
+    DrawTextCenteredX("SCOREBOARD", cardY + 25, 30, WHITE);
+
+    // Separator
+    DrawLineEx((Vector2){cardX + 40, cardY + 60},
+               (Vector2){cardX + cardW - 40, cardY + 60}, 1.5f, (Color){80, 80, 120, 200});
+
+    // Column headers
+    DrawTextEx(gameFont, "#", (Vector2){cardX + 50, cardY + 75}, 16.0f, 1.0f, (Color){150, 150, 170, 255});
+    DrawTextEx(gameFont, "Name", (Vector2){cardX + 90, cardY + 75}, 16.0f, 1.0f, (Color){150, 150, 170, 255});
+    DrawTextEx(gameFont, "Score", (Vector2){cardX + cardW - 80, cardY + 75}, 16.0f, 1.0f, (Color){150, 150, 170, 255});
+
+    // Entries
+    int entryY = cardY + 105;
+    for (int i = 0; i < state->scoreboardCount && i < 10; i++) {
+        char rankStr[8];
+        sprintf(rankStr, "%d.", i + 1);
+        Color entryColor = (i == 0) ? (Color){255, 220, 50, 255} : COLOR_TEXT_PRIMARY;
+
+        DrawTextEx(gameFont, rankStr, (Vector2){cardX + 50, (float)entryY}, 18.0f, 1.0f, entryColor);
+        DrawTextEx(gameFont, state->scoreboardNames[i], (Vector2){cardX + 90, (float)entryY}, 18.0f, 1.0f, entryColor);
+
+        char scoreStr[16];
+        sprintf(scoreStr, "%d", state->scoreboardScores[i]);
+        int scoreW = (int)MeasureTextEx(gameFont, scoreStr, 18.0f, 1.0f).x;
+        DrawTextEx(gameFont, scoreStr, (Vector2){cardX + cardW - 80 - scoreW, (float)entryY}, 18.0f, 1.0f, entryColor);
+
+        entryY += 30;
+    }
+
+    if (state->scoreboardCount == 0) {
+        DrawTextCenteredX("No scores yet!", cardY + 150, 20, (Color){100, 100, 140, 200});
+    }
+
+    // Reset Scoreboard button
+    int btnY = cardY + cardH - 120;
+    Rectangle resetSBBtn = {BTN_X, btnY, BTN_W, BTN_H};
+    bool resetSBHover = CheckCollisionPointRec(GetMousePosition(), resetSBBtn);
+    DrawButtonStyled(resetSBBtn, "Reset Scoreboard", 18,
+                     (Color){140, 40, 40, 255}, (Color){180, 60, 60, 255},
+                     (Color){160, 60, 60, 255}, (Color){220, 80, 80, 255},
+                     (Color){220, 180, 180, 255}, (Color){255, 220, 220, 255},
+                     resetSBHover);
+
+    // Back button
+    int backBtnY = btnY + BTN_H + BTN_GAP;
+    Rectangle backBtn = {BTN_X, backBtnY, BTN_W, BTN_H};
+    bool backHover = CheckCollisionPointRec(GetMousePosition(), backBtn);
+    DrawButtonStyled(backBtn, "Back", 18,
+                     (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+                     (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+                     (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+                     backHover);
+
+    DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
 }
