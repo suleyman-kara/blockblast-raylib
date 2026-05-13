@@ -1,8 +1,61 @@
 #include "game.h"
-#include "level.h"
+#include "save.h"
 #include "sound.h"
-#include <string.h>
+#include "ui_layout.h"
 #include <ctype.h>
+#include <string.h>
+
+
+// ─── Game Init ───────────────────────────────────────────────────────────────
+void GameInit(GameState *state)
+{
+    memset(state, 0, sizeof(GameState));
+    state->currentScreen = SCREEN_MENU;
+    LevelLoadDefinitions();
+    BoardInit(&state->board);
+    state->highScore = ScoreLoadHigh();
+    state->selectedLevel = 0;
+
+    // Load nickname
+    NicknameLoad(state->nickname, 32);
+    state->nicknameInput[0] = '\0';
+    state->nicknameCursorPos = 0;
+
+    // Load scoreboard
+    ScoreboardLoad(state->scoreboardScores, state->scoreboardNames, &state->scoreboardCount);
+
+    // Slots start empty until play begins
+    for (int i = 0; i < 3; i++)
+        SlotClear(&state->slots[i]);
+
+    // Load level progress
+    LevelLoadProgress(state->levelCompleted);
+}
+
+// ─── Game Reset (unified classic + adventure) ────────────────────────────────
+void GameReset(GameState *state)
+{
+    // Free any remaining pieces
+    for (int i = 0; i < 3; i++)
+        SlotClear(&state->slots[i]);
+
+    // Initialize level (sets up board + prefill)
+    LevelInit(&state->level, state->selectedLevel, &state->board);
+    state->score = 0;
+    state->combo = 0;
+    state->isDragging = false;
+    state->anims.count = 0;
+    state->floatTexts.count = 0;
+    state->particles.count = 0;
+
+    // Determine gem chances from level definition
+    const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+    float diamondChance = (def->targetDiamonds > 0) ? DIAMOND_SPAWN_CHANCE : 0.0f;
+    float emeraldChance = (def->targetEmeralds > 0) ? EMERALD_SPAWN_CHANCE : 0.0f;
+
+    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
+}
+
 
 // Helper: get the rectangle for a level button on the level select screen
 static Rectangle GetLevelButtonRect(int levelIndex)
@@ -157,7 +210,7 @@ void GameUpdate(GameState *state)
         }
 
         case SCREEN_RESULT: {
-            // Result screen buttons (must match render_level.c layout)
+            // Result screen buttons (must match RenderResult layout in render_ui.c)
             const int cardH = 400;
             const int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
             const int topBtnY = cardY + cardH - 140;
@@ -316,5 +369,107 @@ void GameUpdate(GameState *state)
             }
             break;
         }
+    }
+}
+
+
+// Execute a setting action for the given index
+static void ExecuteSetting(GameState *state, int index)
+{
+    SoundPlayMenuClick(&state->sound);
+    switch (index) {
+        case SETTING_SFX:
+            SoundToggleSfx(&state->sound);
+            break;
+        case SETTING_MUSIC:
+            SoundToggleMusic(&state->sound);
+            break;
+        case SETTING_RESTART:
+            state->currentScreen = SCREEN_PLAY;
+            GameReset(state);
+            break;
+        case SETTING_QUIT:
+            // Use selectedLevel to decide where Home goes
+            state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
+            break;
+    }
+}
+
+void GameUpdateSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    SettingsLayout layout = GetSettingsLayout(false);
+
+    // Hover highlight for visual feedback
+    if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+        state->selectedSetting = SETTING_SFX;
+    } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+        state->selectedSetting = SETTING_MUSIC;
+    } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+        state->selectedSetting = SETTING_RESTART;
+    } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+        state->selectedSetting = SETTING_QUIT;
+    }
+
+    // Click handling
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+            ExecuteSetting(state, SETTING_SFX);
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+            ExecuteSetting(state, SETTING_MUSIC);
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+            ExecuteSetting(state, SETTING_RESTART);
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+            ExecuteSetting(state, SETTING_QUIT);
+        }
+    }
+
+    // Back to game with ESC
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        SoundPlayMenuClick(&state->sound);
+        state->currentScreen = state->prevScreen;
+    }
+}
+
+// Menu settings: SFX, Music, Change Nickname, Home (no Replay)
+void GameUpdateMenuSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    SettingsLayout layout = GetSettingsLayout(true);
+
+    // Click handling
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleSfx(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleMusic(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+            SoundPlayMenuClick(&state->sound);
+            strcpy(state->nicknameInput, state->nickname);
+            state->nicknameCursorPos = strlen(state->nicknameInput);
+            state->prevScreen = SCREEN_MENU_SETTINGS;
+            state->currentScreen = SCREEN_NICKNAME;
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+            SoundPlayMenuClick(&state->sound);
+            // Reset level progress
+            for (int i = 0; i < TOTAL_LEVELS; i++) {
+                state->levelCompleted[i] = false;
+            }
+            LevelSaveProgress(state->levelCompleted);
+            // Reset classic mode high score
+            state->highScore = 0;
+            ScoreSaveHigh(state->highScore);
+        } else if (CheckCollisionPointRec(mouse, layout.thirdButton)) {
+            SoundPlayMenuClick(&state->sound);
+            state->currentScreen = SCREEN_MENU;
+        }
+    }
+
+    // Back to menu with ESC
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        SoundPlayMenuClick(&state->sound);
+        state->currentScreen = SCREEN_MENU;
     }
 }

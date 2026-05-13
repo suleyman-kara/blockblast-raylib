@@ -5,9 +5,7 @@
 #include "defs.h"
 #include "board.h"
 #include "piece.h"
-#include "anim.h"
-#include "float_text.h"
-#include "particle.h"
+#include "effects.h"
 #include "sound.h"
 #include "level.h"
 
@@ -84,18 +82,5 @@ void GameReset(GameState *state);
 // Update settings screen logic (keyboard/mouse navigation)
 void GameUpdateSettings(GameState *state);
 void GameUpdateMenuSettings(GameState *state);
-
-// High score save/load (moved from deleted score module)
-int ScoreLoadHigh(void);
-void ScoreSaveHigh(int score);
-
-// Nickname save/load
-void NicknameLoad(char *out, int maxLen);
-void NicknameSave(const char *name);
-
-// Scoreboard save/load
-void ScoreboardLoad(int scores[10], char names[10][32], int *count);
-void ScoreboardSave(int scores[10], char names[10][32], int count);
-void ScoreboardAddEntry(int scores[10], char names[10][32], int *count, const char *name, int score);
 
 #endif // GAME_H

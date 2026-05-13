@@ -1,8 +1,6 @@
 #include "input.h"
 #include "board.h"
-#include "float_text.h"
 #include "level.h"
-#include "particle.h"
 #include "sound.h"
 
 #include <stdio.h>

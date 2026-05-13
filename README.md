@@ -24,14 +24,15 @@ python3 build.py --no-make    # raylib Makefile kullanmadan derle
 
 ```text
 src/main.c            Program girişi, pencere ve ana döngü
-src/game_state.c      Oyunu başlatma, resetleme, kayıt dosyaları
-src/game_screens.c    Menü, oyun, sonuç, nickname ve scoreboard ekran akışı
-src/game_settings.c   Ayarlar ekranı tıklama mantığı
+src/game.c            Oyunu başlatma, resetleme, ekran akışı ve ayarlar
+src/save.c            Player, scoreboard ve progress metin kayıtları
 src/input.c           Sürükle-bırak ve hamle sonrası puan/level güncelleme
 src/board.c           8x8 tahta, yerleştirme ve satır/sütun temizleme
 src/piece.c           Parça şekilleri, rastgele parça üretimi ve slotlar
-src/level.c           Level hedefleri ve ilerleme kaydı
-src/render_*.c        Çizim fonksiyonları
+src/level.c           Level hedefleri ve levels.txt okuma
+src/render.c          Oyun ekranı, tahta, parçalar ve frame çizimi
+src/render_ui.c       Menü, HUD, ayarlar, sonuç ve scoreboard çizimi
+src/effects.c         Animasyon, parçacık ve yüzen yazı efektleri
 src/sound.c           Ses ve müzik
 include/*.h           Ortak tipler ve fonksiyon bildirimleri
 assets/               Font, görsel ve ses dosyaları
@@ -112,4 +113,4 @@ highScore=1200
 - `PieceSlot` artık dinamik bellek kullanmaz; slot içinde doğrudan `Piece` ve `occupied` bilgisi tutulur.
 - Parçalar az sayıda ve sabit olduğu için `malloc/free` yerine düz struct kullanmak daha okunur ve güvenlidir.
 - Settings ekranındaki ortak koordinatlar `include/ui_layout.h` içindeki helper ile hesaplanır.
-- Oyun mantığı ve çizim kodu ayrı dosyalardadır; önce `main.c`, sonra `game_screens.c`, `input.c`, `board.c` ve `piece.c` okunması önerilir.
+- Oyun mantığı ve çizim kodu ayrı dosyalardadır; önce `main.c`, sonra `game.c`, `input.c`, `board.c` ve `piece.c` okunması önerilir.

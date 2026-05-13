@@ -1,10 +1,12 @@
-#include "game.h"
-#include <string.h>
+#include "save.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PLAYER_FILE "data/player.txt"
 #define SCOREBOARD_FILE "data/scoreboard.txt"
+#define PROGRESS_FILE "data/progress.txt"
+
 
 static void LoadPlayerFile(char *nickname, int maxLen, int *highScore)
 {
@@ -171,52 +173,40 @@ void ScoreboardAddEntry(int scores[10], char names[10][32], int *count, const ch
     ScoreboardSave(scores, names, *count);
 }
 
-// ─── Game Init ───────────────────────────────────────────────────────────────
-void GameInit(GameState *state)
+void LevelLoadProgress(bool completed[TOTAL_LEVELS])
 {
-    memset(state, 0, sizeof(GameState));
-    state->currentScreen = SCREEN_MENU;
-    LevelLoadDefinitions();
-    BoardInit(&state->board);
-    state->highScore = ScoreLoadHigh();
-    state->selectedLevel = 0;
+    memset(completed, 0, sizeof(bool) * TOTAL_LEVELS);
 
-    // Load nickname
-    NicknameLoad(state->nickname, 32);
-    state->nicknameInput[0] = '\0';
-    state->nicknameCursorPos = 0;
+    FILE *f = fopen(PROGRESS_FILE, "r");
+    if (f) {
+        char line[80];
+        while (fgets(line, sizeof(line), f)) {
+            int level = 0;
+            int done = 0;
 
-    // Load scoreboard
-    ScoreboardLoad(state->scoreboardScores, state->scoreboardNames, &state->scoreboardCount);
+            if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+                continue;
 
-    // Slots start empty until play begins
-    for (int i = 0; i < 3; i++)
-        SlotClear(&state->slots[i]);
-
-    // Load level progress
-    LevelLoadProgress(state->levelCompleted);
+            if (sscanf(line, "%d %d", &level, &done) == 2) {
+                if (level >= 1 && level <= TOTAL_LEVELS)
+                    completed[level - 1] = (done != 0);
+            } else if (sscanf(line, "%d", &level) == 1) {
+                if (level >= 1 && level <= TOTAL_LEVELS)
+                    completed[level - 1] = true;
+            }
+        }
+        fclose(f);
+    }
 }
 
-// ─── Game Reset (unified classic + adventure) ────────────────────────────────
-void GameReset(GameState *state)
+void LevelSaveProgress(bool completed[TOTAL_LEVELS])
 {
-    // Free any remaining pieces
-    for (int i = 0; i < 3; i++)
-        SlotClear(&state->slots[i]);
-
-    // Initialize level (sets up board + prefill)
-    LevelInit(&state->level, state->selectedLevel, &state->board);
-    state->score = 0;
-    state->combo = 0;
-    state->isDragging = false;
-    state->anims.count = 0;
-    state->floatTexts.count = 0;
-    state->particles.count = 0;
-
-    // Determine gem chances from level definition
-    const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
-    float diamondChance = (def->targetDiamonds > 0) ? DIAMOND_SPAWN_CHANCE : 0.0f;
-    float emeraldChance = (def->targetEmeralds > 0) ? EMERALD_SPAWN_CHANCE : 0.0f;
-
-    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
+    FILE *f = fopen(PROGRESS_FILE, "w");
+    if (f) {
+        fprintf(f, "# level completed\n");
+        for (int i = 0; i < TOTAL_LEVELS; i++) {
+            fprintf(f, "%d %d\n", i + 1, completed[i] ? 1 : 0);
+        }
+        fclose(f);
+    }
 }

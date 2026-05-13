@@ -6,8 +6,6 @@
 #include <time.h>
 
 #define LEVELS_FILE "data/levels.txt"
-#define PROGRESS_FILE "data/progress.txt"
-
 // ─── Level Definitions ────────────────────────────────────────────────────────
 // Index 0 = classic mode (infinite, no targets)
 // Index 1-10 = adventure levels
@@ -139,44 +137,4 @@ bool LevelCheckGoal(LevelState *state, int currentScore)
 bool LevelCheckFailure(Board *board, PieceSlot slots[3])
 {
     return !BoardHasValidMove(board, slots);
-}
-
-// ─── Progress Save/Load ───────────────────────────────────────────────────────
-void LevelLoadProgress(bool completed[TOTAL_LEVELS])
-{
-    // Default: nothing completed
-    memset(completed, 0, sizeof(bool) * TOTAL_LEVELS);
-
-    FILE *f = fopen(PROGRESS_FILE, "r");
-    if (f) {
-        char line[80];
-        while (fgets(line, sizeof(line), f)) {
-            int level = 0;
-            int done = 0;
-
-            if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
-                continue;
-
-            if (sscanf(line, "%d %d", &level, &done) == 2) {
-                if (level >= 1 && level <= TOTAL_LEVELS)
-                    completed[level - 1] = (done != 0);
-            } else if (sscanf(line, "%d", &level) == 1) {
-                if (level >= 1 && level <= TOTAL_LEVELS)
-                    completed[level - 1] = true;
-            }
-        }
-        fclose(f);
-    }
-}
-
-void LevelSaveProgress(bool completed[TOTAL_LEVELS])
-{
-    FILE *f = fopen(PROGRESS_FILE, "w");
-    if (f) {
-        fprintf(f, "# level completed\n");
-        for (int i = 0; i < TOTAL_LEVELS; i++) {
-            fprintf(f, "%d %d\n", i + 1, completed[i] ? 1 : 0);
-        }
-        fclose(f);
-    }
 }
