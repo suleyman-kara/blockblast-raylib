@@ -3,12 +3,16 @@
 #include "sound.h"
 #include "ui_layout.h"
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 
 // ─── Game Init ───────────────────────────────────────────────────────────────
 void GameInit(GameState *state)
 {
+    srand((unsigned int)time(NULL));
+
     memset(state, 0, sizeof(GameState));
     state->currentScreen = SCREEN_MENU;
     LevelLoadDefinitions();

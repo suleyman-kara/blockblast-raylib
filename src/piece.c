@@ -1,7 +1,6 @@
 #include "piece.h"
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
 // ---- All piece shape definitions ----
 static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
@@ -43,7 +42,6 @@ static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
     { .shape = {{0,1,1},{1,1,0}}, .width = 3, .height = 2 },
 };
 
-static bool seeded = false;
 
 const PieceDef *GetPieceDefinitions(void)
 {
@@ -52,11 +50,6 @@ const PieceDef *GetPieceDefinitions(void)
 
 void PieceGenerate(Piece *p, float diamondChance, float emeraldChance)
 {
-    if (!seeded) {
-        srand((unsigned int)time(NULL));
-        seeded = true;
-    }
-
     if (!p) return;
     memset(p, 0, sizeof(Piece));
 

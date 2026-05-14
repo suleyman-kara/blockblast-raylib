@@ -1,7 +1,6 @@
 #include "board.h"
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
 void BoardInit(Board *board)
 {
@@ -118,13 +117,6 @@ bool BoardHasValidMove(Board *board, PieceSlot slots[3])
 
 void BoardPrefillGems(Board *board, int count, int levelIndex)
 {
-    // Seed random if not already seeded
-    static bool seeded = false;
-    if (!seeded) {
-        srand((unsigned int)time(NULL));
-        seeded = true;
-    }
-
     // Use the piece definitions to get random shapes
     const PieceDef *defs = GetPieceDefinitions();
 
