@@ -109,7 +109,10 @@ void LevelInit(LevelState *state, int levelIndex, Board *board)
 
     // Pre-fill board with random pieces (adventure levels only)
     if (level->prefillCount > 0) {
-        BoardPrefillGems(board, level->prefillCount, levelIndex);
+        BoardPrefillGems(board,
+                         level->prefillCount,
+                         level->targetDiamonds > 0,
+                         level->targetEmeralds > 0);
     }
 }
 
