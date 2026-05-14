@@ -115,7 +115,8 @@ bool BoardHasValidMove(Board *board, PieceSlot slots[3])
     return false;
 }
 
-void BoardPrefillGems(Board *board, int count, int levelIndex)
+void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
+                      bool allowEmeralds)
 {
     // Use the piece definitions to get random shapes
     const PieceDef *defs = GetPieceDefinitions();
@@ -130,15 +131,15 @@ void BoardPrefillGems(Board *board, int count, int levelIndex)
             int row = rand() % (GRID_SIZE - def->height + 1);
             int col = rand() % (GRID_SIZE - def->width + 1);
 
-    // Use BoardCanPlace logic via a temporary Piece
-    Piece tempPiece;
-    memset(&tempPiece, 0, sizeof(tempPiece));
-    memcpy(tempPiece.shape, def->shape, sizeof(def->shape));
-    tempPiece.width = def->width;
-    tempPiece.height = def->height;
-    tempPiece.colorIndex = 1;
+            // Use BoardCanPlace logic via a temporary Piece
+            Piece tempPiece;
+            memset(&tempPiece, 0, sizeof(tempPiece));
+            memcpy(tempPiece.shape, def->shape, sizeof(def->shape));
+            tempPiece.width = def->width;
+            tempPiece.height = def->height;
+            tempPiece.colorIndex = 1;
 
-    if (!BoardCanPlace(board, &tempPiece, row, col)) continue;
+            if (!BoardCanPlace(board, &tempPiece, row, col)) continue;
 
             // Place the piece with a random color
             int colorIdx = (rand() % 7) + 1;
@@ -146,10 +147,13 @@ void BoardPrefillGems(Board *board, int count, int levelIndex)
                 for (int c = 0; c < def->width; c++) {
                     if (def->shape[r][c] == 0) continue;
                     board->cells[row + r][col + c] = colorIdx;
-                    // Assign a gem to some cells (roughly 30% chance)
-                    if ((rand() % 100) < 30) {
-                        // Diamond for even levels, mix for odd
-                        if (levelIndex < 4 || (rand() % 2) == 0) {
+
+                    // Assign only target-relevant gems to some cells.
+                    if ((allowDiamonds || allowEmeralds) && (rand() % 100) < 30) {
+                        if (allowDiamonds && allowEmeralds) {
+                            board->gems[row + r][col + c] =
+                                (rand() % 2) == 0 ? GEM_DIAMOND : GEM_EMERALD;
+                        } else if (allowDiamonds) {
                             board->gems[row + r][col + c] = GEM_DIAMOND;
                         } else {
                             board->gems[row + r][col + c] = GEM_EMERALD;

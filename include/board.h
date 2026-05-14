@@ -28,7 +28,8 @@ int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
 // Check if any remaining piece in slots can fit anywhere on the board
 bool BoardHasValidMove(Board *board, PieceSlot slots[3]);
 
-// Pre-fill the board with random pieces that may contain gems
-void BoardPrefillGems(Board *board, int count, int levelIndex);
+// Pre-fill the board with random pieces that may contain allowed target gems
+void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
+                      bool allowEmeralds);
 
 #endif // BOARD_H
