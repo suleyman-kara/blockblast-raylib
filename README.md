@@ -74,7 +74,7 @@ Kayıtlar binary değil, okunabilir metin dosyalarıdır:
 ```text
 data/player.txt      nickname ve highScore
 data/scoreboard.txt  score|name formatında skor tablosu
-data/progress.txt    level completed formatında macera ilerlemesi
+data/progress.txt    unlockedLevel formatında macera ilerlemesi
 ```
 
 Örnek `player.txt`:
@@ -94,10 +94,11 @@ highScore=1200
 Örnek `progress.txt`:
 
 ```text
-1 1
-2 0
-3 0
+# Last unlocked adventure level
+unlockedLevel=1
 ```
+
+`unlockedLevel=8` demek, 1-7 arası level'ların geçildiği ve 8. level'ın açık olduğu anlamına gelir. `unlockedLevel=11` tüm 10 macera level'ının tamamlandığını gösterir.
 
 ## Temel Oynanış
 

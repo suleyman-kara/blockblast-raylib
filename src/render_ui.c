@@ -167,8 +167,8 @@ void RenderLevelSelect(GameState *state)
         int by = AMAP_START_Y + row * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP);
         Rectangle btnRect = { bx, by, AMAP_BTN_SIZE, AMAP_BTN_SIZE };
 
-        bool isUnlocked = LevelIsUnlocked(state->levelCompleted, i + 1);
-        bool isCompleted = state->levelCompleted[i];
+        bool isUnlocked = LevelIsUnlocked(state->unlockedLevel, i + 1);
+        bool isCompleted = LevelIsCompleted(state->unlockedLevel, i + 1);
         bool hover = CheckCollisionPointRec(mouse, btnRect) && isUnlocked;
 
         Color btnColor = !isUnlocked ? COLOR_AMAP_LOCKED_BG :
@@ -201,15 +201,7 @@ void RenderLevelSelect(GameState *state)
         }
     }
 
-    bool allCompleted = true;
-    for (int i = 0; i < TOTAL_LEVELS; i++) {
-        if (!state->levelCompleted[i]) {
-            allCompleted = false;
-            break;
-        }
-    }
-
-    if (allCompleted) {
+    if (state->unlockedLevel > TOTAL_LEVELS) {
         int lastRow = (TOTAL_LEVELS - 1) / LEVELS_PER_ROW;
         int botY = AMAP_START_Y + lastRow * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP) + AMAP_BTN_SIZE + 40;
         DrawTextCenteredX("Completed!", botY, 28, COLOR_AMAP_COMPLETED_TEXT);
@@ -440,15 +432,7 @@ void RenderMenu(GameState *state) {
                        (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, advTextColor);
 
-  bool allCompleted = true;
-  for (int i = 0; i < TOTAL_LEVELS; i++) {
-      if (!state->levelCompleted[i]) {
-          allCompleted = false;
-          break;
-      }
-  }
-
-  if (allCompleted) {
+  if (state->unlockedLevel > TOTAL_LEVELS) {
       const char *compText = "Completed";
       int ctw = (int)MeasureTextEx(gameFont, compText, 14.0f, 1.0f).x;
       DrawTextEx(gameFont, compText,
@@ -900,7 +884,7 @@ void RenderScoreboard(GameState *state)
     }
 
     // Reset Scoreboard button
-    int btnY = cardY + cardH - 120;
+    int btnY = cardY + cardH - 140;
     Rectangle resetSBBtn = {BTN_X, btnY, BTN_W, BTN_H};
     bool resetSBHover = CheckCollisionPointRec(GetMousePosition(), resetSBBtn);
     DrawMenuButtonStyled(resetSBBtn, "Reset Scoreboard", 18,

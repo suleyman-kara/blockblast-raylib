@@ -28,8 +28,7 @@ void GameInit(GameState *state)
     for (int i = 0; i < 3; i++)
         SlotClear(&state->slots[i]);
 
-    // Load level progress
-    LevelLoadProgress(state->levelCompleted);
+    state->unlockedLevel = LevelLoadProgress();
 }
 
 // ─── Game Reset (unified classic + adventure) ────────────────────────────────
@@ -144,10 +143,11 @@ void GameUpdate(GameState *state)
                 !state->level.levelComplete) {
                 state->level.levelComplete = true;
 
-                // Save progress
-                int lvl = state->level.currentLevel;
-                state->levelCompleted[lvl - 1] = true;  // levelCompleted is 0-indexed for levels 1-10
-                LevelSaveProgress(state->levelCompleted);
+                if (state->level.currentLevel == state->unlockedLevel &&
+                    state->unlockedLevel <= TOTAL_LEVELS) {
+                    state->unlockedLevel++;
+                    LevelSaveProgress(state->unlockedLevel);
+                }
 
                 state->currentScreen = SCREEN_RESULT;
             }
@@ -191,7 +191,7 @@ void GameUpdate(GameState *state)
                 for (int i = 0; i < TOTAL_LEVELS; i++) {
                     Rectangle btn = GetLevelButtonRect(i);
                     if (CheckCollisionPointRec(mouse, btn)) {
-                        if (LevelIsUnlocked(state->levelCompleted, i + 1)) {
+                        if (LevelIsUnlocked(state->unlockedLevel, i + 1)) {
                             SoundPlayMenuClick(&state->sound);
                             state->selectedLevel = i + 1;  // levels are 1-indexed
                             state->currentScreen = SCREEN_PLAY;
@@ -453,11 +453,8 @@ void GameUpdateMenuSettings(GameState *state)
             state->currentScreen = SCREEN_NICKNAME;
         } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
             SoundPlayMenuClick(&state->sound);
-            // Reset level progress
-            for (int i = 0; i < TOTAL_LEVELS; i++) {
-                state->levelCompleted[i] = false;
-            }
-            LevelSaveProgress(state->levelCompleted);
+            state->unlockedLevel = 1;
+            LevelSaveProgress(state->unlockedLevel);
             // Reset classic mode high score
             state->highScore = 0;
             ScoreSaveHigh(state->highScore);

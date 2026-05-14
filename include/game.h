@@ -55,7 +55,7 @@ typedef struct {
     // Level
     LevelState level;
     int selectedLevel;              // 0 = classic, 1-10 = adventure
-    bool levelCompleted[TOTAL_LEVELS]; // which adventure levels are completed (persisted)
+    int unlockedLevel;              // 1 = first adventure level, TOTAL_LEVELS + 1 = all completed
 
     Screen prevScreen;  // screen before settings overlay
 

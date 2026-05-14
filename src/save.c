@@ -173,9 +173,16 @@ void ScoreboardAddEntry(int scores[10], char names[10][32], int *count, const ch
     ScoreboardSave(scores, names, *count);
 }
 
-void LevelLoadProgress(bool completed[TOTAL_LEVELS])
+static int ClampUnlockedLevel(int unlockedLevel)
 {
-    memset(completed, 0, sizeof(bool) * TOTAL_LEVELS);
+    if (unlockedLevel < 1) return 1;
+    if (unlockedLevel > TOTAL_LEVELS + 1) return TOTAL_LEVELS + 1;
+    return unlockedLevel;
+}
+
+int LevelLoadProgress(void)
+{
+    int unlockedLevel = 1;
 
     FILE *f = fopen(PROGRESS_FILE, "r");
     if (f) {
@@ -183,30 +190,38 @@ void LevelLoadProgress(bool completed[TOTAL_LEVELS])
         while (fgets(line, sizeof(line), f)) {
             int level = 0;
             int done = 0;
+            int value = 0;
 
             if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
                 continue;
 
-            if (sscanf(line, "%d %d", &level, &done) == 2) {
-                if (level >= 1 && level <= TOTAL_LEVELS)
-                    completed[level - 1] = (done != 0);
-            } else if (sscanf(line, "%d", &level) == 1) {
-                if (level >= 1 && level <= TOTAL_LEVELS)
-                    completed[level - 1] = true;
+            if (sscanf(line, "unlockedLevel=%d", &value) == 1) {
+                unlockedLevel = ClampUnlockedLevel(value);
+                break;
+            }
+
+            // Backward compatibility for the old "level completed" format.
+            if (sscanf(line, "%d %d", &level, &done) == 2 &&
+                done != 0 &&
+                level >= unlockedLevel &&
+                level >= 1 &&
+                level <= TOTAL_LEVELS) {
+                unlockedLevel = level + 1;
             }
         }
         fclose(f);
     }
+
+    return ClampUnlockedLevel(unlockedLevel);
 }
 
-void LevelSaveProgress(bool completed[TOTAL_LEVELS])
+void LevelSaveProgress(int unlockedLevel)
 {
     FILE *f = fopen(PROGRESS_FILE, "w");
     if (f) {
-        fprintf(f, "# level completed\n");
-        for (int i = 0; i < TOTAL_LEVELS; i++) {
-            fprintf(f, "%d %d\n", i + 1, completed[i] ? 1 : 0);
-        }
+        fprintf(f, "# Last unlocked adventure level\n");
+        fprintf(f, "# %d means all adventure levels are completed.\n", TOTAL_LEVELS + 1);
+        fprintf(f, "unlockedLevel=%d\n", ClampUnlockedLevel(unlockedLevel));
         fclose(f);
     }
 }

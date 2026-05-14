@@ -14,7 +14,7 @@ void ScoreboardSave(int scores[10], char names[10][32], int count);
 void ScoreboardAddEntry(int scores[10], char names[10][32], int *count,
                         const char *name, int score);
 
-void LevelLoadProgress(bool completed[TOTAL_LEVELS]);
-void LevelSaveProgress(bool completed[TOTAL_LEVELS]);
+int LevelLoadProgress(void);
+void LevelSaveProgress(int unlockedLevel);
 
 #endif // SAVE_H
