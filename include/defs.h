@@ -95,8 +95,9 @@
 
 // ─── Menu Buttons (Y pozisyonları)
 // ────────────────────────────────────────────
-#define MENU_STD_Y 360
-#define MENU_ADV_Y 430
+#define MENU_STD_Y 330
+#define MENU_ADV_Y 400
+#define MENU_QUIT_Y 470
 
 // ─── Title & Subtitle
 // ─────────────────────────────────────────────────────────
@@ -132,7 +133,7 @@ static const Color PIECE_COLORS[] = {
 // ─── Settings overlay
 // ─────────────────────────────────────────────────────────
 #define SETTINGS_CARD_WIDTH 320
-#define SETTINGS_CARD_HEIGHT 400
+#define SETTINGS_CARD_HEIGHT 430
 #define SETTINGS_TITLE_FONT_SIZE 30
 #define SETTINGS_CARD_PADDING_X 40
 

@@ -9,7 +9,6 @@ void TexturesLoad(void)
     gameTextures.crown = LoadTexture("assets/images/crown.png");
     gameTextures.diamond = LoadTexture("assets/images/diamond.png");
     gameTextures.emerald = LoadTexture("assets/images/emerald.png");
-    gameTextures.gear = LoadTexture("assets/images/gear.png");
     gameTextures.home = LoadTexture("assets/images/home.png");
     gameTextures.lock = LoadTexture("assets/images/lock.png");
     gameTextures.logout = LoadTexture("assets/images/logout.png");
@@ -25,7 +24,6 @@ void TexturesUnload(void)
     UnloadTexture(gameTextures.crown);
     UnloadTexture(gameTextures.diamond);
     UnloadTexture(gameTextures.emerald);
-    UnloadTexture(gameTextures.gear);
     UnloadTexture(gameTextures.home);
     UnloadTexture(gameTextures.lock);
     UnloadTexture(gameTextures.logout);

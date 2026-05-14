@@ -9,7 +9,6 @@ typedef struct {
     Texture2D crown;
     Texture2D diamond;
     Texture2D emerald;
-    Texture2D gear;
     Texture2D home;
     Texture2D lock;
     Texture2D logout;

@@ -5,9 +5,7 @@
 #include "defs.h"
 #include "board.h"
 #include "piece.h"
-#include "anim.h"
-#include "float_text.h"
-#include "particle.h"
+#include "effects.h"
 #include "sound.h"
 #include "level.h"
 
@@ -22,7 +20,10 @@ typedef enum {
     SCREEN_PLAY,          // unified classic + adventure
     SCREEN_LEVEL_SELECT,
     SCREEN_RESULT,        // adaptive win/lose
-    SCREEN_SETTINGS
+    SCREEN_SETTINGS,
+    SCREEN_NICKNAME,      // nickname input
+    SCREEN_SCOREBOARD,    // scoreboard display
+    SCREEN_MENU_SETTINGS  // settings from main menu (no replay, has change nickname)
 } Screen;
 
 // Central game state — passed by pointer to all modules
@@ -54,9 +55,19 @@ typedef struct {
     // Level
     LevelState level;
     int selectedLevel;              // 0 = classic, 1-10 = adventure
-    bool levelCompleted[TOTAL_LEVELS]; // which adventure levels are completed (persisted)
+    int unlockedLevel;              // 1 = first adventure level, TOTAL_LEVELS + 1 = all completed
 
     Screen prevScreen;  // screen before settings overlay
+
+    // Nickname
+    char nickname[32];
+    char nicknameInput[32];  // temporary buffer for nickname entry
+    int nicknameCursorPos;
+
+    // Scoreboard
+    int scoreboardScores[10];
+    char scoreboardNames[10][32];
+    int scoreboardCount;
 } GameState;
 
 // Initialize a new game state
@@ -70,9 +81,6 @@ void GameReset(GameState *state);
 
 // Update settings screen logic (keyboard/mouse navigation)
 void GameUpdateSettings(GameState *state);
-
-// High score save/load (moved from deleted score module)
-int ScoreLoadHigh(void);
-void ScoreSaveHigh(int score);
+void GameUpdateMenuSettings(GameState *state);
 
 #endif // GAME_H

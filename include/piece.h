@@ -13,9 +13,11 @@ typedef struct {
     int gemCells[MAX_PIECE_SIZE][MAX_PIECE_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
 } Piece;
 
-// A slot in the bottom panel holding one piece (or NULL if used)
+// A slot in the bottom panel holding one piece.
+// occupied=false means the player already used this slot.
 typedef struct {
-    Piece *piece;    // dynamically allocated, NULL = already used
+    Piece piece;
+    bool occupied;
     float posX;      // screen X for drawing in bottom panel
     float posY;      // screen Y for drawing in bottom panel
 } PieceSlot;
@@ -30,12 +32,12 @@ typedef struct {
 // Get the array of all piece definitions
 const PieceDef *GetPieceDefinitions(void);
 
-// Create a piece (malloc) from a random definition with a random color
-// Pass 0,0 for no gems (classic mode)
-Piece *PieceCreate(float diamondChance, float emeraldChance);
+// Fill out with a random piece definition and color.
+// Pass 0,0 for no gems (classic mode).
+void PieceGenerate(Piece *out, float diamondChance, float emeraldChance);
 
-// Free a piece's memory and set the pointer to NULL
-void PieceFree(Piece **piece);
+void SlotClear(PieceSlot *slot);
+bool SlotIsOccupied(const PieceSlot *slot);
 
 // Generate 3 random pieces into the given slots
 // Pass 0,0 for gem chances in classic mode

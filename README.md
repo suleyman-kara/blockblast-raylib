@@ -1,134 +1,117 @@
-# Block Blast — C ve Raylib ile Geliştirilmiş Blok Oyunu
+# Block Blast - C ve Raylib
 
-## Proje Hakkında
-Bu proje, popüler Block Blast oyununun C programlama dili ve Raylib kütüphanesi kullanılarak geliştirilmiş bir klonudur. Düşük seviye programlama becerileri (bellek yönetimi, pointer işlemleri) ile oyun geliştirme dinamiklerini birleştiren modüler bir yapı hedeflenmiştir.
+Bu proje, C ve raylib ile yazılmış basit bir Block Blast klonudur. Hedefi çok büyük bir oyun yapmak değil; tahta mantığı, parça üretimi, sürükle-bırak, puanlama, level hedefleri, kayıt dosyaları ve temel görsel/işitsel geri bildirimleri anlaşılır şekilde göstermektir.
 
----
+## Derleme ve Çalıştırma
 
-## Kurulum ve Derleme
+Gerekenler:
 
-Proje, **Python 3** tabanlı bir build script'i (`build.py`) ile derlenir. Script, Windows, Linux ve macOS'te sorunsuz çalışacak şekilde tasarlanmıştır.
+- Python 3
+- C derleyicisi (`gcc`, `clang` veya MinGW)
+- İsteğe bağlı olarak `make`
 
-### Gereksinimler
-
-| Araç | Açıklama |
-|------|----------|
-| **Python 3** | Build script'ini çalıştırmak için |
-| **C Derleyicisi** (gcc/clang) | Kaynak kodları derlemek için |
-| **make** (opsiyonel) | Varsa raylib Makefile'ı kullanılır, yoksa doğrudan derleme yapılır |
-
-**İşletim sistemine göre kurulum:**
-
-- **Linux:** `sudo apt install build-essential python3`
-- **macOS:** `xcode-select --install` (gcc/clang dahil)
-- **Windows:** [MinGW-w64](https://www.mingw-w64.org/) veya WSL kurulumu
-
-### Derleme ve Çalıştırma
+Komutlar:
 
 ```bash
-# Derle ve otomatik çalıştır (varsayılan)
-python build.py
-
-# Sadece derle, çalıştırma
-python build.py --no-run
-
-# Debug modunda derle
-python build.py --debug
-
-# Build klasörünü temizle
-python build.py --clean
-
-# make olmadan doğrudan derle
-python build.py --no-make
+python3 build.py              # Derle ve çalıştır
+python3 build.py --no-run     # Sadece derle
+python3 build.py --debug      # Debug build
+python3 build.py --clean      # build/ klasörünü temizle
+python3 build.py --no-make    # raylib Makefile kullanmadan derle
 ```
-
-Build başarılı olduğunda terminalde `file://build/blockblast` şeklinde tıklanabilir bir yol gösterilir.
-
-### VS Code ile Derleme
-1. Python 3 ve bir C derleyicisi kurulu olduğundan emin olun
-2. Projeyi VS Code ile açın
-3. Terminal'de `python build.py` komutunu çalıştırın
-4. Oyun otomatik olarak başlayacaktır
-
----
 
 ## Proje Yapısı
 
-```
-├── build.py              # Python build script'i
-├── src/                  # Kaynak kodları
-│   ├── main.c            # Giriş noktası
-│   ├── game.c/h          # Oyun durumu ve ekran yönetimi
-│   ├── board.c/h         # 8x8 tahta mantığı
-│   ├── piece.c/h         # Blok parçaları ve rastgele üretim
-│   ├── input.c/h         # Sürükle-bırak giriş işlemleri
-│   ├── render.c/h        # Görsel çizim (tahta, parçalar, menü)
-│   ├── anim.c/h          # Satır/sütun temizleme animasyonu
-│   ├── particle.c/h      # Parçacık efekti sistemi
-│   ├── float_text.c/h    # Yüzen puan metinleri
-│   ├── score.c/h         # Puan hesaplama ve highscore
-│   └── sound.c/h         # Ses sistemi
-├── include/              # Header dosyaları
-├── assets/sounds/        # Ses efektleri ve müzik
-├── raylib/               # Raylib kütüphanesi (v6.0)
-└── build/                # Derleme çıktıları
+```text
+src/main.c            Program girişi, pencere ve ana döngü
+src/game.c            Oyunu başlatma, resetleme, ekran akışı ve ayarlar
+src/save.c            Player, scoreboard ve progress metin kayıtları
+src/input.c           Sürükle-bırak ve hamle sonrası puan/level güncelleme
+src/board.c           8x8 tahta, yerleştirme ve satır/sütun temizleme
+src/piece.c           Parça şekilleri, rastgele parça üretimi ve slotlar
+src/level.c           Level hedefleri ve levels.txt okuma
+src/render.c          Oyun ekranı, tahta, parçalar ve frame çizimi
+src/render_ui.c       Menü, HUD, ayarlar, sonuç ve scoreboard çizimi
+src/effects.c         Animasyon, parçacık ve yüzen yazı efektleri
+src/sound.c           Ses ve müzik
+include/*.h           Ortak tipler ve fonksiyon bildirimleri
+assets/               Font, görsel ve ses dosyaları
+raylib/               Projeyle gelen raylib kaynakları
 ```
 
----
+## Düzenlenebilir Dosyalar
 
-## Teknik Detaylar
+Oyun açılırken `data/` klasörü oluşturulur. Bu klasör `.gitignore` içindedir; yani kişisel kayıtlar repoya eklenmez.
 
-### Veri Yapıları
-- **Board:** 8×8 tam sayı matrisi (`int cells[8][8]`)
-- **Piece:** Şekil matrisi (`int shape[5][5]`) + renk index + boyut
-- **PieceSlot:** Parça + ekran konumu (sürükleme paneli için)
+### Level Ayarları
 
-### Bellek Yönetimi
-- Parçalar dinamik olarak `malloc` ile oluşturulur, `free` ile temizlenir
-- Animasyon/partikül kuyrukları statik dizi olarak tutulur
+İlk çalıştırmada `data/levels.txt` yoksa oyun varsayılan dosyayı oluşturur. Hocalar veya geliştiriciler level hedeflerini bu dosyadan hızlıca değiştirebilir.
 
-### Algoritmalar
-- **Satır/Sütun Tarama:** Dolu satır/sütunları tespit edip temizler
-- **Puan Hesaplama:** `Base × N × Combo` (N: aynı anda temizlenen çizgi sayısı)
-- **Game Over Kontrolü:** Kalan parçaların tahtaya sığıp sığmadığı simüle edilir
+Format:
 
-### Animasyon Sistemi
-- **Clear Animasyonu:** Temizlenen hücreler 0.35sn'de solarak kaybolur
-- **Parçacık Sistemi:** Her temizlemede 5 parçacık + varyasyon
-- **Float Text:** "+300" gibi puan metinleri yukarı doğru uçar ve kaybolur
-- **Combo Banner:** 3+ combo'da "BEST COMBO! x3" banner'ı gösterilir
+```text
+# level targetScore targetDiamonds targetEmeralds prefillCount
+# 0 means this target is disabled.
+1 500 0 0 0
+2 1000 0 0 0
+3 0 3 0 2
+```
 
-### Dosya Okuma/Yazma
-- Highscore `data/highscore.dat` dosyasına kaydedilir
-- `MakeDirectory("data")` ile otomatik oluşturulur
+Alanlar:
 
-### Ses Sistemi
-- 7 ses efekti (yerleştirme, temizleme, combo, menü...)
-- Arka plan müziği (WAV, loop)
-- Ses/Müzik aç/kapa ayarlar menüsünden yapılır
+- `level`: 1-10 arası macera level numarası
+- `targetScore`: istenen skor, `0` ise skor hedefi yok
+- `targetDiamonds`: toplanacak elmas sayısı, `0` ise hedef yok
+- `targetEmeralds`: toplanacak zümrüt sayısı, `0` ise hedef yok
+- `prefillCount`: level başında tahtaya rastgele kaç parça yerleşsin
 
----
+Boş satırlar, `#` ile başlayan yorumlar ve hatalı satırlar yok sayılır. Geçersiz satır varsa oyun varsayılan değeri kullanmaya devam eder.
 
-## Oynanış
+### Kayıt Dosyaları
 
-1. **Ana Menü:** Standart Mod / Macera Modu (çok yakında)
-2. **Oyun:** Alt paneldeki 3 parçayı sürükleyerek 8×8 tahtaya yerleştirin
-3. **Puanlama:** Tam satır veya sütun oluşturun → temizlenir → puan kazanırsınız
-4. **Combo:** Ardışık temizlemeler combo çarpanını artırır
-5. **Game Over:** Hiçbir parça sığmazsa oyun biter
-6. **Ayarlar:** Sağ üstteki dişli ikonundan ses/müzik ayarları, yeniden başlatma
+Kayıtlar binary değil, okunabilir metin dosyalarıdır:
 
----
+```text
+data/player.txt      nickname ve highScore
+data/scoreboard.txt  score|name formatında skor tablosu
+data/progress.txt    unlockedLevel formatında macera ilerlemesi
+```
 
-## Teslimat ve Değerlendirme
+Örnek `player.txt`:
 
-Teslimat: Kaynak kod, proje raporu, maksimum 5 dakikalık demo videosu ve canlı sunum.
+```text
+nickname=Ali
+highScore=1200
+```
 
-| Kriter | Ağırlık |
-|--------|---------|
-| Zorunlu Programlama Kavramlarının Kullanımı | 25% |
-| Sözlü Sunum ve Jüri Performansı | 25% |
-| Kod Kalitesi ve Doğruluk | 20% |
-| Yaratıcılık ve Oyun Tasarımı | 15% |
-| Rapor ve Dokümantasyon | 10% |
-| Video Sunumu | 5% |
+Örnek `scoreboard.txt`:
+
+```text
+1200|Ali
+900|Zeynep
+```
+
+Örnek `progress.txt`:
+
+```text
+# Last unlocked adventure level
+unlockedLevel=1
+```
+
+`unlockedLevel=8` demek, 1-7 arası level'ların geçildiği ve 8. level'ın açık olduğu anlamına gelir. `unlockedLevel=11` tüm 10 macera level'ının tamamlandığını gösterir.
+
+## Temel Oynanış
+
+1. Ana menüden Classic Mode veya Adventure Mode seçilir.
+2. Alt paneldeki 3 parçadan biri sürüklenip 8x8 tahtaya bırakılır.
+3. Dolu satır veya sütun oluşursa temizlenir ve puan kazanılır.
+4. Art arda temizleme yapılırsa combo artar.
+5. Hiçbir parça tahtaya sığmazsa oyun biter.
+6. Adventure modunda skor, elmas veya zümrüt hedefleri tamamlanınca level biter.
+
+## Kodun Öğrenme Notları
+
+- `PieceSlot` artık dinamik bellek kullanmaz; slot içinde doğrudan `Piece` ve `occupied` bilgisi tutulur.
+- Parçalar az sayıda ve sabit olduğu için `malloc/free` yerine düz struct kullanmak daha okunur ve güvenlidir.
+- Settings ekranındaki ortak koordinatlar `include/ui_layout.h` içindeki helper ile hesaplanır.
+- Oyun mantığı ve çizim kodu ayrı dosyalardadır; önce `main.c`, sonra `game.c`, `input.c`, `board.c` ve `piece.c` okunması önerilir.

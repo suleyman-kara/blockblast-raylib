@@ -19,5 +19,8 @@ void RenderMenu(GameState *state);
 void RenderSettings(GameState *state);
 void RenderLevelSelect(GameState *state);
 void RenderResult(GameState *state);
+void RenderNickname(GameState *state);
+void RenderScoreboard(GameState *state);
+void RenderMenuSettings(GameState *state);
 
 #endif // RENDER_H
