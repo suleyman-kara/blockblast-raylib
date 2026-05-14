@@ -22,6 +22,8 @@ python3 build.py --no-make    # raylib Makefile kullanmadan derle
 
 ## Proje Yapısı
 
+Daha detaylı anlatım ve şemalar için [docs/codebase-guide.md](docs/codebase-guide.md) dosyasına bakabilirsiniz.
+
 ```text
 src/main.c            Program girişi, pencere ve ana döngü
 src/game.c            Oyunu başlatma, resetleme, ekran akışı ve ayarlar
