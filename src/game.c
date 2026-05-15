@@ -59,6 +59,19 @@ void GameReset(GameState *state)
     GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
 }
 
+static void ResetScoreboardAndHighScore(GameState *state)
+{
+    state->scoreboardCount = 0;
+    for (int i = 0; i < 10; i++) {
+        state->scoreboardScores[i] = 0;
+        state->scoreboardNames[i][0] = '\0';
+    }
+    ScoreboardSave(state->scoreboardScores, state->scoreboardNames, 0);
+
+    state->highScore = 0;
+    ScoreSaveHigh(state->highScore);
+}
+
 
 // Helper: get the rectangle for a level button on the level select screen
 static Rectangle GetLevelButtonRect(int levelIndex)
@@ -355,12 +368,7 @@ void GameUpdate(GameState *state)
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, resetSBBtn)) {
                     SoundPlayMenuClick(&state->sound);
-                    state->scoreboardCount = 0;
-                    for (int i = 0; i < 10; i++) {
-                        state->scoreboardScores[i] = 0;
-                        state->scoreboardNames[i][0] = '\0';
-                    }
-                    ScoreboardSave(state->scoreboardScores, state->scoreboardNames, 0);
+                    ResetScoreboardAndHighScore(state);
                 } else if (CheckCollisionPointRec(mouse, backBtn)) {
                     SoundPlayMenuClick(&state->sound);
                     state->currentScreen = SCREEN_MENU;
