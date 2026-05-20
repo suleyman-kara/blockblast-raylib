@@ -1,6 +1,0 @@
-build/
-data/
-*.zip
-*.tar.gz
-release/
-.vscode/

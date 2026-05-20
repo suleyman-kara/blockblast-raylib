@@ -1,0 +1,2975 @@
+#include "raylib.h"
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#define PI 3.14
+
+Font gameFont = { 0 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BLOCK BLAST — Single file with all constants and colours
+//  ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Screen & Layout
+// ──────────────────────────────────────────────────────────
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 800
+#define CELL_SIZE 50
+#define GRID_DRAW_X 40
+#define GRID_DRAW_Y 130
+#define PANEL_Y 580
+
+// ─── Grid
+// ─────────────────────────────────────────────────────────────────────
+#define GRID_SIZE 8
+#define CELL_EMPTY 0
+#define GEM_NONE 0
+#define GEM_DIAMOND 1
+#define GEM_EMERALD 2
+
+// ─── Piece System
+// ─────────────────────────────────────────────────────────────
+#define MAX_PIECE_SIZE 5
+#define PIECE_DEF_COUNT 18
+#define PANEL_PIECE_SCALE 25
+
+// ─── Scoring
+// ──────────────────────────────────────────────────────────────────
+#define BASE_SCORE 100
+#define ScoreCalculate(lines, combo) (BASE_SCORE * (lines) * (combo))
+
+// ─── Banner
+// ───────────────────────────────────────────────────────────────────
+#define BANNER_DURATION 1.8f
+
+// ─── Animation
+// ────────────────────────────────────────────────────────────────
+#define CLEAR_ANIM_DURATION 0.35f
+#define MAX_ANIMS 16
+
+// ─── Floating Text
+// ────────────────────────────────────────────────────────────
+#define MAX_FLOAT_TEXTS 8
+#define FLOAT_TEXT_LEN 32
+#define FLOAT_TEXT_DURATION 1.2f
+#define FLOAT_TEXT_SPEED 60.0f
+
+// ─── Particles
+// ────────────────────────────────────────────────────────────────
+#define MAX_PARTICLES 512
+#define PARTICLE_LIFE 0.7f
+
+// ─── Adventure Mode
+// ───────────────────────────────────────────────────────────
+#define TOTAL_LEVELS 10
+#define LEVELS_PER_ROW 3
+#define DIAMOND_SPAWN_CHANCE 0.15f
+#define EMERALD_SPAWN_CHANCE 0.12f
+
+// ─── Settings Menu
+// ────────────────────────────────────────────────────────────
+#define SETTING_COUNT 4
+#define SETTING_SFX 0
+#define SETTING_MUSIC 1
+#define SETTING_RESTART 2
+#define SETTING_QUIT 3
+#define SETTINGS_ICON_SIZE 40
+
+// ─── Buttons (tüm ekranlarda aynı boyut)
+// ──────────────────────────────────────
+#define BTN_W 220
+#define BTN_H 50
+#define BTN_GAP 15
+#define BTN_X ((SCREEN_WIDTH - BTN_W) / 2)
+#define BTN_CORNER_RADIUS 0.25f
+#define BTN_BORDER_SEGMENTS 8
+
+// ─── Gear Icon
+// ────────────────────────────────────────────────────────────────
+#define GEAR_X (SCREEN_WIDTH - 50)
+#define GEAR_Y 10
+#define GEAR_SIZE 36
+
+// ─── Menu Buttons (Y pozisyonları)
+// ────────────────────────────────────────────
+#define MENU_STD_Y 330
+#define MENU_ADV_Y 400
+#define MENU_QUIT_Y 470
+
+// ─── Title & Subtitle
+// ─────────────────────────────────────────────────────────
+#define TITLE_FONT_SIZE 65
+#define SUBTITLE_FONT_SIZE 32
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Colour palette — flat constants, no structs
+//  ═══════════════════════════════════════════════════════════════════════════════
+
+// Background colour for the whole screen
+#define COLOR_BG ((Color){40, 60, 100, 255})
+#define BG_COLOR COLOR_BG // backward compatibility
+
+// ─── Piece colours (index 0 = empty, 1-7 = piece colours) ────────────────────
+static const Color PIECE_COLORS[] = {
+    {40, 40, 60, 255},   // 0 = empty cell
+    {255, 87, 87, 255},  // 1 = red
+    {255, 189, 46, 255}, // 2 = yellow
+    {46, 204, 113, 255}, // 3 = green
+    {52, 152, 219, 255}, // 4 = blue
+    {155, 89, 182, 255}, // 5 = purple
+    {255, 147, 51, 255}, // 6 = orange
+    {26, 188, 156, 255}, // 7 = teal
+};
+
+// ─── Text
+// ─────────────────────────────────────────────────────────────────────
+#define COLOR_TEXT_PRIMARY ((Color){255, 255, 255, 255})
+#define COLOR_TEXT_SECONDARY ((Color){150, 150, 170, 255})
+#define COLOR_TEXT_MUTED ((Color){100, 100, 140, 200})
+
+// ─── Settings overlay
+// ─────────────────────────────────────────────────────────
+#define SETTINGS_CARD_WIDTH 320
+#define SETTINGS_CARD_HEIGHT 430
+#define SETTINGS_TITLE_FONT_SIZE 30
+#define SETTINGS_CARD_PADDING_X 40
+
+// ─── Gems
+// ─────────────────────────────────────────────────────────────────────
+#define GEM_SIZE_RATIO 0.50f
+
+/* ---- Piece types and declarations ---- */
+
+// A block piece with its shape matrix and metadata
+typedef struct {
+    int shape[MAX_PIECE_SIZE][MAX_PIECE_SIZE]; // 1 = filled, 0 = empty
+    int width;
+    int height;
+    int colorIndex; // 1-7 maps to a color in the palette
+    int gemCells[MAX_PIECE_SIZE][MAX_PIECE_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
+} Piece;
+
+// A slot in the bottom panel holding one piece.
+// occupied=false means the player already used this slot.
+typedef struct {
+    Piece piece;
+    bool occupied;
+    float posX;      // screen X for drawing in bottom panel
+    float posY;      // screen Y for drawing in bottom panel
+} PieceSlot;
+
+// Static piece shape definition (used as templates)
+typedef struct {
+    int shape[MAX_PIECE_SIZE][MAX_PIECE_SIZE];
+    int width;
+    int height;
+} PieceDef;
+
+// Get the array of all piece definitions
+const PieceDef *GetPieceDefinitions(void);
+
+// Fill out with a random piece definition and color.
+// Pass 0,0 for no gems (classic mode).
+void PieceGenerate(Piece *out, float diamondChance, float emeraldChance);
+
+void SlotClear(PieceSlot *slot);
+bool SlotIsOccupied(const PieceSlot *slot);
+
+// Generate 3 random pieces into the given slots
+// Pass 0,0 for gem chances in classic mode
+void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
+                           float diamondChance, float emeraldChance);
+
+// Check if all 3 slots are empty (pieces used up)
+bool AllSlotsEmpty(PieceSlot slots[3]);
+
+/* ---- Board types and declarations ---- */
+
+// Board: 8x8 grid where blocks are placed
+typedef struct {
+  int cells[GRID_SIZE]
+           [GRID_SIZE]; // 0 = empty, 1-7 = color index, 8=ice, 9=stone
+  int gems[GRID_SIZE][GRID_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
+} Board;
+
+// Initialize all cells to CELL_EMPTY and gems to GEM_NONE
+void BoardInit(Board *board);
+
+// Check if a piece can be placed at grid position (row, col)
+bool BoardCanPlace(Board *board, Piece *piece, int row, int col);
+
+// Place piece onto the board at (row, col). Assumes BoardCanPlace was checked.
+// Also copies gem data from piece's gemCells into board's gems array.
+void BoardPlace(Board *board, Piece *piece, int row, int col);
+
+// Scan and clear full rows/columns. Returns number of lines cleared.
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
+
+// Check if any remaining piece in slots can fit anywhere on the board
+bool BoardHasValidMove(Board *board, PieceSlot slots[3]);
+
+// Pre-fill the board with random pieces that may contain allowed target gems
+void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
+                      bool allowEmeralds);
+
+/* ---- Effect types and declarations ---- */
+
+typedef struct {
+    bool active;
+    float timer;
+    int row;
+    int col;
+} ClearAnim;
+
+typedef struct {
+    ClearAnim items[MAX_ANIMS * GRID_SIZE];
+    int count;
+} AnimQueue;
+
+typedef struct {
+    bool active;
+    Vector2 pos;
+    Vector2 vel;
+    float life;
+    float maxLife;
+    float size;
+    Color color;
+    float gravity;
+} Particle;
+
+typedef struct {
+    Particle items[MAX_PARTICLES];
+    int count;
+} ParticleSystem;
+
+typedef struct {
+    bool active;
+    char text[FLOAT_TEXT_LEN];
+    float x, y;
+    float startY;
+    float timer;
+    float duration;
+    float speed;
+    int fontSize;
+    Color color;
+} FloatText;
+
+typedef struct {
+    FloatText items[MAX_FLOAT_TEXTS];
+    int count;
+} FloatTextQueue;
+
+void AnimAddCleared(AnimQueue *queue, bool clearedCells[GRID_SIZE][GRID_SIZE]);
+bool AnimUpdate(AnimQueue *queue, float dt);
+bool AnimIsActive(AnimQueue *queue);
+float AnimGetCellAlpha(AnimQueue *queue, int row, int col);
+
+void ParticleEmit(ParticleSystem *ps, float x, float y, Color color, int count);
+void ParticleUpdate(ParticleSystem *ps, float dt);
+void ParticleDraw(ParticleSystem *ps);
+
+void FloatTextAdd(FloatTextQueue *queue, const char *text,
+                  float centerX, float startY,
+                  int fontSize, Color color);
+void FloatTextUpdate(FloatTextQueue *queue, float dt);
+void FloatTextDraw(FloatTextQueue *queue);
+
+/* ---- Sound types and declarations ---- */
+
+// Sound system — holds all loaded audio resources and volume state
+typedef struct {
+    // Sound effects
+    Sound sfxPlace;       // block-placing.ogg
+    Sound sfxLineClear1;  // line-clear-1.ogg
+    Sound sfxLineClear2;  // line-clear-2.ogg
+    Sound sfxCombo1;      // combo-1.ogg
+    Sound sfxCombo2;      // combo-2.ogg
+    Sound sfxLose;        // lose.ogg
+    Sound sfxMenuClick;   // menu-click.ogg
+
+    // Background music
+    Music bgMusic;        // background-music.wav
+
+    // Toggle state
+    bool sfxEnabled;
+    bool musicEnabled;
+} SoundSystem;
+
+// Initialize audio device and load all sound resources
+void SoundInit(SoundSystem *snd);
+
+// Unload all sound resources and close audio device
+void SoundClose(SoundSystem *snd);
+
+// Must be called every frame to keep music stream playing
+void SoundUpdate(SoundSystem *snd);
+
+// Toggle functions
+void SoundToggleSfx(SoundSystem *snd);
+void SoundToggleMusic(SoundSystem *snd);
+
+// Play specific sound effects (respects sfxEnabled)
+void SoundPlayPlace(SoundSystem *snd);
+void SoundPlayLineClear(SoundSystem *snd, int linesCleared);
+void SoundPlayCombo(SoundSystem *snd, int comboCount);
+void SoundPlayLose(SoundSystem *snd);
+void SoundPlayMenuClick(SoundSystem *snd);
+
+/* ---- Level types and declarations ---- */
+
+// ─── Level Definition (immutable, const array) ────────────────────────────────
+// Level 0 = classic (infinite play, all targets 0)
+// Levels 1-10 = adventure levels
+typedef struct {
+    int level;
+    int targetScore;      // 0 = no score target
+    int targetDiamonds;   // 0 = no diamond target
+    int targetEmeralds;   // 0 = no emerald target
+    int prefillCount;     // random pieces to pre-place on board
+} LevelDef;
+
+// ─── Level State (mutable, runtime) ──────────────────────────────────────────
+typedef struct {
+    int currentLevel;         // index into level defs (0 = classic)
+    int collectedDiamonds;
+    int collectedEmeralds;
+    bool levelComplete;
+    bool levelFailed;
+} LevelState;
+
+// ─── Public Functions ─────────────────────────────────────────────────────────
+
+// Get the level definitions array (index 0 = classic, 1-10 = adventure)
+const LevelDef *LevelGetDefs(void);
+
+// Initialize level state + board for a given level
+void LevelInit(LevelState *state, int levelIndex, Board *board);
+
+// Check if all goals are met. Returns false for classic (level 0).
+bool LevelCheckGoal(LevelState *state, int currentScore);
+
+// Check if no valid moves remain
+bool LevelCheckFailure(Board *board, PieceSlot slots[3]);
+
+static inline bool LevelIsUnlocked(int unlockedLevel, int lvl) {
+    return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl <= unlockedLevel);
+}
+
+static inline bool LevelIsCompleted(int unlockedLevel, int lvl) {
+    return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl < unlockedLevel);
+}
+
+/* ---- Texture types and declarations ---- */
+
+// Central repository for all game textures.
+// Loaded once at startup, unloaded at shutdown.
+typedef struct {
+    Texture2D crown;
+    Texture2D diamond;
+    Texture2D emerald;
+    Texture2D home;
+    Texture2D lock;
+    Texture2D logout;
+    Texture2D musicalNote;
+    Texture2D waveSound;
+    Texture2D replay;
+    Texture2D completed;
+    Texture2D logo;
+} GameTextures;
+
+// Global instance
+extern GameTextures gameTextures;
+
+// Load all game textures (call once at startup after InitWindow)
+void TexturesLoad(void);
+
+// Unload all game textures (call once at shutdown before CloseWindow)
+void TexturesUnload(void);
+
+/* ---- UI layout helpers ---- */
+
+typedef struct {
+    int cardX;
+    int cardY;
+    int iconAreaY;
+    Rectangle sfxIcon;
+    Rectangle musicIcon;
+    Rectangle firstButton;
+    Rectangle secondButton;
+    Rectangle thirdButton;
+} SettingsLayout;
+
+static inline SettingsLayout GetSettingsLayout(bool hasThreeButtons)
+{
+    SettingsLayout layout;
+    int iconSpacing;
+    int iconStartX;
+    int firstButtonY;
+    int secondButtonY;
+    int thirdButtonY;
+
+    layout.cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
+    layout.cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
+    layout.iconAreaY = layout.cardY + 85;
+
+    iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
+    iconStartX = layout.cardX + SETTINGS_CARD_PADDING_X;
+
+    layout.sfxIcon = (Rectangle){
+        (float)(iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2),
+        (float)layout.iconAreaY,
+        SETTINGS_ICON_SIZE,
+        SETTINGS_ICON_SIZE
+    };
+    layout.musicIcon = (Rectangle){
+        (float)(iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2),
+        (float)layout.iconAreaY,
+        SETTINGS_ICON_SIZE,
+        SETTINGS_ICON_SIZE
+    };
+
+    firstButtonY = layout.iconAreaY + SETTINGS_ICON_SIZE + 40;
+    secondButtonY = firstButtonY + BTN_H + BTN_GAP;
+    thirdButtonY = secondButtonY + BTN_H + BTN_GAP;
+
+    layout.firstButton = (Rectangle){ (float)BTN_X, (float)firstButtonY, BTN_W, BTN_H };
+    layout.secondButton = (Rectangle){ (float)BTN_X, (float)secondButtonY, BTN_W, BTN_H };
+    layout.thirdButton = hasThreeButtons
+        ? (Rectangle){ (float)BTN_X, (float)thirdButtonY, BTN_W, BTN_H }
+        : (Rectangle){ 0, 0, 0, 0 };
+
+    return layout;
+}
+
+/* ---- Game state and declarations ---- */
+
+// Global font loaded from a TrueType file (defined in main.c)
+extern Font gameFont;
+
+// Game screens
+typedef enum {
+    SCREEN_MENU,
+    SCREEN_PLAY,          // unified classic + adventure
+    SCREEN_LEVEL_SELECT,
+    SCREEN_RESULT,        // adaptive win/lose
+    SCREEN_SETTINGS,
+    SCREEN_MENU_SETTINGS  // settings from main menu
+} Screen;
+
+// Central game state — passed by pointer to all modules
+typedef struct {
+    Screen currentScreen;
+    Board board;
+    PieceSlot slots[3];
+    int score;
+    int highScore;
+    int combo;
+
+    // Drag state
+    bool isDragging;
+    int dragSlotIndex;
+    Vector2 dragPos;      // current drag position (screen coords)
+    Vector2 dragOffset;   // offset from piece origin to mouse
+
+    // Animation & effects
+    AnimQueue anims;
+    FloatTextQueue floatTexts;
+    ParticleSystem particles;
+
+    // Settings menu
+    int selectedSetting;
+
+    // Sound system
+    SoundSystem sound;
+
+    // Level
+    LevelState level;
+    int selectedLevel;              // 0 = classic, 1-10 = adventure
+    int unlockedLevel;              // 1 = first adventure level, TOTAL_LEVELS + 1 = all completed
+
+    Screen prevScreen;  // screen before settings overlay
+} GameState;
+
+// Initialize a new game state
+void GameInit(GameState *state);
+
+// Update game logic for one frame
+void GameUpdate(GameState *state);
+
+// Reset board and slots for a new game (uses selectedLevel to determine behavior)
+void GameReset(GameState *state);
+
+// Update settings screen logic (keyboard/mouse navigation)
+void GameUpdateSettings(GameState *state);
+void GameUpdateMenuSettings(GameState *state);
+
+/* ---- Save declarations ---- */
+
+void SaveLoad(int *highScore, int *unlockedLevel);
+void SaveWrite(int highScore, int unlockedLevel);
+
+/* ---- Input declarations ---- */
+
+// Process mouse input: drag start, drag move, drop
+void InputUpdate(GameState *state);
+
+/* ---- Render declarations ---- */
+
+// Draw the entire game frame based on current state
+void RenderFrame(GameState *state);
+
+// Sub-render functions (called by RenderFrame)
+void RenderBoard(GameState *state);
+void RenderGhost(GameState *state);
+void RenderPieceSlots(GameState *state);
+void RenderDraggedPiece(GameState *state);
+void DrawBlockBeveled(int x, int y, int size, Color baseColor);
+void RenderPlayHUD(GameState *state);
+void RenderGearIcon(void);
+void DrawGemIcon(int x, int y, int cellSize, int gemType);
+void RenderMenu(GameState *state);
+void RenderSettings(GameState *state);
+void RenderLevelSelect(GameState *state);
+void RenderResult(GameState *state);
+void RenderMenuSettings(GameState *state);
+
+/* ------------------------------------------------------------------------- */
+/* Implementation                                                            */
+/* ------------------------------------------------------------------------- */
+
+/* ---- Piece implementation ---- */
+
+// ---- All piece shape definitions ----
+static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
+    // 1x1
+    { .shape = {{1}}, .width = 1, .height = 1 },
+    // 1x2 horizontal
+    { .shape = {{1,1}}, .width = 2, .height = 1 },
+    // 2x1 vertical
+    { .shape = {{1},{1}}, .width = 1, .height = 2 },
+    // 1x3 horizontal
+    { .shape = {{1,1,1}}, .width = 3, .height = 1 },
+    // 3x1 vertical
+    { .shape = {{1},{1},{1}}, .width = 1, .height = 3 },
+    // 1x4 horizontal
+    { .shape = {{1,1,1,1}}, .width = 4, .height = 1 },
+    // 4x1 vertical
+    { .shape = {{1},{1},{1},{1}}, .width = 1, .height = 4 },
+    // 1x5 horizontal
+    { .shape = {{1,1,1,1,1}}, .width = 5, .height = 1 },
+    // 5x1 vertical
+    { .shape = {{1},{1},{1},{1},{1}}, .width = 1, .height = 5 },
+    // 2x2 square
+    { .shape = {{1,1},{1,1}}, .width = 2, .height = 2 },
+    // 3x3 square
+    { .shape = {{1,1,1},{1,1,1},{1,1,1}}, .width = 3, .height = 3 },
+    // L-shape
+    { .shape = {{1,0},{1,0},{1,1}}, .width = 2, .height = 3 },
+    // Reverse L
+    { .shape = {{0,1},{0,1},{1,1}}, .width = 2, .height = 3 },
+    // L rotated
+    { .shape = {{1,1,1},{1,0,0}}, .width = 3, .height = 2 },
+    // Reverse L rotated
+    { .shape = {{1,1,1},{0,0,1}}, .width = 3, .height = 2 },
+    // T-shape
+    { .shape = {{1,1,1},{0,1,0}}, .width = 3, .height = 2 },
+    // Z-shape
+    { .shape = {{1,1,0},{0,1,1}}, .width = 3, .height = 2 },
+    // S-shape
+    { .shape = {{0,1,1},{1,1,0}}, .width = 3, .height = 2 },
+};
+
+
+const PieceDef *GetPieceDefinitions(void)
+{
+    return PIECE_DEFS;
+}
+
+void PieceGenerate(Piece *p, float diamondChance, float emeraldChance)
+{
+    if (!p) return;
+    memset(p, 0, sizeof(Piece));
+
+    int defIndex = rand() % PIECE_DEF_COUNT;
+    const PieceDef *def = &PIECE_DEFS[defIndex];
+
+    // Copy shape
+    for (int r = 0; r < MAX_PIECE_SIZE; r++)
+        for (int c = 0; c < MAX_PIECE_SIZE; c++)
+            p->shape[r][c] = def->shape[r][c];
+
+    p->width = def->width;
+    p->height = def->height;
+    p->colorIndex = (rand() % 7) + 1; // 1-7
+
+    // Initialize gems
+    memset(p->gemCells, GEM_NONE, sizeof(p->gemCells));
+
+    // Randomly assign gems to filled cells
+    if (diamondChance > 0.0f || emeraldChance > 0.0f) {
+        for (int r = 0; r < p->height; r++) {
+            for (int c = 0; c < p->width; c++) {
+                if (p->shape[r][c] == 0) continue;
+
+                float roll = (float)rand() / (float)RAND_MAX;
+                if (emeraldChance > 0.0f && roll < emeraldChance) {
+                    p->gemCells[r][c] = GEM_EMERALD;
+                } else if (diamondChance > 0.0f && roll < diamondChance + emeraldChance) {
+                    p->gemCells[r][c] = GEM_DIAMOND;
+                }
+                // else: GEM_NONE
+            }
+        }
+    }
+
+}
+
+void SlotClear(PieceSlot *slot)
+{
+    if (!slot) return;
+    memset(&slot->piece, 0, sizeof(Piece));
+    slot->occupied = false;
+}
+
+bool SlotIsOccupied(const PieceSlot *slot)
+{
+    return slot && slot->occupied;
+}
+
+void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
+                           float diamondChance, float emeraldChance)
+{
+    // Divide the bottom panel into 3 equal sections
+    float sectionWidth = screenWidth / 3.0f;
+
+    for (int i = 0; i < 3; i++) {
+        PieceGenerate(&slots[i].piece, diamondChance, emeraldChance);
+        slots[i].occupied = true;
+
+        // Center each piece in its section
+        float piecePixelW = slots[i].piece.width * (float)PANEL_PIECE_SCALE;
+        slots[i].posX = sectionWidth * i + (sectionWidth - piecePixelW) / 2.0f;
+        slots[i].posY = panelY + 20.0f;
+    }
+}
+
+bool AllSlotsEmpty(PieceSlot slots[3])
+{
+    for (int i = 0; i < 3; i++) {
+        if (SlotIsOccupied(&slots[i])) return false;
+    }
+    return true;
+}
+
+/* ---- Board implementation ---- */
+
+void BoardInit(Board *board)
+{
+    memset(board->cells, CELL_EMPTY, sizeof(board->cells));
+    memset(board->gems, GEM_NONE, sizeof(board->gems));
+}
+
+bool BoardCanPlace(Board *board, Piece *piece, int row, int col)
+{
+    if (!piece) return false;
+
+    for (int r = 0; r < piece->height; r++) {
+        for (int c = 0; c < piece->width; c++) {
+            if (piece->shape[r][c] == 0) continue;
+
+            int gr = row + r;
+            int gc = col + c;
+
+            // Out of bounds check
+            if (gr < 0 || gr >= GRID_SIZE || gc < 0 || gc >= GRID_SIZE)
+                return false;
+
+            // Collision check (empty, ice, or stone all block placement)
+            if (board->cells[gr][gc] != CELL_EMPTY)
+                return false;
+        }
+    }
+    return true;
+}
+
+void BoardPlace(Board *board, Piece *piece, int row, int col)
+{
+    for (int r = 0; r < piece->height; r++) {
+        for (int c = 0; c < piece->width; c++) {
+            if (piece->shape[r][c] == 0) continue;
+            board->cells[row + r][col + c] = piece->colorIndex;
+            board->gems[row + r][col + c] = piece->gemCells[r][c];
+        }
+    }
+}
+
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE])
+{
+    int cleared = 0;
+    bool rowFull[GRID_SIZE] = {false};
+    bool colFull[GRID_SIZE] = {false};
+
+    // Initialize clearedCells to false
+    memset(clearedCells, false, sizeof(bool) * GRID_SIZE * GRID_SIZE);
+
+    // Check which rows are full
+    for (int r = 0; r < GRID_SIZE; r++) {
+        rowFull[r] = true;
+        for (int c = 0; c < GRID_SIZE; c++) {
+            if (board->cells[r][c] == CELL_EMPTY) {
+                rowFull[r] = false;
+                break;
+            }
+        }
+        if (rowFull[r]) cleared++;
+    }
+
+    // Check which columns are full
+    for (int c = 0; c < GRID_SIZE; c++) {
+        colFull[c] = true;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            if (board->cells[r][c] == CELL_EMPTY) {
+                colFull[c] = false;
+                break;
+            }
+        }
+        if (colFull[c]) cleared++;
+    }
+
+    // Mark and clear full rows
+    for (int r = 0; r < GRID_SIZE; r++) {
+        if (!rowFull[r]) continue;
+        for (int c = 0; c < GRID_SIZE; c++) {
+            clearedCells[r][c] = true;
+            board->cells[r][c] = CELL_EMPTY;
+            board->gems[r][c] = GEM_NONE;
+        }
+    }
+
+    // Mark and clear full columns
+    for (int c = 0; c < GRID_SIZE; c++) {
+        if (!colFull[c]) continue;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            clearedCells[r][c] = true;
+            board->cells[r][c] = CELL_EMPTY;
+            board->gems[r][c] = GEM_NONE;
+        }
+    }
+
+    return cleared;
+}
+
+
+bool BoardHasValidMove(Board *board, PieceSlot slots[3])
+{
+    for (int s = 0; s < 3; s++) {
+        if (!SlotIsOccupied(&slots[s])) continue;
+
+        Piece *p = &slots[s].piece;
+        for (int r = 0; r <= GRID_SIZE - p->height; r++) {
+            for (int c = 0; c <= GRID_SIZE - p->width; c++) {
+                if (BoardCanPlace(board, p, r, c))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
+                      bool allowEmeralds)
+{
+    // Use the piece definitions to get random shapes
+    const PieceDef *defs = GetPieceDefinitions();
+
+    for (int i = 0; i < count; i++) {
+        // Pick a random piece definition
+        int defIndex = rand() % PIECE_DEF_COUNT;
+        const PieceDef *def = &defs[defIndex];
+
+        // Try to find a valid position (max 50 attempts)
+        for (int attempt = 0; attempt < 50; attempt++) {
+            int row = rand() % (GRID_SIZE - def->height + 1);
+            int col = rand() % (GRID_SIZE - def->width + 1);
+
+            // Use BoardCanPlace logic via a temporary Piece
+            Piece tempPiece;
+            memset(&tempPiece, 0, sizeof(tempPiece));
+            memcpy(tempPiece.shape, def->shape, sizeof(def->shape));
+            tempPiece.width = def->width;
+            tempPiece.height = def->height;
+            tempPiece.colorIndex = 1;
+
+            if (!BoardCanPlace(board, &tempPiece, row, col)) continue;
+
+            // Place the piece with a random color
+            int colorIdx = (rand() % 7) + 1;
+            for (int r = 0; r < def->height; r++) {
+                for (int c = 0; c < def->width; c++) {
+                    if (def->shape[r][c] == 0) continue;
+                    board->cells[row + r][col + c] = colorIdx;
+
+                    // Assign only target-relevant gems to some cells.
+                    if ((allowDiamonds || allowEmeralds) && (rand() % 100) < 30) {
+                        if (allowDiamonds && allowEmeralds) {
+                            board->gems[row + r][col + c] =
+                                (rand() % 2) == 0 ? GEM_DIAMOND : GEM_EMERALD;
+                        } else if (allowDiamonds) {
+                            board->gems[row + r][col + c] = GEM_DIAMOND;
+                        } else {
+                            board->gems[row + r][col + c] = GEM_EMERALD;
+                        }
+                    }
+                }
+            }
+            break; // Successfully placed
+        }
+    }
+}
+
+/* ---- Effects implementation ---- */
+
+void AnimAddCleared(AnimQueue *queue, bool clearedCells[GRID_SIZE][GRID_SIZE])
+{
+    for (int r = 0; r < GRID_SIZE; r++) {
+        for (int c = 0; c < GRID_SIZE; c++) {
+            if (!clearedCells[r][c]) continue;
+            if (queue->count >= MAX_ANIMS * GRID_SIZE) return;
+
+            ClearAnim *a = &queue->items[queue->count++];
+            a->active = true;
+            a->timer = CLEAR_ANIM_DURATION;
+            a->row = r;
+            a->col = c;
+        }
+    }
+}
+
+bool AnimUpdate(AnimQueue *queue, float dt)
+{
+    bool anyActive = false;
+
+    for (int i = 0; i < queue->count; i++) {
+        ClearAnim *a = &queue->items[i];
+        if (!a->active) continue;
+
+        a->timer -= dt;
+        if (a->timer <= 0.0f) {
+            a->active = false;
+        } else {
+            anyActive = true;
+        }
+    }
+
+    // If no active animations, reset the queue
+    if (!anyActive) {
+        queue->count = 0;
+    }
+
+    return anyActive;
+}
+
+bool AnimIsActive(AnimQueue *queue)
+{
+    for (int i = 0; i < queue->count; i++) {
+        if (queue->items[i].active) return true;
+    }
+    return false;
+}
+
+float AnimGetCellAlpha(AnimQueue *queue, int row, int col)
+{
+    for (int i = 0; i < queue->count; i++) {
+        ClearAnim *a = &queue->items[i];
+        if (a->active && a->row == row && a->col == col) {
+            return a->timer / CLEAR_ANIM_DURATION; // 1.0 -> 0.0 fade out
+        }
+    }
+    return -1.0f; // not being animated
+}
+
+void ParticleEmit(ParticleSystem *ps, float x, float y,
+                  Color color, int count)
+{
+    for (int i = 0; i < count; i++) {
+        if (ps->count >= MAX_PARTICLES) return;
+
+        Particle *p = &ps->items[ps->count++];
+        p->active = true;
+        p->pos = (Vector2){x, y};
+
+        // Random direction and speed
+        float angle = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+        float speed = 80.0f + ((float)rand() / (float)RAND_MAX) * 160.0f;
+        p->vel = (Vector2){cosf(angle) * speed, sinf(angle) * speed};
+
+        p->life = PARTICLE_LIFE + ((float)rand() / (float)RAND_MAX) * 0.4f;
+        p->maxLife = p->life;
+        p->size = 3.0f + ((float)rand() / (float)RAND_MAX) * 4.0f;
+        p->gravity = 200.0f + ((float)rand() / (float)RAND_MAX) * 100.0f;
+
+        // Slight color variation
+        p->color = color;
+        int variation = (rand() % 40) - 20;
+        p->color.r = (unsigned char)fminf(255, fmaxf(0, color.r + variation));
+        p->color.g = (unsigned char)fminf(255, fmaxf(0, color.g + variation));
+    }
+}
+
+void ParticleUpdate(ParticleSystem *ps, float dt)
+{
+    bool anyActive = false;
+
+    for (int i = 0; i < ps->count; i++) {
+        Particle *p = &ps->items[i];
+        if (!p->active) continue;
+
+        p->life -= dt;
+        if (p->life <= 0.0f) {
+            p->active = false;
+            continue;
+        }
+
+        anyActive = true;
+
+        // Apply gravity
+        p->vel.y += p->gravity * dt;
+
+        // Move
+        p->pos.x += p->vel.x * dt;
+        p->pos.y += p->vel.y * dt;
+    }
+
+    // Reset count if all inactive
+    if (!anyActive) ps->count = 0;
+}
+
+void ParticleDraw(ParticleSystem *ps)
+{
+    for (int i = 0; i < ps->count; i++) {
+        Particle *p = &ps->items[i];
+        if (!p->active) continue;
+
+        float t = p->life / p->maxLife;  // 1.0 -> 0.0
+
+        // Size shrinks over time
+        float currentSize = p->size * t;
+        if (currentSize < 0.5f) continue;
+
+        // Alpha fades
+        Color clr = p->color;
+        clr.a = (unsigned char)(t * 255.0f);
+
+        DrawRectangle(
+            (int)(p->pos.x - currentSize / 2),
+            (int)(p->pos.y - currentSize / 2),
+            (int)currentSize + 1,
+            (int)currentSize + 1,
+            clr
+        );
+    }
+}
+
+void FloatTextAdd(FloatTextQueue *queue, const char *text,
+                  float centerX, float startY,
+                  int fontSize, Color color)
+{
+    // Find an inactive slot or use the oldest one
+    int idx = -1;
+    for (int i = 0; i < queue->count; i++) {
+        if (!queue->items[i].active) {
+            idx = i;
+            break;
+        }
+    }
+
+    if (idx < 0) {
+        if (queue->count < MAX_FLOAT_TEXTS) {
+            idx = queue->count++;
+        } else {
+            // Overwrite the oldest (first) item
+            idx = 0;
+        }
+    }
+
+    FloatText *ft = &queue->items[idx];
+    ft->active = true;
+    strncpy(ft->text, text, FLOAT_TEXT_LEN - 1);
+    ft->text[FLOAT_TEXT_LEN - 1] = '\0';
+    ft->x = centerX;
+    ft->y = startY;
+    ft->startY = startY;
+    ft->timer = FLOAT_TEXT_DURATION;
+    ft->duration = FLOAT_TEXT_DURATION;
+    ft->speed = FLOAT_TEXT_SPEED;
+    ft->fontSize = fontSize;
+    ft->color = color;
+}
+
+void FloatTextUpdate(FloatTextQueue *queue, float dt)
+{
+    for (int i = 0; i < queue->count; i++) {
+        FloatText *ft = &queue->items[i];
+        if (!ft->active) continue;
+
+        ft->timer -= dt;
+        ft->y -= ft->speed * dt;  // move upward
+
+        if (ft->timer <= 0.0f) {
+            ft->active = false;
+        }
+    }
+
+    // Compact: if all inactive, reset count
+    bool anyActive = false;
+    for (int i = 0; i < queue->count; i++) {
+        if (queue->items[i].active) {
+            anyActive = true;
+            break;
+        }
+    }
+    if (!anyActive) queue->count = 0;
+}
+
+void FloatTextDraw(FloatTextQueue *queue)
+{
+    for (int i = 0; i < queue->count; i++) {
+        FloatText *ft = &queue->items[i];
+        if (!ft->active) continue;
+
+        float t = ft->timer / ft->duration;  // 1.0 -> 0.0
+        unsigned char alpha = (unsigned char)(t * 255.0f);
+
+        // Scale effect: start slightly larger, settle to normal
+        float scale = 1.0f + (1.0f - t) * 0.15f;
+        int fontSize = (int)(ft->fontSize * scale);
+
+        Color clr = ft->color;
+        clr.a = alpha;
+
+        int w = (int)MeasureTextEx(gameFont, ft->text, (float)fontSize, 1.0f).x;
+        DrawTextEx(gameFont, ft->text, (Vector2){ft->x - w / 2.0f, ft->y},
+                   (float)fontSize, 1.0f, clr);
+    }
+}
+
+/* ---- Level implementation ---- */
+
+// ─── Level Definitions ────────────────────────────────────────────────────────
+// Index 0 = classic mode (infinite, no targets)
+// Index 1-10 = adventure levels
+static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
+    // Classic mode — no targets, no prefill
+    { .level = 0,  .targetScore = 0, .targetDiamonds = 0, .targetEmeralds = 0, .prefillCount = 0 },
+
+    // Adventure levels
+    { .level = 1,  .targetScore = 500,  .prefillCount = 0 },
+    { .level = 2,  .targetScore = 1000, .prefillCount = 0 },
+    { .level = 3,  .targetDiamonds = 3, .prefillCount = 2 },
+    { .level = 4,  .targetDiamonds = 5, .prefillCount = 3 },
+    { .level = 5,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 4 },
+    { .level = 6,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 5 },
+    { .level = 7,  .targetScore = 500,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 5 },
+    { .level = 8,  .targetScore = 800,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 6 },
+    { .level = 9,  .targetScore = 1000, .targetDiamonds = 5, .targetEmeralds = 4, .prefillCount = 7 },
+    { .level = 10, .targetScore = 1500, .targetDiamonds = 6, .targetEmeralds = 5, .prefillCount = 8 },
+};
+
+const LevelDef *LevelGetDefs(void)
+{
+    return defaultLevelDefs;
+}
+
+// ─── Level Init ───────────────────────────────────────────────────────────────
+void LevelInit(LevelState *state, int levelIndex, Board *board)
+{
+    memset(state, 0, sizeof(LevelState));
+    state->currentLevel = levelIndex;
+
+    BoardInit(board);
+
+    const LevelDef *level = &defaultLevelDefs[levelIndex];
+
+    // Pre-fill board with random pieces (adventure levels only)
+    if (level->prefillCount > 0) {
+        BoardPrefillGems(board,
+                         level->prefillCount,
+                         level->targetDiamonds > 0,
+                         level->targetEmeralds > 0);
+    }
+}
+
+// ─── Goal Check ───────────────────────────────────────────────────────────────
+bool LevelCheckGoal(LevelState *state, int currentScore)
+{
+    const LevelDef *level = &defaultLevelDefs[state->currentLevel];
+
+    // Classic mode never wins
+    if (level->level == 0) return false;
+
+    // Check each target — if set (> 0) and not met, return false
+    if (level->targetScore > 0 && currentScore < level->targetScore)
+        return false;
+    if (level->targetDiamonds > 0 && state->collectedDiamonds < level->targetDiamonds)
+        return false;
+    if (level->targetEmeralds > 0 && state->collectedEmeralds < level->targetEmeralds)
+        return false;
+
+    return true;
+}
+
+// ─── Failure Check ────────────────────────────────────────────────────────────
+bool LevelCheckFailure(Board *board, PieceSlot slots[3])
+{
+    return !BoardHasValidMove(board, slots);
+}
+
+/* ---- Save implementation ---- */
+
+#define SAVE_FILE "data/save.txt"
+
+static int ClampUnlockedLevel(int unlockedLevel)
+{
+    if (unlockedLevel < 1) return 1;
+    if (unlockedLevel > TOTAL_LEVELS + 1) return TOTAL_LEVELS + 1;
+    return unlockedLevel;
+}
+
+void SaveLoad(int *highScore, int *unlockedLevel)
+{
+    char line[128];
+    FILE *f;
+
+    if (highScore) *highScore = 0;
+    if (unlockedLevel) *unlockedLevel = 1;
+
+    f = fopen(SAVE_FILE, "r");
+    if (!f) return;
+
+    while (fgets(line, sizeof(line), f)) {
+        if (strncmp(line, "highScore=", 10) == 0 && highScore) {
+            int value = atoi(line + 10);
+            if (value >= 0) *highScore = value;
+        } else if (strncmp(line, "unlockedLevel=", 14) == 0 && unlockedLevel) {
+            *unlockedLevel = ClampUnlockedLevel(atoi(line + 14));
+        }
+    }
+
+    if (unlockedLevel) *unlockedLevel = ClampUnlockedLevel(*unlockedLevel);
+    fclose(f);
+}
+
+void SaveWrite(int highScore, int unlockedLevel)
+{
+    FILE *f = fopen(SAVE_FILE, "w");
+    if (!f) return;
+
+    if (highScore < 0) highScore = 0;
+
+    fprintf(f, "# Block Blast save file\n");
+    fprintf(f, "highScore=%d\n", highScore);
+    fprintf(f, "unlockedLevel=%d\n", ClampUnlockedLevel(unlockedLevel));
+    fclose(f);
+}
+
+/* ---- Sound implementation ---- */
+
+// Path prefix for sound assets (relative to working directory)
+#define SND_PATH "assets/sounds/"
+
+void SoundInit(SoundSystem *snd)
+{
+    InitAudioDevice();
+
+    // Load sound effects
+    snd->sfxPlace      = LoadSound(SND_PATH "block-placing.ogg");
+    snd->sfxLineClear1 = LoadSound(SND_PATH "line-clear-1.ogg");
+    snd->sfxLineClear2 = LoadSound(SND_PATH "line-clear-2.ogg");
+    snd->sfxCombo1     = LoadSound(SND_PATH "combo-1.ogg");
+    snd->sfxCombo2     = LoadSound(SND_PATH "combo-2.ogg");
+    snd->sfxLose       = LoadSound(SND_PATH "lose.ogg");
+    snd->sfxMenuClick  = LoadSound(SND_PATH "menu-click.ogg");
+
+    // Load background music
+    snd->bgMusic = LoadMusicStream(SND_PATH "background-music.wav");
+    snd->bgMusic.looping = true;
+
+    // Default: both enabled
+    snd->sfxEnabled   = true;
+    snd->musicEnabled = true;
+
+    // Set default volumes
+    SetSoundVolume(snd->sfxPlace,      0.7f);
+    SetSoundVolume(snd->sfxLineClear1, 0.8f);
+    SetSoundVolume(snd->sfxLineClear2, 0.8f);
+    SetSoundVolume(snd->sfxCombo1,     0.9f);
+    SetSoundVolume(snd->sfxCombo2,     0.9f);
+    SetSoundVolume(snd->sfxLose,       0.8f);
+    SetSoundVolume(snd->sfxMenuClick,  0.6f);
+    SetMusicVolume(snd->bgMusic, 0.4f);
+
+    // Start playing background music
+    PlayMusicStream(snd->bgMusic);
+}
+
+void SoundClose(SoundSystem *snd)
+{
+    // Unload sound effects
+    UnloadSound(snd->sfxPlace);
+    UnloadSound(snd->sfxLineClear1);
+    UnloadSound(snd->sfxLineClear2);
+    UnloadSound(snd->sfxCombo1);
+    UnloadSound(snd->sfxCombo2);
+    UnloadSound(snd->sfxLose);
+    UnloadSound(snd->sfxMenuClick);
+
+    // Unload music
+    UnloadMusicStream(snd->bgMusic);
+
+    CloseAudioDevice();
+}
+
+void SoundUpdate(SoundSystem *snd)
+{
+    if (snd->musicEnabled) {
+        UpdateMusicStream(snd->bgMusic);
+    }
+}
+
+void SoundToggleSfx(SoundSystem *snd)
+{
+    snd->sfxEnabled = !snd->sfxEnabled;
+}
+
+void SoundToggleMusic(SoundSystem *snd)
+{
+    snd->musicEnabled = !snd->musicEnabled;
+    if (snd->musicEnabled) {
+        ResumeMusicStream(snd->bgMusic);
+    } else {
+        PauseMusicStream(snd->bgMusic);
+    }
+}
+
+void SoundPlayPlace(SoundSystem *snd)
+{
+    if (snd->sfxEnabled) PlaySound(snd->sfxPlace);
+}
+
+void SoundPlayLineClear(SoundSystem *snd, int linesCleared)
+{
+    if (!snd->sfxEnabled) return;
+    // Use the second (bigger) clear sound for 2+ lines
+    if (linesCleared >= 2)
+        PlaySound(snd->sfxLineClear2);
+    else
+        PlaySound(snd->sfxLineClear1);
+}
+
+void SoundPlayCombo(SoundSystem *snd, int comboCount)
+{
+    if (!snd->sfxEnabled) return;
+    // Use the second (epic) combo sound for combo >= 4
+    if (comboCount >= 4)
+        PlaySound(snd->sfxCombo2);
+    else
+        PlaySound(snd->sfxCombo1);
+}
+
+void SoundPlayLose(SoundSystem *snd)
+{
+    if (snd->sfxEnabled) PlaySound(snd->sfxLose);
+}
+
+void SoundPlayMenuClick(SoundSystem *snd)
+{
+    if (snd->sfxEnabled) PlaySound(snd->sfxMenuClick);
+}
+
+/* ---- Texture implementation ---- */
+
+// Global texture instance
+GameTextures gameTextures;
+
+void TexturesLoad(void)
+{
+    // Load all textures from PNG files
+    gameTextures.crown = LoadTexture("assets/images/crown.png");
+    gameTextures.diamond = LoadTexture("assets/images/diamond.png");
+    gameTextures.emerald = LoadTexture("assets/images/emerald.png");
+    gameTextures.home = LoadTexture("assets/images/home.png");
+    gameTextures.lock = LoadTexture("assets/images/lock.png");
+    gameTextures.logout = LoadTexture("assets/images/logout.png");
+    gameTextures.musicalNote = LoadTexture("assets/images/musical-note.png");
+    gameTextures.waveSound = LoadTexture("assets/images/wave-sound.png");
+    gameTextures.replay = LoadTexture("assets/images/replay.png");
+    gameTextures.completed = LoadTexture("assets/images/completed.png");
+    gameTextures.logo = LoadTexture("assets/images/logo.png");
+}
+
+void TexturesUnload(void)
+{
+    UnloadTexture(gameTextures.crown);
+    UnloadTexture(gameTextures.diamond);
+    UnloadTexture(gameTextures.emerald);
+    UnloadTexture(gameTextures.home);
+    UnloadTexture(gameTextures.lock);
+    UnloadTexture(gameTextures.logout);
+    UnloadTexture(gameTextures.musicalNote);
+    UnloadTexture(gameTextures.waveSound);
+    UnloadTexture(gameTextures.replay);
+    UnloadTexture(gameTextures.completed);
+    UnloadTexture(gameTextures.logo);
+}
+
+/* ---- UI rendering implementation ---- */
+
+// ─── Adventure Map UI Constants ───────────────────────────────────────────────
+#define COLOR_AMAP_LOCKED_BG       ((Color){ 25,  25,  40,  255 })
+#define COLOR_AMAP_LOCKED_BORDER   ((Color){ 40,  40,  55,  255 })
+#define COLOR_AMAP_UNLOCKED_BG     ((Color){ 40,  35,  60,  255 })
+#define COLOR_AMAP_UNLOCKED_HOVER  ((Color){ 60,  50,  80,  255 })
+#define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
+#define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
+#define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
+#define AMAP_BTN_SIZE              80
+#define AMAP_BTN_GAP               15
+#define AMAP_BTN_LABEL_GAP         30
+#define AMAP_START_Y               150
+
+// ─── Helper: draw texture full ───────────────────────────────────────────────
+static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
+{
+    DrawTexturePro(tex,
+        (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
+        (Rectangle){ (float)x, (float)y, (float)w, (float)h },
+        (Vector2){ 0, 0 }, 0.0f, WHITE);
+}
+
+// ─── Helper: draw text centered X ────────────────────────────────────────────
+static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
+{
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
+               (float)fontSize, 1.0f, color);
+}
+
+// ─── Helper: draw styled button ──────────────────────────────────────────────
+static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
+                              Color bg, Color bgHover,
+                              Color border, Color borderHover,
+                              Color textColor, Color textHover,
+                              bool hover)
+{
+    Color cBg  = hover ? bgHover  : bg;
+    Color cBrd = hover ? borderHover : border;
+    Color cTxt = hover ? textHover : textColor;
+
+    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
+    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
+
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text,
+               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
+                         btn.y + (btn.height - (float)fontSize) / 2.0f},
+               (float)fontSize, 1.0f, cTxt);
+}
+
+// ─── Helper: draw gem counter ────────────────────────────────────────────────
+static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
+                            const char *countText, int fontSize, int textYOffset,
+                            Color textColor)
+{
+    DrawTextureFull(tex, centerX - gemSize / 2, topY, gemSize, gemSize);
+    int tw = (int)MeasureTextEx(gameFont, countText, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, countText,
+               (Vector2){(float)(centerX - tw / 2), (float)(topY + textYOffset)},
+               (float)fontSize, 1.0f, textColor);
+}
+
+// ============================================================================
+//  Play HUD — adapts based on level targets
+// ============================================================================
+void RenderPlayHUD(GameState *state)
+{
+    const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+    char buf[128];
+
+    if (state->selectedLevel == 0) {
+        // Classic mode: crown + high score + score + combo
+        int crownSize = 28;
+        DrawTexturePro(gameTextures.crown,
+            (Rectangle){ 0, 0, (float)gameTextures.crown.width, (float)gameTextures.crown.height },
+            (Rectangle){ 15, 12, (float)crownSize, (float)crownSize },
+            (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+        sprintf(buf, "%d", state->highScore);
+        DrawTextEx(gameFont, buf, (Vector2){15 + crownSize + 8, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+
+        sprintf(buf, "%d", state->score);
+        int scoreW = (int)MeasureTextEx(gameFont, buf, 40.0f, 1.0f).x;
+        DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
+
+        if (state->combo > 1) {
+            sprintf(buf, "COMBO x%d", state->combo);
+            int cw = (int)MeasureTextEx(gameFont, buf, 18.0f, 1.0f).x;
+            DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
+        }
+    } else {
+        // Adventure mode: show only non-zero targets
+        int midY = 45;
+        bool hasScore = (def->targetScore > 0);
+        bool hasDiamond = (def->targetDiamonds > 0);
+        bool hasEmerald = (def->targetEmeralds > 0);
+
+        if (hasScore && !hasDiamond && !hasEmerald) {
+            // Score only
+            sprintf(buf, "%d / %d", state->score, def->targetScore);
+            DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
+        } else if (!hasScore && hasDiamond && !hasEmerald) {
+            // Diamond only
+            int gemSize = 36;
+            int remaining = def->targetDiamonds - state->level.collectedDiamonds;
+            if (remaining < 0) remaining = 0;
+            sprintf(buf, "%d", remaining);
+            DrawGemCounter(gameTextures.diamond, SCREEN_WIDTH / 2, midY - 6,
+                           gemSize, buf, 26, gemSize + 4, COLOR_TEXT_PRIMARY);
+        } else {
+            // Mixed: show all non-zero targets
+            int gemSize = 32;
+            int spacing = 125; // increased spacing
+            int centerX = SCREEN_WIDTH / 2;
+
+            if (hasScore) {
+                sprintf(buf, "%d / %d", state->score, def->targetScore);
+                DrawTextCenteredX(buf, midY + 4, 28, COLOR_TEXT_PRIMARY);
+            }
+
+            if (hasDiamond) {
+                int remaining = def->targetDiamonds - state->level.collectedDiamonds;
+                if (remaining < 0) remaining = 0;
+                sprintf(buf, "%d", remaining);
+                DrawGemCounter(gameTextures.diamond, centerX - spacing, midY - 4,
+                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
+            }
+
+            if (hasEmerald) {
+                int remaining = def->targetEmeralds - state->level.collectedEmeralds;
+                if (remaining < 0) remaining = 0;
+                sprintf(buf, "%d", remaining);
+                DrawGemCounter(gameTextures.emerald, centerX + spacing, midY - 4,
+                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
+            }
+        }
+    }
+}
+
+// ============================================================================
+//  Level Select Screen
+// ============================================================================
+void RenderLevelSelect(GameState *state)
+{
+    DrawTextureFull(gameTextures.logout, 15, 15, 32, 32);
+    DrawTextCenteredX("ADVENTURE", 30, 36, COLOR_TEXT_PRIMARY);
+
+    int totalRowWidth = LEVELS_PER_ROW * AMAP_BTN_SIZE + (LEVELS_PER_ROW - 1) * AMAP_BTN_GAP;
+    int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
+    Vector2 mouse = GetMousePosition();
+
+    for (int i = 0; i < TOTAL_LEVELS; i++) {
+        int row = i / LEVELS_PER_ROW;
+        int col = i % LEVELS_PER_ROW;
+        int bx = mapStartX + col * (AMAP_BTN_SIZE + AMAP_BTN_GAP);
+        int by = AMAP_START_Y + row * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP);
+        Rectangle btnRect = { bx, by, AMAP_BTN_SIZE, AMAP_BTN_SIZE };
+
+        bool isUnlocked = LevelIsUnlocked(state->unlockedLevel, i + 1);
+        bool isCompleted = LevelIsCompleted(state->unlockedLevel, i + 1);
+        bool hover = CheckCollisionPointRec(mouse, btnRect) && isUnlocked;
+
+        Color btnColor = !isUnlocked ? COLOR_AMAP_LOCKED_BG :
+                         hover ? COLOR_AMAP_UNLOCKED_HOVER : COLOR_AMAP_UNLOCKED_BG;
+        Color borderColor = !isUnlocked ? COLOR_AMAP_LOCKED_BORDER : COLOR_AMAP_UNLOCKED_BORDER;
+
+        DrawRectangleRounded(btnRect, 0.2f, 6, btnColor);
+        DrawRectangleRoundedLines(btnRect, 0.2f, 6, borderColor);
+
+        char lvlBuf[8];
+        sprintf(lvlBuf, "%d", i + 1);
+        Color lvlColor = isUnlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
+        int lnw = (int)MeasureTextEx(gameFont, lvlBuf, 28.0f, 1.0f).x;
+        DrawTextEx(gameFont, lvlBuf,
+                   (Vector2){(float)(bx + (AMAP_BTN_SIZE - lnw) / 2), (float)(by + 20)},
+                   28.0f, 1.0f, lvlColor);
+
+        if (isCompleted) {
+            int compSize = 28;
+            DrawTextureFull(gameTextures.completed,
+                bx + AMAP_BTN_SIZE - compSize + 6,
+                by - 6,
+                compSize, compSize);
+        } else if (!isUnlocked) {
+            int lockSize = 24;
+            DrawTextureFull(gameTextures.lock,
+                bx + (AMAP_BTN_SIZE - lockSize) / 2,
+                by + AMAP_BTN_SIZE - lockSize - 8,
+                lockSize, lockSize);
+        }
+    }
+
+    if (state->unlockedLevel > TOTAL_LEVELS) {
+        int lastRow = (TOTAL_LEVELS - 1) / LEVELS_PER_ROW;
+        int botY = AMAP_START_Y + lastRow * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP) + AMAP_BTN_SIZE + 40;
+        DrawTextCenteredX("Completed!", botY, 28, COLOR_AMAP_COMPLETED_TEXT);
+    }
+
+    DrawTextCenteredX("ESC: Main Menu", SCREEN_HEIGHT - 30, 16, COLOR_TEXT_MUTED);
+}
+
+// ============================================================================
+//  Result Screen (adaptive win/lose)
+// ============================================================================
+void RenderResult(GameState *state)
+{
+    const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+
+    // Draw game board underneath
+    RenderPlayHUD(state);
+    RenderBoard(state);
+    RenderPieceSlots(state);
+
+    // Dark overlay
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
+
+    // Card
+    int cardW = 380, cardH = 400;
+    int cardX = (SCREEN_WIDTH - cardW) / 2;
+    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
+
+    char buf[128];
+    Vector2 mouse = GetMousePosition();
+
+    // Title
+    if (state->level.levelFailed) {
+        if (state->selectedLevel == 0) {
+            DrawTextCenteredX("GAME OVER", cardY + 30, 32, (Color){255, 80, 80, 255});
+        } else {
+            DrawTextCenteredX("LEVEL FAILED!", cardY + 30, 32, (Color){255, 80, 80, 255});
+        }
+    } else {
+        DrawTextCenteredX("LEVEL COMPLETE!", cardY + 30, 32, (Color){50, 255, 100, 255});
+    }
+
+    // Score
+    int statY = cardY + 100;
+    sprintf(buf, "Score: %d", state->score);
+    DrawTextCenteredX(buf, statY, 28, WHITE);
+
+    if (state->selectedLevel == 0) {
+        // Classic: show high score
+        sprintf(buf, "Best: %d", state->highScore);
+        DrawTextCenteredX(buf, statY + 40, 22, (Color){150, 150, 170, 255});
+    } else {
+        // Adventure: show gem progress
+        int infoY = statY + 45;
+        if (def->targetDiamonds > 0) {
+            sprintf(buf, "Diamonds: %d / %d", state->level.collectedDiamonds, def->targetDiamonds);
+            DrawTextCenteredX(buf, infoY, 18, (Color){100, 200, 255, 255});
+            infoY += 30;
+        }
+        if (def->targetEmeralds > 0) {
+            sprintf(buf, "Emeralds: %d / %d", state->level.collectedEmeralds, def->targetEmeralds);
+            DrawTextCenteredX(buf, infoY, 18, (Color){50, 220, 100, 255});
+        }
+    }
+
+    // Buttons
+    const int topBtnY = cardY + cardH - 140;
+    const int botBtnY = topBtnY + BTN_H + BTN_GAP;
+    Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
+    Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
+    bool topHover = CheckCollisionPointRec(mouse, btnTop);
+    bool botHover = CheckCollisionPointRec(mouse, btnBot);
+
+    if (state->level.levelFailed) {
+        const char *retryText = (state->selectedLevel == 0) ? "Play Again" : "Try Again";
+        DrawButtonStyled(btnTop, retryText, 18,
+            (Color){55, 40, 85, 255}, (Color){80, 50, 120, 255},
+            (Color){100, 70, 150, 255}, (Color){180, 120, 255, 255},
+            (Color){170, 150, 200, 255}, (Color){255, 255, 255, 255},
+            topHover);
+    } else {
+        const char *topText = (state->level.currentLevel < TOTAL_LEVELS) ? "Next Level" : "Completed!";
+        DrawButtonStyled(btnTop, topText, 18,
+            (Color){35, 70, 45, 255}, (Color){50, 100, 60, 255},
+            (Color){60, 140, 80, 255}, (Color){100, 220, 120, 255},
+            (Color){150, 220, 170, 255}, (Color){255, 255, 255, 255},
+            topHover);
+    }
+
+    DrawButtonStyled(btnBot, "Main Menu", 18,
+        (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+        (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+        (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+        botHover);
+
+    DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
+}
+
+// ─── Settings overlay colors
+// ──────────────────────────────────────────────────
+#define COLOR_SETTINGS_OVERLAY_BG ((Color){0, 0, 0, 160})
+#define COLOR_SETTINGS_CARD_BG ((Color){20, 25, 50, 235})
+#define COLOR_SETTINGS_CARD_BORDER ((Color){60, 70, 110, 180})
+#define COLOR_SETTINGS_SEPARATOR ((Color){80, 80, 120, 200})
+#define COLOR_SETTINGS_SELECTED_TEXT ((Color){255, 220, 50, 255})
+#define COLOR_SETTINGS_UNSELECTED_TEXT ((Color){180, 180, 210, 255})
+#define COLOR_SETTINGS_FOOTER_HINT ((Color){100, 100, 140, 200})
+
+// ─── Menu Buttons — Classic Mode colors
+// ───────────────────────────────────────
+#define COLOR_BTN_STD_BG ((Color){60, 100, 180, 255})
+#define COLOR_BTN_STD_BG_HOVER ((Color){80, 130, 210, 255})
+#define COLOR_BTN_STD_BORDER ((Color){100, 150, 220, 255})
+#define COLOR_BTN_STD_BORDER_HOVER ((Color){140, 200, 255, 255})
+#define COLOR_BTN_STD_TEXT ((Color){220, 230, 250, 255})
+#define COLOR_BTN_STD_TEXT_HOVER ((Color){255, 255, 255, 255})
+
+// ─── Menu Buttons — Adventure Mode colors
+// ─────────────────────────────────────
+#define COLOR_BTN_ADV_BG ((Color){55, 40, 85, 255})
+#define COLOR_BTN_ADV_BG_HOVER ((Color){80, 60, 120, 255})
+#define COLOR_BTN_ADV_BORDER ((Color){100, 70, 150, 255})
+#define COLOR_BTN_ADV_BORDER_HOVER ((Color){180, 120, 255, 255})
+#define COLOR_BTN_ADV_TEXT ((Color){170, 150, 200, 255})
+#define COLOR_BTN_ADV_TEXT_HOVER ((Color){230, 210, 255, 255})
+
+// ─── Menu Buttons — Quit colors
+// ──────────────────────────────
+#define COLOR_BTN_QUIT_BG ((Color){140, 40, 40, 255})
+#define COLOR_BTN_QUIT_BG_HOVER ((Color){180, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER ((Color){160, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER_HOVER ((Color){220, 80, 80, 255})
+#define COLOR_BTN_QUIT_TEXT ((Color){220, 180, 180, 255})
+#define COLOR_BTN_QUIT_TEXT_HOVER ((Color){255, 220, 220, 255})
+
+// ─── Helper: draw styled button ──────────────────────────────────────────────
+static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
+                              Color bg, Color bgHover,
+                              Color border, Color borderHover,
+                              Color textColor, Color textHover,
+                              bool hover)
+{
+    Color cBg  = hover ? bgHover  : bg;
+    Color cBrd = hover ? borderHover : border;
+    Color cTxt = hover ? textHover : textColor;
+
+    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
+    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
+
+    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(gameFont, text,
+               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
+                         btn.y + (btn.height - (float)fontSize) / 2.0f},
+               (float)fontSize, 1.0f, cTxt);
+}
+
+// ----- Menu screen -----
+void RenderMenu(GameState *state) {
+  // Draw Logo (Scaled to fit the screen)
+  float targetW = SCREEN_WIDTH - 80.0f; // 40px margin on each side
+  float scale = targetW / (float)gameTextures.logo.width;
+  float targetH = (float)gameTextures.logo.height * scale;
+  float logoX = (SCREEN_WIDTH - targetW) / 2.0f;
+  float logoY = 50.0f; // Slightly higher to account for scaling
+  DrawTexturePro(gameTextures.logo,
+                 (Rectangle){0, 0, (float)gameTextures.logo.width, (float)gameTextures.logo.height},
+                 (Rectangle){logoX, logoY, targetW, targetH},
+                 (Vector2){0, 0}, 0.0f, WHITE);
+
+  Vector2 mouse = GetMousePosition();
+
+  // --- Gear Icon (top-right) for menu settings ---
+  RenderGearIcon();
+
+  // --- Standard Mode Button ---
+  Rectangle stdBtn = {BTN_X, MENU_STD_Y, BTN_W, BTN_H};
+  bool stdHover = CheckCollisionPointRec(mouse, stdBtn);
+
+  Color stdBg = stdHover ? COLOR_BTN_STD_BG_HOVER : COLOR_BTN_STD_BG;
+  Color stdBorder =
+      stdHover ? COLOR_BTN_STD_BORDER_HOVER : COLOR_BTN_STD_BORDER;
+
+  DrawRectangleRounded(stdBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, stdBg);
+  DrawRectangleRoundedLines(stdBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
+                            stdBorder);
+
+  const char *stdText = "Classic Mode";
+  int stw = (int)MeasureTextEx(gameFont, stdText, 22.0f, 1.0f).x;
+  Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
+  DrawTextEx(gameFont, stdText,
+             (Vector2){(float)(BTN_X + (BTN_W - stw) / 2),
+                       (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
+             22.0f, 1.0f, stdTextColor);
+
+  // --- Adventure Mode Button ---
+  Rectangle advBtn = {BTN_X, MENU_ADV_Y, BTN_W, BTN_H};
+  bool advHover = CheckCollisionPointRec(mouse, advBtn);
+
+  Color advBg = advHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
+  Color advBorder =
+      advHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
+
+  DrawRectangleRounded(advBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, advBg);
+  DrawRectangleRoundedLines(advBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
+                            advBorder);
+
+  const char *advText = "Adventure Mode";
+  int atw = (int)MeasureTextEx(gameFont, advText, 22.0f, 1.0f).x;
+  Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
+  DrawTextEx(gameFont, advText,
+             (Vector2){(float)(BTN_X + (BTN_W - atw) / 2),
+                       (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
+             22.0f, 1.0f, advTextColor);
+
+  if (state->unlockedLevel > TOTAL_LEVELS) {
+      const char *compText = "Completed";
+      int ctw = (int)MeasureTextEx(gameFont, compText, 14.0f, 1.0f).x;
+      DrawTextEx(gameFont, compText,
+                 (Vector2){(float)(BTN_X + (BTN_W - ctw) / 2),
+                           (float)(MENU_ADV_Y + BTN_H + 5)},
+                 14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
+  }
+
+  // --- Quit Button ---
+  Rectangle quitBtn = {BTN_X, MENU_QUIT_Y, BTN_W, BTN_H};
+  bool quitHover = CheckCollisionPointRec(mouse, quitBtn);
+  DrawMenuButtonStyled(quitBtn, "Quit", 22,
+                   COLOR_BTN_QUIT_BG, COLOR_BTN_QUIT_BG_HOVER,
+                   COLOR_BTN_QUIT_BORDER, COLOR_BTN_QUIT_BORDER_HOVER,
+                   COLOR_BTN_QUIT_TEXT, COLOR_BTN_QUIT_TEXT_HOVER,
+                   quitHover);
+
+  // --- Game Simulation Decoration ---
+  int s = 35; // Block size for mini grid
+  int startX = (SCREEN_WIDTH - (4 * s)) / 2;
+  int startY = 560;
+
+  // 1. Draw Grid Background
+  DrawRectangle(startX - 4, startY - 4, 4*s + 8, 4*s + 8, (Color){ 50,  50,  70, 255 });
+
+  // 2. Draw empty cells
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 4; c++) {
+      DrawRectangle(startX + c*s + 1, startY + r*s + 1, s - 2, s - 2, (Color){ 40,  40,  60, 255 });
+    }
+  }
+
+  // 3. Placed Piece: Blue L-shape (left side)
+  Color colBlue = PIECE_COLORS[4];
+  DrawBlockBeveled(startX + 0*s, startY + 1*s, s, colBlue); // Row 1, Col 0
+  DrawBlockBeveled(startX + 0*s, startY + 2*s, s, colBlue); // Row 2, Col 0
+  DrawBlockBeveled(startX + 0*s, startY + 3*s, s, colBlue); // Row 3, Col 0
+  DrawBlockBeveled(startX + 1*s, startY + 3*s, s, colBlue); // Row 3, Col 1
+
+  // 4. Placed Piece: Yellow 2x2 Square (bottom right)
+  Color colYellow = PIECE_COLORS[2];
+  DrawBlockBeveled(startX + 2*s, startY + 2*s, s, colYellow); // Row 2, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 2*s, s, colYellow); // Row 2, Col 3
+  DrawBlockBeveled(startX + 2*s, startY + 3*s, s, colYellow); // Row 3, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 3*s, s, colYellow); // Row 3, Col 3
+
+  // 5. Hovering Piece: Red 3x1 horizontal
+  Color colRed = PIECE_COLORS[1];
+  Color ghostRed = colRed;
+  ghostRed.a = 80;
+
+  // Ghost indicator on the grid
+  DrawBlockBeveled(startX + 1*s, startY + 0*s, s, ghostRed); // Row 0, Col 1
+  DrawBlockBeveled(startX + 2*s, startY + 0*s, s, ghostRed); // Row 0, Col 2
+  DrawBlockBeveled(startX + 3*s, startY + 0*s, s, ghostRed); // Row 0, Col 3
+
+  // Actual hovering piece (offset upwards to simulate dragging)
+  int hoverOffsetY = -18;
+  int hoverOffsetX = 6;
+  DrawBlockBeveled(startX + 1*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+  DrawBlockBeveled(startX + 2*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+  DrawBlockBeveled(startX + 3*s + hoverOffsetX, startY + 0*s + hoverOffsetY, s, colRed);
+}
+
+// ----- Settings screen (overlay with framed card) - for in-game settings -----
+void RenderSettings(GameState *state) {
+  SettingsLayout layout = GetSettingsLayout(false);
+
+  // Semi-transparent dark overlay
+  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+
+  // Settings card frame
+  int cardX = layout.cardX;
+  int cardY = layout.cardY;
+
+  // Card background
+  DrawRectangleRounded(
+      (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+      0.15f, 8, COLOR_SETTINGS_CARD_BG);
+  DrawRectangleRoundedLines(
+      (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+      0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+
+  // Title
+  const char *title = "SETTINGS";
+  int tw =
+      (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f)
+          .x;
+  DrawTextEx(gameFont, title,
+             (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
+             (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
+
+  // Separator line
+  DrawLineEx((Vector2){cardX + 40, cardY + 65},
+             (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65}, 1.5f,
+             COLOR_SETTINGS_SEPARATOR);
+
+  Vector2 mouse = GetMousePosition();
+
+  // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
+  // SFX icon
+  int sfxIconX = (int)layout.sfxIcon.x;
+  int iconAreaY = (int)layout.sfxIcon.y;
+  DrawTexturePro(gameTextures.waveSound,
+                 (Rectangle){0, 0, (float)gameTextures.waveSound.width,
+                             (float)gameTextures.waveSound.height},
+                 (Rectangle){(float)sfxIconX, (float)iconAreaY,
+                             (float)SETTINGS_ICON_SIZE,
+                             (float)SETTINGS_ICON_SIZE},
+                 (Vector2){0, 0}, 0.0f, WHITE);
+
+  // Red cross overlay if SFX is off (single diagonal: bottom-left to top-right)
+  if (!state->sound.sfxEnabled) {
+    int cx = sfxIconX;
+    int cy = iconAreaY;
+    DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+               (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+  }
+
+  // SFX label below icon
+  const char *sfxLabel = "SFX";
+  int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
+  DrawTextEx(gameFont, sfxLabel,
+             (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
+                       (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+             14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+  // Music icon
+  int musicIconX = (int)layout.musicIcon.x;
+  DrawTexturePro(gameTextures.musicalNote,
+                 (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
+                             (float)gameTextures.musicalNote.height},
+                 (Rectangle){(float)musicIconX, (float)iconAreaY,
+                             (float)SETTINGS_ICON_SIZE,
+                             (float)SETTINGS_ICON_SIZE},
+                 (Vector2){0, 0}, 0.0f, WHITE);
+
+  // Red cross overlay if Music is off (single diagonal: bottom-left to
+  // top-right)
+  if (!state->sound.musicEnabled) {
+    int cx = musicIconX;
+    int cy = iconAreaY;
+    DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+               (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+  }
+
+  // Music label below icon
+  const char *musicLabel = "Music";
+  int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
+  DrawTextEx(
+      gameFont, musicLabel,
+      (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
+                (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+      14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+  // ─── Replay Button ────────────────────────────────────────────────────────
+  int replayBtnY = (int)layout.firstButton.y;
+  Rectangle replayBtn = layout.firstButton;
+  bool replayHover = CheckCollisionPointRec(mouse, replayBtn);
+
+  Color replayBg =
+      replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+  Color replayBorder =
+      replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+  DrawRectangleRounded(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
+                       replayBg);
+  DrawRectangleRoundedLines(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
+                            replayBorder);
+
+  // Replay icon at left of text
+  int replayIconSize = 20;
+  DrawTexturePro(gameTextures.replay,
+                 (Rectangle){0, 0, (float)gameTextures.replay.width,
+                             (float)gameTextures.replay.height},
+                 (Rectangle){(float)(BTN_X + 15),
+                             (float)(replayBtnY + (BTN_H - replayIconSize) / 2),
+                             (float)replayIconSize, (float)replayIconSize},
+                 (Vector2){0, 0}, 0.0f, WHITE);
+
+  const char *replayText = "Replay";
+  int replayTextW = (int)MeasureTextEx(gameFont, replayText, 18.0f, 1.0f).x;
+  DrawTextEx(
+      gameFont, replayText,
+      (Vector2){(float)(BTN_X + 15 + replayIconSize + 8 +
+                        (BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
+                (float)(replayBtnY + (BTN_H - 18) / 2)},
+      18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+  // ─── Home Button ──────────────────────────────────────────────────────────
+  int homeBtnY = (int)layout.secondButton.y;
+  Rectangle homeBtn = layout.secondButton;
+  bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
+
+  Color homeBg =
+      homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
+  Color homeBorder =
+      homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
+  DrawRectangleRounded(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeBg);
+  DrawRectangleRoundedLines(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
+                            homeBorder);
+
+  // Home icon at left of text
+  int homeIconSize = 20;
+  DrawTexturePro(gameTextures.home,
+                 (Rectangle){0, 0, (float)gameTextures.home.width,
+                             (float)gameTextures.home.height},
+                 (Rectangle){(float)(BTN_X + 15),
+                             (float)(homeBtnY + (BTN_H - homeIconSize) / 2),
+                             (float)homeIconSize, (float)homeIconSize},
+                 (Vector2){0, 0}, 0.0f, WHITE);
+
+  const char *homeText = "Home";
+  int homeTextW = (int)MeasureTextEx(gameFont, homeText, 18.0f, 1.0f).x;
+  DrawTextEx(gameFont, homeText,
+             (Vector2){(float)(BTN_X + 15 + homeIconSize + 8 +
+                               (BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
+                       (float)(homeBtnY + (BTN_H - 18) / 2)},
+             18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+  // Footer hint
+  const char *hint = "ESC to go back";
+  int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
+  DrawTextEx(gameFont, hint,
+             (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
+                       (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
+             14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+}
+
+// ----- Menu Settings screen (from main menu gear icon) -----
+void RenderMenuSettings(GameState *state)
+{
+    SettingsLayout layout = GetSettingsLayout(false);
+
+    // Semi-transparent dark overlay
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+
+    // Settings card frame
+    int cardX = layout.cardX;
+    int cardY = layout.cardY;
+
+    // Card background
+    DrawRectangleRounded(
+        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+        0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines(
+        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
+        0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+
+    // Title
+    const char *title = "SETTINGS";
+    int tw = (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
+    DrawTextEx(gameFont, title,
+               (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
+               (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
+
+    // Separator line
+    DrawLineEx((Vector2){cardX + 40, cardY + 65},
+               (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65}, 1.5f,
+               COLOR_SETTINGS_SEPARATOR);
+
+    Vector2 mouse = GetMousePosition();
+
+    // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
+    // SFX icon
+    int sfxIconX = (int)layout.sfxIcon.x;
+    int iconAreaY = (int)layout.sfxIcon.y;
+    DrawTexturePro(gameTextures.waveSound,
+                   (Rectangle){0, 0, (float)gameTextures.waveSound.width,
+                               (float)gameTextures.waveSound.height},
+                   (Rectangle){(float)sfxIconX, (float)iconAreaY,
+                               (float)SETTINGS_ICON_SIZE,
+                               (float)SETTINGS_ICON_SIZE},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+
+    if (!state->sound.sfxEnabled) {
+        int cx = sfxIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    const char *sfxLabel = "SFX";
+    int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, sfxLabel,
+               (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+    // Music icon
+    int musicIconX = (int)layout.musicIcon.x;
+    DrawTexturePro(gameTextures.musicalNote,
+                   (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
+                               (float)gameTextures.musicalNote.height},
+                   (Rectangle){(float)musicIconX, (float)iconAreaY,
+                               (float)SETTINGS_ICON_SIZE,
+                               (float)SETTINGS_ICON_SIZE},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+
+    if (!state->sound.musicEnabled) {
+        int cx = musicIconX;
+        int cy = iconAreaY;
+        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
+                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
+    }
+
+    const char *musicLabel = "Music";
+    int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, musicLabel,
+               (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
+                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
+               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+
+    // ─── Reset Button (progress + high score) ────────────────────────────────
+    Rectangle resetBtn = layout.firstButton;
+    bool resetHover = CheckCollisionPointRec(mouse, resetBtn);
+    DrawMenuButtonStyled(resetBtn, "Reset Save", 18,
+                     (Color){140, 40, 40, 255}, (Color){180, 60, 60, 255},
+                     (Color){160, 60, 60, 255}, (Color){220, 80, 80, 255},
+                     (Color){220, 180, 180, 255}, (Color){255, 220, 220, 255},
+                     resetHover);
+
+    // ─── Home Button ─────────────────────────────────────────────────────────
+    Rectangle homeBtn = layout.secondButton;
+    bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
+    DrawMenuButtonStyled(homeBtn, "Home", 18,
+                     (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
+                     (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
+                     (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
+                     homeHover);
+
+    // Footer hint
+    const char *hint = "ESC to go back";
+    int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
+    DrawTextEx(gameFont, hint,
+               (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
+                         (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
+               14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+}
+
+/* ---- Gameplay rendering implementation ---- */
+
+void RenderFrame(GameState *state)
+{
+    BeginDrawing();
+    ClearBackground(BG_COLOR);
+
+    switch (state->currentScreen) {
+        case SCREEN_MENU:
+            RenderMenu(state);
+            break;
+        case SCREEN_PLAY:
+            RenderPlayHUD(state);
+            RenderBoard(state);
+            RenderGhost(state);
+            RenderPieceSlots(state);
+            RenderDraggedPiece(state);
+            ParticleDraw(&state->particles);
+            FloatTextDraw(&state->floatTexts);
+            RenderGearIcon();
+            break;
+        case SCREEN_SETTINGS:
+            // Draw the game behind the overlay
+            RenderPlayHUD(state);
+            RenderBoard(state);
+            RenderPieceSlots(state);
+            ParticleDraw(&state->particles);
+            FloatTextDraw(&state->floatTexts);
+            // Settings overlay on top
+            RenderSettings(state);
+            break;
+        case SCREEN_LEVEL_SELECT:
+            RenderLevelSelect(state);
+            break;
+        case SCREEN_RESULT:
+            RenderResult(state);
+            break;
+        case SCREEN_MENU_SETTINGS:
+            RenderMenuSettings(state);
+            break;
+    }
+
+    EndDrawing();
+}
+
+// ─── Grid & Board Colors ────────────────────────────────────────────────────────
+#define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
+#define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
+#define COLOR_GRID_HIGHLIGHT    ((Color){ 255, 255, 255, 40  })
+
+#define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })
+#define COLOR_PANEL_TOP_BORDER  ((Color){ 50,  50,  70, 255 })
+#define PANEL_TOP_BORDER_WIDTH  2.0f
+
+// ----- Block Rendering -----
+static void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c) {
+    DrawTriangle(v1, v2, v3, c);
+    DrawTriangle(v1, v3, v2, c);
+}
+
+static void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c) {
+    DrawSafeTriangle(v1, v2, v3, c);
+    DrawSafeTriangle(v1, v3, v4, c);
+}
+
+void DrawBlockBeveled(int x, int y, int size, Color baseColor)
+{
+    Color lightColor = (Color){
+        (unsigned char)(baseColor.r + (255 - baseColor.r) * 0.5f),
+        (unsigned char)(baseColor.g + (255 - baseColor.g) * 0.5f),
+        (unsigned char)(baseColor.b + (255 - baseColor.b) * 0.5f),
+        baseColor.a
+    };
+    Color darkColor = (Color){
+        (unsigned char)(baseColor.r * 0.5f),
+        (unsigned char)(baseColor.g * 0.5f),
+        (unsigned char)(baseColor.b * 0.5f),
+        baseColor.a
+    };
+    Color veryDarkColor = (Color){
+        (unsigned char)(baseColor.r * 0.3f),
+        (unsigned char)(baseColor.g * 0.3f),
+        (unsigned char)(baseColor.b * 0.3f),
+        baseColor.a
+    };
+
+    int margin = 1;
+    int bx = x + margin;
+    int by = y + margin;
+    int bsize = size - 2 * margin;
+    int b = bsize / 10; // Bevel width halved
+    if (b < 2) b = 2;
+
+    Vector2 tl = { (float)bx, (float)by };
+    Vector2 tr = { (float)(bx + bsize), (float)by };
+    Vector2 bl = { (float)bx, (float)(by + bsize) };
+    Vector2 br = { (float)(bx + bsize), (float)(by + bsize) };
+
+    Vector2 itl = { (float)(bx + b), (float)(by + b) };
+    Vector2 itr = { (float)(bx + bsize - b), (float)(by + b) };
+    Vector2 ibl = { (float)(bx + b), (float)(by + bsize - b) };
+    Vector2 ibr = { (float)(bx + bsize - b), (float)(by + bsize - b) };
+
+    // Top bevel (light)
+    DrawSafeQuad(tl, tr, itr, itl, lightColor);
+    // Left bevel (light)
+    DrawSafeQuad(tl, itl, ibl, bl, lightColor);
+    // Right bevel (dark)
+    DrawSafeQuad(tr, br, ibr, itr, darkColor);
+    // Bottom bevel (very dark)
+    DrawSafeQuad(bl, ibl, ibr, br, veryDarkColor);
+
+    // Inner center
+    DrawRectangle(bx + b, by + b, bsize - 2 * b, bsize - 2 * b, baseColor);
+
+    // Inner highlight for jewel effect
+    int ib = b / 2;
+    if (ib > 0) {
+        DrawRectangle(bx + b, by + b, (bsize - 2 * b), ib, lightColor);
+        DrawRectangle(bx + b, by + b, ib, (bsize - 2 * b), lightColor);
+    }
+}
+
+// ----- Board -----
+void RenderBoard(GameState *state)
+{
+    // Draw board background
+    DrawRectangle(GRID_DRAW_X - 4, GRID_DRAW_Y - 4,
+                  GRID_SIZE * CELL_SIZE + 8, GRID_SIZE * CELL_SIZE + 8,
+                  COLOR_GRID_BORDER);
+
+    for (int r = 0; r < GRID_SIZE; r++) {
+        for (int c = 0; c < GRID_SIZE; c++) {
+            int x = GRID_DRAW_X + c * CELL_SIZE;
+            int y = GRID_DRAW_Y + r * CELL_SIZE;
+            int val = state->board.cells[r][c];
+            int gem = state->board.gems[r][c];
+
+            // Check if cell is being animated
+            float alpha = AnimGetCellAlpha(&state->anims, r, c);
+            if (alpha >= 0.0f) {
+                // Animated cell: fade out
+                Color clr = PIECE_COLORS[val > 0 ? val : 1];
+                clr.a = (unsigned char)(alpha * 255);
+                DrawBlockBeveled(x, y, CELL_SIZE, clr);
+            } else if (val != CELL_EMPTY) {
+                // Normal filled cell
+                Color clr = PIECE_COLORS[val];
+                DrawBlockBeveled(x, y, CELL_SIZE, clr);
+
+                // Draw gem icon if present
+                if (gem != GEM_NONE) {
+                    DrawGemIcon(x, y, CELL_SIZE, gem);
+                }
+            } else {
+                // Empty cell
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, COLOR_GRID_EMPTY);
+            }
+        }
+    }
+}
+
+// ----- Ghost preview -----
+void RenderGhost(GameState *state)
+{
+    if (!state->isDragging) return;
+
+    PieceSlot *slot = &state->slots[state->dragSlotIndex];
+    if (!SlotIsOccupied(slot)) return;
+    Piece *piece = &slot->piece;
+
+    float pieceScreenX = state->dragPos.x - state->dragOffset.x;
+    float pieceScreenY = state->dragPos.y - state->dragOffset.y;
+
+    int gridCol = (int)((pieceScreenX - GRID_DRAW_X + CELL_SIZE/2) / CELL_SIZE);
+    int gridRow = (int)((pieceScreenY - GRID_DRAW_Y + CELL_SIZE/2) / CELL_SIZE);
+
+    if (!BoardCanPlace(&state->board, piece, gridRow, gridCol)) return;
+
+    Color ghost = PIECE_COLORS[piece->colorIndex];
+    ghost.a = 80;
+
+    for (int r = 0; r < piece->height; r++) {
+        for (int c = 0; c < piece->width; c++) {
+            if (piece->shape[r][c] == 0) continue;
+            int x = GRID_DRAW_X + (gridCol + c) * CELL_SIZE;
+            int y = GRID_DRAW_Y + (gridRow + r) * CELL_SIZE;
+            DrawBlockBeveled(x, y, CELL_SIZE, ghost);
+        }
+    }
+}
+
+// ----- Piece slots (bottom panel) -----
+void RenderPieceSlots(GameState *state)
+{
+    // Panel background
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, SCREEN_HEIGHT - PANEL_Y + 10, COLOR_PANEL_BG);
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, (int)PANEL_TOP_BORDER_WIDTH, COLOR_PANEL_TOP_BORDER);
+
+    for (int i = 0; i < 3; i++) {
+        // Skip the slot being dragged
+        if (state->isDragging && state->dragSlotIndex == i) continue;
+
+        PieceSlot *slot = &state->slots[i];
+        if (!SlotIsOccupied(slot)) continue;
+
+        Piece *p = &slot->piece;
+        Color clr = PIECE_COLORS[p->colorIndex];
+
+        for (int r = 0; r < p->height; r++) {
+            for (int c = 0; c < p->width; c++) {
+                if (p->shape[r][c] == 0) continue;
+                int x = (int)(slot->posX + c * PANEL_PIECE_SCALE);
+                int y = (int)(slot->posY + r * PANEL_PIECE_SCALE);
+                DrawBlockBeveled(x, y, PANEL_PIECE_SCALE, clr);
+
+                // Draw gem icon in panel if present
+                if (p->gemCells[r][c] != GEM_NONE) {
+                    DrawGemIcon(x, y, PANEL_PIECE_SCALE, p->gemCells[r][c]);
+                }
+            }
+        }
+    }
+}
+
+// ----- Dragged piece (follows mouse at grid scale) -----
+void RenderDraggedPiece(GameState *state)
+{
+    if (!state->isDragging) return;
+
+    PieceSlot *slot = &state->slots[state->dragSlotIndex];
+    if (!SlotIsOccupied(slot)) return;
+    Piece *p = &slot->piece;
+
+    float baseX = state->dragPos.x - state->dragOffset.x;
+    float baseY = state->dragPos.y - state->dragOffset.y;
+
+    Color clr = PIECE_COLORS[p->colorIndex];
+    clr.a = 200;
+
+    for (int r = 0; r < p->height; r++) {
+        for (int c = 0; c < p->width; c++) {
+            if (p->shape[r][c] == 0) continue;
+            int x = (int)(baseX + c * CELL_SIZE);
+            int y = (int)(baseY + r * CELL_SIZE);
+            DrawBlockBeveled(x, y, CELL_SIZE, clr);
+
+            // Draw gem icon on dragged piece
+            if (p->gemCells[r][c] != GEM_NONE) {
+                DrawGemIcon(x, y, CELL_SIZE, p->gemCells[r][c]);
+            }
+        }
+    }
+}
+
+// ----- Gear icon (settings button, top-right) -----
+void RenderGearIcon(void)
+{
+    int cx = GEAR_X + GEAR_SIZE / 2;
+    int cy = GEAR_Y + GEAR_SIZE / 2;
+    int outerR = GEAR_SIZE / 2 - 2;
+    int innerR = outerR - 7;
+    int holeR  = 5;
+
+    Color gearClr = (Color){180, 180, 200, 200};
+    Vector2 mousePos = GetMousePosition();
+    Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+    if (CheckCollisionPointRec(mousePos, gearRect)) {
+        gearClr = (Color){255, 220, 50, 240}; // highlight on hover
+    }
+
+    // Outer circle
+    DrawCircle(cx, cy, outerR, gearClr);
+
+    // Gear teeth (8 small rectangles around the circle)
+    for (int i = 0; i < 8; i++) {
+        float angle = (float)i * (PI / 4.0f);
+        float tx = cx + cosf(angle) * (outerR - 1);
+        float ty = cy + sinf(angle) * (outerR - 1);
+        DrawRectanglePro(
+            (Rectangle){ tx, ty, 8, 5 },
+            (Vector2){ 4, 2.5f },
+            angle * (180.0f / PI),
+            gearClr
+        );
+    }
+
+    // Inner circle (darker, to create the ring look)
+    DrawCircle(cx, cy, innerR, (Color){30, 30, 48, 255});
+
+    // Center hole
+    DrawCircle(cx, cy, holeR, gearClr);
+    DrawCircle(cx, cy, holeR - 2, (Color){30, 30, 48, 255});
+}
+
+// ----- Draw a gem icon inside a cell block (using PNG textures) -----
+void DrawGemIcon(int x, int y, int cellSize, int gemType)
+{
+    int gemSize = (int)(cellSize * GEM_SIZE_RATIO);
+    int cx = x + cellSize / 2;
+    int cy = y + cellSize / 2;
+
+    if (gemType == GEM_DIAMOND) {
+        DrawTexturePro(gameTextures.diamond,
+            (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
+            (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
+            (Vector2){ 0, 0 }, 0.0f, WHITE);
+    } else if (gemType == GEM_EMERALD) {
+        DrawTexturePro(gameTextures.emerald,
+            (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
+            (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
+            (Vector2){ 0, 0 }, 0.0f, WHITE);
+    }
+}
+
+/* ---- Input implementation ---- */
+
+static void TryStartDrag(GameState *state, Vector2 mouse)
+{
+  if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || state->isDragging)
+    return;
+
+  for (int i = 0; i < 3; i++) {
+    PieceSlot *slot = &state->slots[i];
+    if (!SlotIsOccupied(slot))
+      continue;
+
+    float pw = slot->piece.width * PANEL_PIECE_SCALE;
+    float ph = slot->piece.height * PANEL_PIECE_SCALE;
+    Rectangle rect = {slot->posX, slot->posY, pw, ph};
+
+    if (CheckCollisionPointRec(mouse, rect)) {
+      state->isDragging = true;
+      state->dragSlotIndex = i;
+      state->dragOffset.x = mouse.x - slot->posX;
+      state->dragOffset.y = mouse.y - slot->posY;
+      state->dragPos = mouse;
+      break;
+    }
+  }
+}
+
+static void AddClearFeedback(GameState *state,
+                             bool clearedCells[GRID_SIZE][GRID_SIZE],
+                             int savedColors[GRID_SIZE][GRID_SIZE],
+                             int points)
+{
+  AnimAddCleared(&state->anims, clearedCells);
+
+  for (int r = 0; r < GRID_SIZE; r++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      if (!clearedCells[r][c])
+        continue;
+      float px = GRID_DRAW_X + c * CELL_SIZE + CELL_SIZE / 2.0f;
+      float py = GRID_DRAW_Y + r * CELL_SIZE + CELL_SIZE / 2.0f;
+      int colorIdx = savedColors[r][c];
+      if (colorIdx < 1 || colorIdx > 7)
+        colorIdx = 1;
+      ParticleEmit(&state->particles, px, py, PIECE_COLORS[colorIdx], 5);
+    }
+  }
+
+  char scoreBuf[64];
+  if (state->combo > 1)
+    sprintf(scoreBuf, "+%d (x%d Combo)", points, state->combo);
+  else
+    sprintf(scoreBuf, "+%d", points);
+  FloatTextAdd(&state->floatTexts, scoreBuf, SCREEN_WIDTH / 2.0f,
+               SCREEN_HEIGHT / 2.0f - 40.0f, 36,
+               (Color){255, 255, 100, 255});
+
+  if (state->combo >= 3) {
+    char comboBanner[32];
+    if (state->combo >= 5)
+      sprintf(comboBanner, "AMAZING! x%d", state->combo);
+    else if (state->combo >= 4)
+      sprintf(comboBanner, "SUPER COMBO! x%d", state->combo);
+    else
+      sprintf(comboBanner, "BEST COMBO! x%d", state->combo);
+    FloatTextAdd(&state->floatTexts, comboBanner, SCREEN_WIDTH / 2.0f,
+                 SCREEN_HEIGHT / 2.0f - 100.0f, 40,
+                 (Color){255, 220, 50, 255});
+  }
+}
+
+static void GenerateNextPiecesIfNeeded(GameState *state)
+{
+  if (!AllSlotsEmpty(state->slots))
+    return;
+
+  const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+  float diamondChance = (def->targetDiamonds > 0) ? DIAMOND_SPAWN_CHANCE : 0.0f;
+  float emeraldChance = (def->targetEmeralds > 0) ? EMERALD_SPAWN_CHANCE : 0.0f;
+  GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance,
+                       emeraldChance);
+
+  for (int i = 0; i < 3; i++) {
+    PieceSlot *newSlot = &state->slots[i];
+    if (!SlotIsOccupied(newSlot))
+      continue;
+
+    float slotCenterX =
+        newSlot->posX + (newSlot->piece.width * PANEL_PIECE_SCALE) / 2.0f;
+    float slotCenterY =
+        newSlot->posY + (newSlot->piece.height * PANEL_PIECE_SCALE) / 2.0f;
+    int colorIdx = newSlot->piece.colorIndex;
+    if (colorIdx < 1 || colorIdx > 7)
+      colorIdx = 1;
+    ParticleEmit(&state->particles, slotCenterX, slotCenterY,
+                 PIECE_COLORS[colorIdx], 8);
+  }
+}
+
+static void TryDropDraggedPiece(GameState *state)
+{
+  if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON) || !state->isDragging)
+    return;
+
+  state->isDragging = false;
+
+  PieceSlot *slot = &state->slots[state->dragSlotIndex];
+  if (!SlotIsOccupied(slot))
+    return;
+
+  Piece *piece = &slot->piece;
+  float pieceScreenX = state->dragPos.x - state->dragOffset.x;
+  float pieceScreenY = state->dragPos.y - state->dragOffset.y;
+
+  int gridCol =
+      (int)((pieceScreenX - GRID_DRAW_X + CELL_SIZE / 2) / CELL_SIZE);
+  int gridRow =
+      (int)((pieceScreenY - GRID_DRAW_Y + CELL_SIZE / 2) / CELL_SIZE);
+
+  if (!BoardCanPlace(&state->board, piece, gridRow, gridCol))
+    return;
+
+  BoardPlace(&state->board, piece, gridRow, gridCol);
+  SoundPlayPlace(&state->sound);
+
+  float placeCenterX =
+      GRID_DRAW_X + gridCol * CELL_SIZE + (piece->width * CELL_SIZE) / 2.0f;
+  float placeCenterY =
+      GRID_DRAW_Y + gridRow * CELL_SIZE + (piece->height * CELL_SIZE) / 2.0f;
+  int colorIdx = piece->colorIndex;
+  if (colorIdx < 1 || colorIdx > 7)
+    colorIdx = 1;
+  ParticleEmit(&state->particles, placeCenterX, placeCenterY,
+               PIECE_COLORS[colorIdx], 12);
+
+  int savedColors[GRID_SIZE][GRID_SIZE];
+  int savedGems[GRID_SIZE][GRID_SIZE];
+  memcpy(savedColors, state->board.cells, sizeof(savedColors));
+  memcpy(savedGems, state->board.gems, sizeof(savedGems));
+
+  bool clearedCells[GRID_SIZE][GRID_SIZE];
+  int linesCleared = BoardClearLines(&state->board, clearedCells);
+  int diamondsCollected = 0;
+  int emeraldsCollected = 0;
+
+  for (int r = 0; r < GRID_SIZE; r++) {
+    for (int c = 0; c < GRID_SIZE; c++) {
+      if (clearedCells[r][c] && savedGems[r][c] == GEM_DIAMOND)
+        diamondsCollected++;
+      else if (clearedCells[r][c] && savedGems[r][c] == GEM_EMERALD)
+        emeraldsCollected++;
+    }
+  }
+
+  if (linesCleared > 0) {
+    state->combo += linesCleared;
+    int points = ScoreCalculate(linesCleared, state->combo);
+    state->score += points;
+
+    SoundPlayLineClear(&state->sound, linesCleared);
+    if (state->combo >= 2)
+      SoundPlayCombo(&state->sound, state->combo);
+
+    AddClearFeedback(state, clearedCells, savedColors, points);
+
+    if (state->selectedLevel > 0) {
+      state->level.collectedDiamonds += diamondsCollected;
+      state->level.collectedEmeralds += emeraldsCollected;
+    }
+  } else {
+    state->combo = 0;
+  }
+
+  if (state->score > state->highScore)
+    state->highScore = state->score;
+
+  SlotClear(slot);
+  GenerateNextPiecesIfNeeded(state);
+}
+
+void InputUpdate(GameState *state) {
+  if (AnimIsActive(&state->anims))
+    return;
+  if (state->level.levelFailed || state->level.levelComplete)
+    return;
+
+  Vector2 mouse = GetMousePosition();
+
+  TryStartDrag(state, mouse);
+
+  if (state->isDragging) {
+    state->dragPos = mouse;
+  }
+
+  TryDropDraggedPiece(state);
+}
+
+/* ---- Game flow implementation ---- */
+
+// ─── Game Init ───────────────────────────────────────────────────────────────
+void GameInit(GameState *state)
+{
+    srand((unsigned int)time(NULL));
+
+    memset(state, 0, sizeof(GameState));
+    state->currentScreen = SCREEN_MENU;
+    BoardInit(&state->board);
+    state->selectedLevel = 0;
+    SaveLoad(&state->highScore, &state->unlockedLevel);
+
+    // Slots start empty until play begins
+    for (int i = 0; i < 3; i++)
+        SlotClear(&state->slots[i]);
+}
+
+// ─── Game Reset (unified classic + adventure) ────────────────────────────────
+void GameReset(GameState *state)
+{
+    // Free any remaining pieces
+    for (int i = 0; i < 3; i++)
+        SlotClear(&state->slots[i]);
+
+    // Initialize level (sets up board + prefill)
+    LevelInit(&state->level, state->selectedLevel, &state->board);
+    state->score = 0;
+    state->combo = 0;
+    state->isDragging = false;
+    state->anims.count = 0;
+    state->floatTexts.count = 0;
+    state->particles.count = 0;
+
+    // Determine gem chances from level definition
+    const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
+    float diamondChance = (def->targetDiamonds > 0) ? DIAMOND_SPAWN_CHANCE : 0.0f;
+    float emeraldChance = (def->targetEmeralds > 0) ? EMERALD_SPAWN_CHANCE : 0.0f;
+
+    GenerateRandomPieces(state->slots, PANEL_Y, SCREEN_WIDTH, diamondChance, emeraldChance);
+}
+
+// Helper: get the rectangle for a level button on the level select screen
+static Rectangle GetLevelButtonRect(int levelIndex)
+{
+    int btnSize = 80;
+    int gap = 15;
+    int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
+    int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
+    int mapStartY = 150;
+    int row = levelIndex / LEVELS_PER_ROW;
+    int col = levelIndex % LEVELS_PER_ROW;
+    return (Rectangle){
+        mapStartX + col * (btnSize + gap),
+        mapStartY + row * (btnSize + gap + 30),
+        btnSize,
+        btnSize
+    };
+}
+
+void GameUpdate(GameState *state)
+{
+    float dt = GetFrameTime();
+
+    // Always update visual effects
+    FloatTextUpdate(&state->floatTexts, dt);
+    ParticleUpdate(&state->particles, dt);
+
+    Vector2 mouse = GetMousePosition();
+
+    switch (state->currentScreen) {
+        case SCREEN_MENU: {
+            Rectangle stdBtn = { BTN_X, MENU_STD_Y, BTN_W, BTN_H };
+            Rectangle advBtn = { BTN_X, MENU_ADV_Y, BTN_W, BTN_H };
+            Rectangle quitBtn = { BTN_X, MENU_QUIT_Y, BTN_W, BTN_H };
+            Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (CheckCollisionPointRec(mouse, stdBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->selectedLevel = 0;
+                    state->currentScreen = SCREEN_PLAY;
+                    GameReset(state);
+                } else if (CheckCollisionPointRec(mouse, advBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_LEVEL_SELECT;
+                } else if (CheckCollisionPointRec(mouse, quitBtn)) {
+                    SoundPlayMenuClick(&state->sound);
+                    CloseWindow();
+                } else if (CheckCollisionPointRec(mouse, gearRect)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_MENU_SETTINGS;
+                }
+            }
+            break;
+        }
+
+        case SCREEN_PLAY: {
+            // Update animations
+            AnimUpdate(&state->anims, dt);
+
+            // Open settings by clicking the gear icon
+            Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+                CheckCollisionPointRec(mouse, gearRect)) {
+                state->prevScreen = state->currentScreen;
+                state->currentScreen = SCREEN_SETTINGS;
+                state->selectedSetting = 0;
+            }
+
+            // Check if level goals are met (only for adventure, level > 0)
+            if (state->selectedLevel > 0 &&
+                LevelCheckGoal(&state->level, state->score) &&
+                !state->level.levelComplete) {
+                state->level.levelComplete = true;
+
+                if (state->level.currentLevel == state->unlockedLevel &&
+                    state->unlockedLevel <= TOTAL_LEVELS) {
+                    state->unlockedLevel++;
+                    SaveWrite(state->highScore, state->unlockedLevel);
+                }
+
+                state->currentScreen = SCREEN_RESULT;
+            }
+
+            // Check if no valid moves (game over / level failed)
+            if (LevelCheckFailure(&state->board, state->slots) &&
+                !state->level.levelComplete) {
+                state->level.levelFailed = true;
+
+                if (state->selectedLevel == 0) {
+                    // Classic mode: persist only the high score.
+                    if (state->score > state->highScore)
+                        state->highScore = state->score;
+                    SaveWrite(state->highScore, state->unlockedLevel);
+
+                    SoundPlayLose(&state->sound);
+                }
+
+                state->currentScreen = SCREEN_RESULT;
+            }
+            break;
+        }
+
+        case SCREEN_LEVEL_SELECT: {
+            // Leave icon (top-left)
+            Rectangle leaveRect = { 15, 15, 32, 32 };
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (CheckCollisionPointRec(mouse, leaveRect)) {
+                    SoundPlayMenuClick(&state->sound);
+                    state->currentScreen = SCREEN_MENU;
+                    break;
+                }
+
+                for (int i = 0; i < TOTAL_LEVELS; i++) {
+                    Rectangle btn = GetLevelButtonRect(i);
+                    if (CheckCollisionPointRec(mouse, btn)) {
+                        if (LevelIsUnlocked(state->unlockedLevel, i + 1)) {
+                            SoundPlayMenuClick(&state->sound);
+                            state->selectedLevel = i + 1;  // levels are 1-indexed
+                            state->currentScreen = SCREEN_PLAY;
+                            GameReset(state);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                SoundPlayMenuClick(&state->sound);
+                state->currentScreen = SCREEN_MENU;
+            }
+            break;
+        }
+
+        case SCREEN_RESULT: {
+            // Result screen buttons (must match RenderResult layout in render_ui.c)
+            const int cardH = 400;
+            const int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
+            const int topBtnY = cardY + cardH - 140;
+            const int botBtnY = topBtnY + BTN_H + BTN_GAP;
+
+            Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
+            Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (state->level.levelFailed) {
+                    // Failed: Top = Retry, Bottom = Home
+                    if (CheckCollisionPointRec(mouse, btnTop)) {
+                        SoundPlayMenuClick(&state->sound);
+                        state->level.levelFailed = false;
+                        state->level.levelComplete = false;
+                        GameReset(state);
+                        state->currentScreen = SCREEN_PLAY;
+                    } else if (CheckCollisionPointRec(mouse, btnBot)) {
+                        SoundPlayMenuClick(&state->sound);
+                        state->level.levelFailed = false;
+                        state->level.levelComplete = false;
+                        state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
+                    }
+                } else {
+                    // Won: Top = Next Level, Bottom = Home
+                    if (CheckCollisionPointRec(mouse, btnTop)) {
+                        SoundPlayMenuClick(&state->sound);
+                        int nextLevel = state->level.currentLevel + 1;
+                        state->level.levelComplete = false;
+                        if (nextLevel <= TOTAL_LEVELS) {
+                            state->selectedLevel = nextLevel;
+                            GameReset(state);
+                            state->currentScreen = SCREEN_PLAY;
+                        } else {
+                            state->currentScreen = SCREEN_LEVEL_SELECT;
+                        }
+                    } else if (CheckCollisionPointRec(mouse, btnBot)) {
+                        SoundPlayMenuClick(&state->sound);
+                        state->level.levelComplete = false;
+                        state->currentScreen = SCREEN_LEVEL_SELECT;
+                    }
+                }
+            }
+
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                SoundPlayMenuClick(&state->sound);
+                state->level.levelFailed = false;
+                state->level.levelComplete = false;
+                state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
+            }
+            break;
+        }
+
+        case SCREEN_SETTINGS:
+            GameUpdateSettings(state);
+            break;
+
+        case SCREEN_MENU_SETTINGS:
+            GameUpdateMenuSettings(state);
+            break;
+    }
+}
+
+
+// Execute a setting action for the given index
+static void ExecuteSetting(GameState *state, int index)
+{
+    SoundPlayMenuClick(&state->sound);
+    switch (index) {
+        case SETTING_SFX:
+            SoundToggleSfx(&state->sound);
+            break;
+        case SETTING_MUSIC:
+            SoundToggleMusic(&state->sound);
+            break;
+        case SETTING_RESTART:
+            state->currentScreen = SCREEN_PLAY;
+            GameReset(state);
+            break;
+        case SETTING_QUIT:
+            // Use selectedLevel to decide where Home goes
+            state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
+            break;
+    }
+}
+
+void GameUpdateSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    SettingsLayout layout = GetSettingsLayout(false);
+
+    // Hover highlight for visual feedback
+    if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+        state->selectedSetting = SETTING_SFX;
+    } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+        state->selectedSetting = SETTING_MUSIC;
+    } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+        state->selectedSetting = SETTING_RESTART;
+    } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+        state->selectedSetting = SETTING_QUIT;
+    }
+
+    // Click handling
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+            ExecuteSetting(state, SETTING_SFX);
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+            ExecuteSetting(state, SETTING_MUSIC);
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+            ExecuteSetting(state, SETTING_RESTART);
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+            ExecuteSetting(state, SETTING_QUIT);
+        }
+    }
+
+    // Back to game with ESC
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        SoundPlayMenuClick(&state->sound);
+        state->currentScreen = state->prevScreen;
+    }
+}
+
+// Menu settings: SFX, Music, Reset Progress, Home (no Replay)
+void GameUpdateMenuSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    SettingsLayout layout = GetSettingsLayout(false);
+
+    // Click handling
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleSfx(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+            SoundPlayMenuClick(&state->sound);
+            SoundToggleMusic(&state->sound);
+        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+            SoundPlayMenuClick(&state->sound);
+            state->unlockedLevel = 1;
+            state->highScore = 0;
+            SaveWrite(state->highScore, state->unlockedLevel);
+        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+            SoundPlayMenuClick(&state->sound);
+            state->currentScreen = SCREEN_MENU;
+        }
+    }
+
+    // Back to menu with ESC
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        SoundPlayMenuClick(&state->sound);
+        state->currentScreen = SCREEN_MENU;
+    }
+}
+
+/* ---- Program entry point ---- */
+
+int main(void)
+{
+    // Ensure data directory exists for save files
+    MakeDirectory("data");
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Block Blast");
+    SetExitKey(0);  // Disable ESC as exit key (we use it for settings menu)
+    SetTargetFPS(60);
+
+    // Load TrueType font for crisp text rendering
+    gameFont = LoadFontEx("assets/fonts/RussoOne-Regular.ttf", 200, 0, 0);
+    if (gameFont.texture.id != 0)
+        printf("INFO: FONT: Loaded custom font successfully.\n");
+
+    // Load all textures at startup
+    TexturesLoad();
+
+    GameState state;
+    GameInit(&state);
+
+    // Initialize sound system (must be after InitWindow)
+    SoundInit(&state.sound);
+
+    while (!WindowShouldClose()) {
+        // Update music stream
+        SoundUpdate(&state.sound);
+
+        // Input (during play screen only)
+        if (state.currentScreen == SCREEN_PLAY) {
+            InputUpdate(&state);
+        }
+
+        // Update
+        GameUpdate(&state);
+
+        // Draw
+        RenderFrame(&state);
+    }
+
+    // Cleanup sound system
+    SoundClose(&state.sound);
+
+    // Unload all textures
+    TexturesUnload();
+
+    // Unload font
+    if (gameFont.texture.id != 0) UnloadFont(gameFont);
+
+    CloseWindow();
+    return 0;
+}

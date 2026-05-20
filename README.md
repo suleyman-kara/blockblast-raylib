@@ -1,119 +1,86 @@
 # Block Blast - C ve Raylib
 
-Bu proje, C ve raylib ile yazılmış basit bir Block Blast klonudur. Hedefi çok büyük bir oyun yapmak değil; tahta mantığı, parça üretimi, sürükle-bırak, puanlama, level hedefleri, kayıt dosyaları ve temel görsel/işitsel geri bildirimleri anlaşılır şekilde göstermektir.
+Bu proje, C ve raylib ile yazılmış basit bir Block Blast klonudur. Oyun kodunun tamamı tek dosyada tutulur:
+
+```text
+main.c
+```
+
+`raylib/` klasörü projeyle gelen harici kütüphanedir.
 
 ## Derleme ve Çalıştırma
 
 Gerekenler:
 
-- Python 3
-- C derleyicisi (`gcc`, `clang` veya MinGW)
-- İsteğe bağlı olarak `make`
+- `gcc` veya `clang`
+- `make`
 
-Komutlar:
+### 1. Raylib'i Derle
+
+Raylib'i her seferinde yeniden derlemek gerekmez. Projeyi ilk kez aldıktan sonra bir kere şu komutu çalıştır:
 
 ```bash
-python3 build.py              # Derle ve çalıştır
-python3 build.py --no-run     # Sadece derle
-python3 build.py --debug      # Debug build
-python3 build.py --clean      # build/ klasörünü temizle
-python3 build.py --no-make    # raylib Makefile kullanmadan derle
+make -C raylib/src PLATFORM=PLATFORM_DESKTOP RAYLIB_LIBTYPE=STATIC RAYLIB_BUILD_MODE=RELEASE
+```
+
+Bu komut `raylib/src/libraylib.a` dosyasını oluşturur.
+
+### 2. Oyunu Derle
+
+macOS:
+
+```bash
+gcc -std=c99 -Wall -Wno-missing-braces -Iraylib/src main.c raylib/src/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo -o blockblast
+```
+
+Linux:
+
+```bash
+gcc -std=c99 -Wall -Wno-missing-braces -Iraylib/src main.c raylib/src/libraylib.a -lGL -lm -lpthread -ldl -lrt -lX11 -o blockblast
+```
+
+Windows (MinGW):
+
+```bat
+gcc -std=c99 -Wall -Wno-missing-braces -Iraylib\src main.c raylib\src\libraylib.a -lopengl32 -lgdi32 -lwinmm -o blockblast.exe
+```
+
+Çalıştırma:
+
+```bash
+./blockblast
 ```
 
 ## Proje Yapısı
 
-Daha detaylı anlatım ve şemalar için [docs/codebase-guide.md](docs/codebase-guide.md) dosyasına bakabilirsiniz.
-
 ```text
-src/main.c            Program girişi, pencere ve ana döngü
-src/game.c            Oyunu başlatma, resetleme, ekran akışı ve ayarlar
-src/save.c            Player, scoreboard ve progress metin kayıtları
-src/input.c           Sürükle-bırak ve hamle sonrası puan/level güncelleme
-src/board.c           8x8 tahta, yerleştirme ve satır/sütun temizleme
-src/piece.c           Parça şekilleri, rastgele parça üretimi ve slotlar
-src/level.c           Level hedefleri ve levels.txt okuma
-src/render.c          Oyun ekranı, tahta, parçalar ve frame çizimi
-src/render_ui.c       Menü, HUD, ayarlar, sonuç ve scoreboard çizimi
-src/effects.c         Animasyon, parçacık ve yüzen yazı efektleri
-src/sound.c           Ses ve müzik
-include/*.h           Ortak tipler ve fonksiyon bildirimleri
-assets/               Font, görsel ve ses dosyaları
-raylib/               Projeyle gelen raylib kaynakları
+main.c      Tüm oyun kodu: sabitler, tipler, oyun mantığı, input, render, ses, kayıt ve main loop
+assets/         Font, görsel ve ses dosyaları
+raylib/         Projeyle gelen raylib kaynakları
+data/           Çalışma sırasında oluşan kişisel kayıt dosyaları
 ```
 
-## Düzenlenebilir Dosyalar
+## Kayıt Dosyası
 
-Oyun açılırken `data/` klasörü oluşturulur. Bu klasör `.gitignore` içindedir; yani kişisel kayıtlar repoya eklenmez.
+Oyun açılırken `data/` klasörü oluşturulur. Bu klasör `.gitignore` içindedir.
 
-### Level Ayarları
-
-İlk çalıştırmada `data/levels.txt` yoksa oyun varsayılan dosyayı oluşturur. Hocalar veya geliştiriciler level hedeflerini bu dosyadan hızlıca değiştirebilir.
-
-Format:
+Kayıt binary değil, okunabilir tek bir metin dosyasıdır:
 
 ```text
-# level targetScore targetDiamonds targetEmeralds prefillCount
-# 0 means this target is disabled.
-1 500 0 0 0
-2 1000 0 0 0
-3 0 3 0 2
+data/save.txt
 ```
 
-Alanlar:
-
-- `level`: 1-10 arası macera level numarası
-- `targetScore`: istenen skor, `0` ise skor hedefi yok
-- `targetDiamonds`: toplanacak elmas sayısı, `0` ise hedef yok
-- `targetEmeralds`: toplanacak zümrüt sayısı, `0` ise hedef yok
-- `prefillCount`: level başında tahtaya rastgele kaç parça yerleşsin
-
-Boş satırlar, `#` ile başlayan yorumlar ve hatalı satırlar yok sayılır. Geçersiz satır varsa oyun varsayılan değeri kullanmaya devam eder.
-
-### Kayıt Dosyaları
-
-Kayıtlar binary değil, okunabilir metin dosyalarıdır:
+Örnek:
 
 ```text
-data/player.txt      nickname ve highScore
-data/scoreboard.txt  score|name formatında skor tablosu
-data/progress.txt    unlockedLevel formatında macera ilerlemesi
-```
-
-Örnek `player.txt`:
-
-```text
-nickname=Ali
 highScore=1200
+unlockedLevel=8
 ```
 
-Örnek `scoreboard.txt`:
+`unlockedLevel=8`, 1-7 arası adventure level'ların geçildiği ve 8. level'ın açık olduğu anlamına gelir. `unlockedLevel=11` tüm 10 adventure level'ının tamamlandığını gösterir.
 
-```text
-1200|Ali
-900|Zeynep
-```
+## Notlar
 
-Örnek `progress.txt`:
-
-```text
-# Last unlocked adventure level
-unlockedLevel=1
-```
-
-`unlockedLevel=8` demek, 1-7 arası level'ların geçildiği ve 8. level'ın açık olduğu anlamına gelir. `unlockedLevel=11` tüm 10 macera level'ının tamamlandığını gösterir.
-
-## Temel Oynanış
-
-1. Ana menüden Classic Mode veya Adventure Mode seçilir.
-2. Alt paneldeki 3 parçadan biri sürüklenip 8x8 tahtaya bırakılır.
-3. Dolu satır veya sütun oluşursa temizlenir ve puan kazanılır.
-4. Art arda temizleme yapılırsa combo artar.
-5. Hiçbir parça tahtaya sığmazsa oyun biter.
-6. Adventure modunda skor, elmas veya zümrüt hedefleri tamamlanınca level biter.
-
-## Kodun Öğrenme Notları
-
-- `PieceSlot` artık dinamik bellek kullanmaz; slot içinde doğrudan `Piece` ve `occupied` bilgisi tutulur.
-- Parçalar az sayıda ve sabit olduğu için `malloc/free` yerine düz struct kullanmak daha okunur ve güvenlidir.
-- Settings ekranındaki ortak koordinatlar `include/ui_layout.h` içindeki helper ile hesaplanır.
-- Oyun mantığı ve çizim kodu ayrı dosyalardadır; önce `main.c`, sonra `game.c`, `input.c`, `board.c` ve `piece.c` okunması önerilir.
+- Scoreboard ve nickname özellikleri yoktur.
+- Adventure mode durur, ancak level hedefleri `main.c` içinde sabittir.
+- Raylib kaynaklarını her oyun derlemesinde yeniden derlememek için `libraylib.a` kullanılır.

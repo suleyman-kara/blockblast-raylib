@@ -1,3 +1,0 @@
--Iinclude
--Iraylib/src
--std=c11
