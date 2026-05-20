@@ -58,33 +58,6 @@
 #define DIAMOND_SPAWN_CHANCE 0.15f
 #define EMERALD_SPAWN_CHANCE 0.12f
 
-// ─── Settings Menu
-// ────────────────────────────────────────────────────────────
-#define SETTING_SFX 0
-#define SETTING_MUSIC 1
-#define SETTING_RESTART 2
-#define SETTING_QUIT 3
-#define SETTINGS_ICON_SIZE 40
-
-// ─── Buttons (tüm ekranlarda aynı boyut)
-// ──────────────────────────────────────
-#define BTN_W 220
-#define BTN_H 50
-#define BTN_GAP 15
-#define BTN_X ((SCREEN_WIDTH - BTN_W) / 2)
-
-// ─── Gear Icon
-// ────────────────────────────────────────────────────────────────
-#define GEAR_X (SCREEN_WIDTH - 50)
-#define GEAR_Y 10
-#define GEAR_SIZE 36
-
-// ─── Menu Buttons (Y pozisyonları)
-// ────────────────────────────────────────────
-#define MENU_STD_Y 330
-#define MENU_ADV_Y 400
-#define MENU_QUIT_Y 470
-
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Colour palette — flat constants, no structs
 //  ═══════════════════════════════════════════════════════════════════════════════
@@ -104,70 +77,9 @@ const Color PIECE_COLORS[] = {
     {26, 188, 156, 255}, // 7 = teal
 };
 
-// ─── Text
-// ─────────────────────────────────────────────────────────────────────
-#define COLOR_TEXT_PRIMARY ((Color){255, 255, 255, 255})
-#define COLOR_TEXT_SECONDARY ((Color){150, 150, 170, 255})
-#define COLOR_TEXT_MUTED ((Color){100, 100, 140, 200})
-
 // ─── Gems
 // ─────────────────────────────────────────────────────────────────────
 #define GEM_SIZE_RATIO 0.50f
-
-// ─── Adventure Map UI Constants ───────────────────────────────────────────────
-#define COLOR_AMAP_LOCKED_BG       ((Color){ 25,  25,  40,  255 })
-#define COLOR_AMAP_LOCKED_BORDER   ((Color){ 40,  40,  55,  255 })
-#define COLOR_AMAP_UNLOCKED_BG     ((Color){ 40,  35,  60,  255 })
-#define COLOR_AMAP_UNLOCKED_HOVER  ((Color){ 60,  50,  80,  255 })
-#define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
-#define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
-#define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
-#define AMAP_BTN_SIZE              80
-
-// ─── Settings overlay colors
-// ──────────────────────────────────────────────────
-#define COLOR_SETTINGS_OVERLAY_BG ((Color){0, 0, 0, 160})
-#define COLOR_SETTINGS_CARD_BG ((Color){20, 25, 50, 235})
-#define COLOR_SETTINGS_CARD_BORDER ((Color){60, 70, 110, 180})
-#define COLOR_SETTINGS_SEPARATOR ((Color){80, 80, 120, 200})
-#define COLOR_SETTINGS_UNSELECTED_TEXT ((Color){180, 180, 210, 255})
-#define COLOR_SETTINGS_FOOTER_HINT ((Color){100, 100, 140, 200})
-
-// ─── Menu Buttons — Classic Mode colors
-// ───────────────────────────────────────
-#define COLOR_BTN_STD_BG ((Color){60, 100, 180, 255})
-#define COLOR_BTN_STD_BG_HOVER ((Color){80, 130, 210, 255})
-#define COLOR_BTN_STD_BORDER ((Color){100, 150, 220, 255})
-#define COLOR_BTN_STD_BORDER_HOVER ((Color){140, 200, 255, 255})
-#define COLOR_BTN_STD_TEXT ((Color){220, 230, 250, 255})
-#define COLOR_BTN_STD_TEXT_HOVER ((Color){255, 255, 255, 255})
-
-// ─── Menu Buttons — Adventure Mode colors
-// ─────────────────────────────────────
-#define COLOR_BTN_ADV_BG ((Color){55, 40, 85, 255})
-#define COLOR_BTN_ADV_BG_HOVER ((Color){80, 60, 120, 255})
-#define COLOR_BTN_ADV_BORDER ((Color){100, 70, 150, 255})
-#define COLOR_BTN_ADV_BORDER_HOVER ((Color){180, 120, 255, 255})
-#define COLOR_BTN_ADV_TEXT ((Color){170, 150, 200, 255})
-#define COLOR_BTN_ADV_TEXT_HOVER ((Color){230, 210, 255, 255})
-
-// ─── Menu Buttons — Quit colors
-// ──────────────────────────────
-#define COLOR_BTN_QUIT_BG ((Color){140, 40, 40, 255})
-#define COLOR_BTN_QUIT_BG_HOVER ((Color){180, 60, 60, 255})
-#define COLOR_BTN_QUIT_BORDER ((Color){160, 60, 60, 255})
-#define COLOR_BTN_QUIT_BORDER_HOVER ((Color){220, 80, 80, 255})
-#define COLOR_BTN_QUIT_TEXT ((Color){220, 180, 180, 255})
-#define COLOR_BTN_QUIT_TEXT_HOVER ((Color){255, 220, 220, 255})
-
-// ─── Grid & Board Colors ────────────────────────────────────────────────────────
-#define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
-#define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
-
-#define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })
-#define COLOR_PANEL_TOP_BORDER  ((Color){ 50,  50,  70, 255 })
-#define PANEL_TOP_BORDER_WIDTH  2.0f
-
 
 /* ---- Piece types ---- */
 
@@ -1195,16 +1107,16 @@ void RenderPlayHUD(GameState *state)
             (Vector2){0, 0}, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(assets.font, buf, (Vector2){51, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+        DrawTextEx(assets.font, buf, (Vector2){51, 16}, 20.0f, 1.0f, WHITE);
 
         sprintf(buf, "%d", state->score);
         textW = (int)MeasureTextEx(assets.font, buf, 40.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 40}, 40.0f, 1.0f, WHITE);
 
         if (state->combo > 1) {
             sprintf(buf, "COMBO x%d", state->combo);
             textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 80}, 18.0f, 1.0f, WHITE);
         }
         return;
     }
@@ -1216,7 +1128,7 @@ void RenderPlayHUD(GameState *state)
     if (hasScore) {
         sprintf(buf, "%d / %d", state->score, def->targetScore);
         textW = (int)MeasureTextEx(assets.font, buf, 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 49}, 28.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 49}, 28.0f, 1.0f, WHITE);
     }
 
     if (hasDiamond) {
@@ -1228,7 +1140,7 @@ void RenderPlayHUD(GameState *state)
             (Rectangle){99, 41, 32, 32},
             (Vector2){0, 0}, 0.0f, WHITE);
         textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){115 - textW / 2.0f, 79}, 22.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        DrawTextEx(assets.font, buf, (Vector2){115 - textW / 2.0f, 79}, 22.0f, 1.0f, WHITE);
     }
 
     if (hasEmerald) {
@@ -1240,7 +1152,7 @@ void RenderPlayHUD(GameState *state)
             (Rectangle){349, 41, 32, 32},
             (Vector2){0, 0}, 0.0f, WHITE);
         textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){365 - textW / 2.0f, 79}, 22.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        DrawTextEx(assets.font, buf, (Vector2){365 - textW / 2.0f, 79}, 22.0f, 1.0f, WHITE);
     }
 }
 
@@ -1256,25 +1168,20 @@ void RenderLevelSelect(GameState *state)
         (Vector2){0, 0}, 0.0f, WHITE);
 
     int textW;
-    DrawTextEx(assets.font, "ADVENTURE", (Vector2){130, 30}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
-
-    Vector2 mouse = GetMousePosition();
+    DrawTextEx(assets.font, "ADVENTURE", (Vector2){130, 30}, 36.0f, 1.0f, WHITE);
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
         int col = i % LEVELS_PER_ROW;
         int x = 100 + col * 95;
         int y = 150 + row * 125;
-        Rectangle button = {x, y, AMAP_BTN_SIZE, AMAP_BTN_SIZE};
+        Rectangle button = {x, y, 80, 80};
 
         bool unlocked = i + 1 <= state->unlockedLevel;
         bool completed = i + 1 < state->unlockedLevel;
-        bool hover = unlocked && CheckCollisionPointRec(mouse, button);
 
-        Color bg = unlocked ? COLOR_AMAP_UNLOCKED_BG : COLOR_AMAP_LOCKED_BG;
-        Color border = unlocked ? COLOR_AMAP_UNLOCKED_BORDER : COLOR_AMAP_LOCKED_BORDER;
-        Color numberColor = unlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
-        if (hover) bg = COLOR_AMAP_UNLOCKED_HOVER;
+        Color bg = unlocked ? (Color){40, 35, 60, 255} : (Color){25, 25, 40, 255};
+        Color border = unlocked ? (Color){120, 80, 180, 255} : (Color){40, 40, 55, 255};
 
         DrawRectangleRounded(button, 0.2f, 6, bg);
         DrawRectangleRoundedLines(button, 0.2f, 6, border);
@@ -1282,7 +1189,7 @@ void RenderLevelSelect(GameState *state)
         char levelText[8];
         sprintf(levelText, "%d", i + 1);
         textW = (int)MeasureTextEx(assets.font, levelText, 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, levelText, (Vector2){x + (AMAP_BTN_SIZE - textW) / 2.0f, y + 20}, 28.0f, 1.0f, numberColor);
+        DrawTextEx(assets.font, levelText, (Vector2){x + (80 - textW) / 2.0f, y + 20}, 28.0f, 1.0f, WHITE);
 
         if (completed) {
             DrawTexturePro(assets.completed,
@@ -1298,10 +1205,10 @@ void RenderLevelSelect(GameState *state)
     }
 
     if (state->unlockedLevel > TOTAL_LEVELS) {
-        DrawTextEx(assets.font, "Completed!", (Vector2){145, 690}, 28.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
+        DrawTextEx(assets.font, "Completed!", (Vector2){145, 690}, 28.0f, 1.0f, WHITE);
     }
 
-    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){178, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, COLOR_TEXT_MUTED);
+    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){178, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, WHITE);
 }
 
 
@@ -1312,8 +1219,6 @@ void RenderResult(GameState *state)
 {
     const LevelDef *def = &defaultLevelDefs[state->selectedLevel];
     char buf[128];
-    Vector2 mouse = GetMousePosition();
-
     RenderPlayHUD(state);
     RenderBoard(state);
     RenderPieceSlots(state);
@@ -1323,8 +1228,8 @@ void RenderResult(GameState *state)
     int cardY = 180;
     int cardW = 380;
     int cardH = 400;
-    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
-    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
 
     const char *title = state->level.levelFailed ? (state->selectedLevel == 0 ? "GAME OVER" : "LEVEL FAILED!") : "LEVEL COMPLETE!";
     Color titleColor = state->level.levelFailed ? (Color){255, 80, 80, 255} : (Color){50, 255, 100, 255};
@@ -1338,47 +1243,42 @@ void RenderResult(GameState *state)
     if (state->selectedLevel == 0) {
         sprintf(buf, "Best: %d", state->highScore);
         textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 140}, 22.0f, 1.0f, COLOR_TEXT_SECONDARY);
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 140}, 22.0f, 1.0f, WHITE);
     } else {
         int y = cardY + 145;
         if (def->targetDiamonds > 0) {
             sprintf(buf, "Diamonds: %d / %d", state->level.collectedDiamonds, def->targetDiamonds);
             textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, (Color){100, 200, 255, 255});
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, WHITE);
             y += 30;
         }
         if (def->targetEmeralds > 0) {
             sprintf(buf, "Emeralds: %d / %d", state->level.collectedEmeralds, def->targetEmeralds);
             textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, (Color){50, 220, 100, 255});
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, WHITE);
         }
     }
 
-    Rectangle topButton = {BTN_X, cardY + cardH - 140, BTN_W, BTN_H};
-    Rectangle bottomButton = {BTN_X, cardY + cardH - 75, BTN_W, BTN_H};
-    bool topHover = CheckCollisionPointRec(mouse, topButton);
-    bool bottomHover = CheckCollisionPointRec(mouse, bottomButton);
-
+    Rectangle topButton = {130, cardY + cardH - 140, 220, 50};
+    Rectangle bottomButton = {130, cardY + cardH - 75, 220, 50};
     const char *topText = state->level.levelFailed ? (state->selectedLevel == 0 ? "Play Again" : "Try Again") : (state->level.currentLevel < TOTAL_LEVELS ? "Next Level" : "Completed!");
-    Color topBg = topHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
-    Color topBorder = topHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
-    Color topTextColor = topHover ? COLOR_TEXT_PRIMARY : COLOR_BTN_ADV_TEXT;
+    Color topBg = (Color){55, 40, 85, 255};
+    Color topBorder = (Color){100, 70, 150, 255};
     if (!state->level.levelFailed) {
-        topBg = topHover ? (Color){50, 100, 60, 255} : (Color){35, 70, 45, 255};
-        topBorder = topHover ? (Color){100, 220, 120, 255} : (Color){60, 140, 80, 255};
-        topTextColor = topHover ? COLOR_TEXT_PRIMARY : (Color){150, 220, 170, 255};
+        topBg = (Color){35, 70, 45, 255};
+        topBorder = (Color){60, 140, 80, 255};
     }
 
     DrawRectangleRounded(topButton, 0.25f, 8, topBg);
     DrawRectangleRoundedLines(topButton, 0.25f, 8, topBorder);
     textW = (int)MeasureTextEx(assets.font, topText, 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, topText, (Vector2){BTN_X + (BTN_W - textW) / 2.0f, topButton.y + 16}, 18.0f, 1.0f, topTextColor);
+    DrawTextEx(assets.font, topText, (Vector2){130 + (220 - textW) / 2.0f, topButton.y + 16}, 18.0f, 1.0f, WHITE);
 
-    DrawRectangleRounded(bottomButton, 0.25f, 8, bottomHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
-    DrawRectangleRoundedLines(bottomButton, 0.25f, 8, bottomHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    DrawTextEx(assets.font, "Main Menu", (Vector2){188, bottomButton.y + 16}, 18.0f, 1.0f, bottomHover ? COLOR_TEXT_PRIMARY : COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawRectangleRounded(bottomButton, 0.25f, 8, (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(bottomButton, 0.25f, 8, (Color){80, 80, 100, 255});
+    DrawTextEx(assets.font, "Main Menu", (Vector2){188, bottomButton.y + 16}, 18.0f, 1.0f, WHITE);
 
-    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){188, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, COLOR_TEXT_MUTED);
+    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){188, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, WHITE);
 }
 
 // ----- Menu screen -----
@@ -1394,62 +1294,40 @@ void RenderMenu(GameState *state) {
                  (Rectangle){logoX, logoY, targetW, targetH},
                  (Vector2){0, 0}, 0.0f, WHITE);
 
-  Vector2 mouse = GetMousePosition();
-
   // --- Gear Icon (top-right) for menu settings ---
   RenderGearIcon();
 
   // --- Standard Mode Button ---
-  Rectangle stdBtn = {BTN_X, MENU_STD_Y, BTN_W, BTN_H};
-  bool stdHover = CheckCollisionPointRec(mouse, stdBtn);
+  Rectangle stdBtn = {130, 330, 220, 50};
+  DrawRectangleRounded(stdBtn, 0.25f, 8, (Color){60, 100, 180, 255});
+  DrawRectangleRoundedLines(stdBtn, 0.25f, 8, (Color){100, 150, 220, 255});
 
-  Color stdBg = stdHover ? COLOR_BTN_STD_BG_HOVER : COLOR_BTN_STD_BG;
-  Color stdBorder =
-      stdHover ? COLOR_BTN_STD_BORDER_HOVER : COLOR_BTN_STD_BORDER;
-
-  DrawRectangleRounded(stdBtn, 0.25f, 8, stdBg);
-  DrawRectangleRoundedLines(stdBtn, 0.25f, 8,
-                            stdBorder);
-
-  Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
   DrawTextEx(assets.font, "Classic Mode",
-             (Vector2){151, (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
-             22.0f, 1.0f, stdTextColor);
+             (Vector2){151, 344},
+             22.0f, 1.0f, WHITE);
 
   // --- Adventure Mode Button ---
-  Rectangle advBtn = {BTN_X, MENU_ADV_Y, BTN_W, BTN_H};
-  bool advHover = CheckCollisionPointRec(mouse, advBtn);
+  Rectangle advBtn = {130, 400, 220, 50};
+  DrawRectangleRounded(advBtn, 0.25f, 8, (Color){55, 40, 85, 255});
+  DrawRectangleRoundedLines(advBtn, 0.25f, 8, (Color){100, 70, 150, 255});
 
-  Color advBg = advHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
-  Color advBorder =
-      advHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
-
-  DrawRectangleRounded(advBtn, 0.25f, 8, advBg);
-  DrawRectangleRoundedLines(advBtn, 0.25f, 8,
-                            advBorder);
-
-  Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
   DrawTextEx(assets.font, "Adventure Mode",
-             (Vector2){134, (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
-             22.0f, 1.0f, advTextColor);
+             (Vector2){134, 414},
+             22.0f, 1.0f, WHITE);
 
   if (state->unlockedLevel > TOTAL_LEVELS) {
       DrawTextEx(assets.font, "Completed",
-                 (Vector2){198, (float)(MENU_ADV_Y + BTN_H + 5)},
+                 (Vector2){198, 455},
                  14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
   }
 
   // --- Quit Button ---
-  Rectangle quitBtn = {BTN_X, MENU_QUIT_Y, BTN_W, BTN_H};
-  bool quitHover = CheckCollisionPointRec(mouse, quitBtn);
-  Color quitBg = quitHover ? COLOR_BTN_QUIT_BG_HOVER : COLOR_BTN_QUIT_BG;
-  Color quitBorder = quitHover ? COLOR_BTN_QUIT_BORDER_HOVER : COLOR_BTN_QUIT_BORDER;
-  Color quitTextColor = quitHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT;
-  DrawRectangleRounded(quitBtn, 0.25f, 8, quitBg);
-  DrawRectangleRoundedLines(quitBtn, 0.25f, 8, quitBorder);
+  Rectangle quitBtn = {130, 470, 220, 50};
+  DrawRectangleRounded(quitBtn, 0.25f, 8, (Color){140, 40, 40, 255});
+  DrawRectangleRoundedLines(quitBtn, 0.25f, 8, (Color){160, 60, 60, 255});
   DrawTextEx(assets.font, "Quit",
-             (Vector2){217, (float)(MENU_QUIT_Y + (BTN_H - 22) / 2)},
-             22.0f, 1.0f, quitTextColor);
+             (Vector2){217, 484},
+             22.0f, 1.0f, WHITE);
 
   // --- Game Simulation Decoration ---
   int s = 35; // Block size for mini grid
@@ -1501,50 +1379,40 @@ void RenderMenu(GameState *state) {
 // ----- Settings screen -----
 void RenderSettings(GameState *state)
 {
-    Vector2 mouse = GetMousePosition();
-    int cardX = 80;
-    int cardY = 165;
-    int iconY = 250;
-    int sfxIconX = 160;
-    int musicIconX = 280;
-    int actionY = 330;
-    int homeY = 395;
     bool menuSettings = state->currentScreen == SCREEN_MENU_SETTINGS;
-    Rectangle actionButton = {BTN_X, actionY, BTN_W, BTN_H};
-    Rectangle homeButton = {BTN_X, homeY, BTN_W, BTN_H};
+    Rectangle actionButton = {130, 330, 220, 50};
+    Rectangle homeButton = {130, 395, 220, 50};
 
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
-    DrawRectangleRounded((Rectangle){cardX, cardY, 320, 430}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
-    DrawRectangleRoundedLines((Rectangle){cardX, cardY, 320, 430}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 160});
+    DrawRectangleRounded((Rectangle){80, 165, 320, 430}, 0.15f, 8, (Color){20, 25, 50, 235});
+    DrawRectangleRoundedLines((Rectangle){80, 165, 320, 430}, 0.15f, 8, (Color){60, 70, 110, 180});
 
-    DrawTextEx(assets.font, "SETTINGS", (Vector2){158, cardY + 25}, 30.0f, 1.0f, WHITE);
-    DrawLineEx((Vector2){120, cardY + 65}, (Vector2){360, cardY + 65}, 1.5f, COLOR_SETTINGS_SEPARATOR);
+    DrawTextEx(assets.font, "SETTINGS", (Vector2){158, 190}, 30.0f, 1.0f, WHITE);
+    DrawLineEx((Vector2){120, 230}, (Vector2){360, 230}, 1.5f, (Color){80, 80, 120, 200});
 
-    DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){sfxIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
-    if (!assets.sfxEnabled) DrawLineEx((Vector2){sfxIconX + 2, iconY + 38}, (Vector2){sfxIconX + 38, iconY + 2}, 5.0f, RED);
-    DrawTextEx(assets.font, "SFX", (Vector2){166, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){160, 250, 40, 40}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.sfxEnabled) DrawLineEx((Vector2){162, 288}, (Vector2){198, 252}, 5.0f, RED);
+    DrawTextEx(assets.font, "SFX", (Vector2){166, 294}, 14.0f, 1.0f, WHITE);
 
-    DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){musicIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
-    if (!assets.musicEnabled) DrawLineEx((Vector2){musicIconX + 2, iconY + 38}, (Vector2){musicIconX + 38, iconY + 2}, 5.0f, RED);
-    DrawTextEx(assets.font, "Music", (Vector2){279, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){280, 250, 40, 40}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.musicEnabled) DrawLineEx((Vector2){282, 288}, (Vector2){318, 252}, 5.0f, RED);
+    DrawTextEx(assets.font, "Music", (Vector2){279, 294}, 14.0f, 1.0f, WHITE);
 
-    bool actionHover = CheckCollisionPointRec(mouse, actionButton);
     if (menuSettings) {
-        DrawRectangleRounded(actionButton, 0.25f, 8, actionHover ? COLOR_BTN_QUIT_BG_HOVER : COLOR_BTN_QUIT_BG);
-        DrawRectangleRoundedLines(actionButton, 0.25f, 8, actionHover ? COLOR_BTN_QUIT_BORDER_HOVER : COLOR_BTN_QUIT_BORDER);
-        DrawTextEx(assets.font, "Reset Save", (Vector2){181, actionY + 16}, 18.0f, 1.0f, actionHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT);
+        DrawRectangleRounded(actionButton, 0.25f, 8, (Color){140, 40, 40, 255});
+        DrawRectangleRoundedLines(actionButton, 0.25f, 8, (Color){160, 60, 60, 255});
+        DrawTextEx(assets.font, "Reset Save", (Vector2){181, 346}, 18.0f, 1.0f, WHITE);
     } else {
-        DrawRectangleRounded(actionButton, 0.25f, 8, actionHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
-        DrawRectangleRoundedLines(actionButton, 0.25f, 8, actionHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-        DrawTextEx(assets.font, "Replay", (Vector2){206, actionY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+        DrawRectangleRounded(actionButton, 0.25f, 8, (Color){40, 40, 60, 255});
+        DrawRectangleRoundedLines(actionButton, 0.25f, 8, (Color){80, 80, 100, 255});
+        DrawTextEx(assets.font, "Replay", (Vector2){206, 346}, 18.0f, 1.0f, WHITE);
     }
 
-    bool homeHover = CheckCollisionPointRec(mouse, homeButton);
-    DrawRectangleRounded(homeButton, 0.25f, 8, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
-    DrawRectangleRoundedLines(homeButton, 0.25f, 8, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    DrawTextEx(assets.font, "Home", (Vector2){215, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawRectangleRounded(homeButton, 0.25f, 8, (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(homeButton, 0.25f, 8, (Color){80, 80, 100, 255});
+    DrawTextEx(assets.font, "Home", (Vector2){215, 411}, 18.0f, 1.0f, WHITE);
 
-    DrawTextEx(assets.font, "ESC to go back", (Vector2){180, cardY + 400}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+    DrawTextEx(assets.font, "ESC to go back", (Vector2){180, 565}, 14.0f, 1.0f, WHITE);
 }
 
 
@@ -1668,7 +1536,7 @@ void RenderBoard(GameState *state)
     // Draw board background
     DrawRectangle(GRID_DRAW_X - 4, GRID_DRAW_Y - 4,
                   GRID_SIZE * CELL_SIZE + 8, GRID_SIZE * CELL_SIZE + 8,
-                  COLOR_GRID_BORDER);
+                  (Color){50, 50, 70, 255});
 
     for (int r = 0; r < GRID_SIZE; r++) {
         for (int c = 0; c < GRID_SIZE; c++) {
@@ -1695,7 +1563,7 @@ void RenderBoard(GameState *state)
                 }
             } else {
                 // Empty cell
-                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, COLOR_GRID_EMPTY);
+                DrawRectangle(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, (Color){40, 40, 60, 255});
             }
         }
     }
@@ -1733,8 +1601,8 @@ void RenderGhost(GameState *state)
 void RenderPieceSlots(GameState *state)
 {
     // Panel background
-    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, SCREEN_HEIGHT - PANEL_Y + 10, COLOR_PANEL_BG);
-    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, (int)PANEL_TOP_BORDER_WIDTH, COLOR_PANEL_TOP_BORDER);
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, SCREEN_HEIGHT - PANEL_Y + 10, (Color){30, 30, 50, 255});
+    DrawRectangle(0, PANEL_Y - 10, SCREEN_WIDTH, 2, (Color){50, 50, 70, 255});
 
     for (int i = 0; i < 3; i++) {
         // Skip the slot being dragged
@@ -1791,15 +1659,15 @@ void RenderDraggedPiece(GameState *state)
 // ----- Gear icon (settings button, top-right) -----
 void RenderGearIcon(void)
 {
-    int cx = GEAR_X + GEAR_SIZE / 2;
-    int cy = GEAR_Y + GEAR_SIZE / 2;
-    int outerR = GEAR_SIZE / 2 - 2;
+    int cx = 448;
+    int cy = 28;
+    int outerR = 16;
     int innerR = outerR - 7;
     int holeR  = 5;
 
     Color gearClr = (Color){180, 180, 200, 200};
     Vector2 mousePos = GetMousePosition();
-    Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+    Rectangle gearRect = { 430, 10, 36, 36 };
     if (CheckCollisionPointRec(mousePos, gearRect)) {
         gearClr = (Color){255, 220, 50, 240}; // highlight on hover
     }
@@ -1913,7 +1781,7 @@ void AddClearFeedback(GameState *state,
       sprintf(comboBanner, "BEST COMBO! x%d", state->combo);
     FloatTextAdd(&state->floatTexts, comboBanner, SCREEN_WIDTH / 2.0f,
                  SCREEN_HEIGHT / 2.0f - 100.0f, 40,
-                 (Color){255, 220, 50, 255});
+                 WHITE);
   }
 }
 
@@ -2096,10 +1964,10 @@ void GameUpdate(GameState *state)
 
     switch (state->currentScreen) {
         case SCREEN_MENU: {
-            Rectangle stdBtn = { BTN_X, MENU_STD_Y, BTN_W, BTN_H };
-            Rectangle advBtn = { BTN_X, MENU_ADV_Y, BTN_W, BTN_H };
-            Rectangle quitBtn = { BTN_X, MENU_QUIT_Y, BTN_W, BTN_H };
-            Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+            Rectangle stdBtn = { 130, 330, 220, 50 };
+            Rectangle advBtn = { 130, 400, 220, 50 };
+            Rectangle quitBtn = { 130, 470, 220, 50 };
+            Rectangle gearRect = { 430, 10, 36, 36 };
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, stdBtn)) {
@@ -2126,7 +1994,7 @@ void GameUpdate(GameState *state)
             AnimUpdate(&state->anims, dt);
 
             // Open settings by clicking the gear icon
-            Rectangle gearRect = { GEAR_X, GEAR_Y, GEAR_SIZE, GEAR_SIZE };
+            Rectangle gearRect = { 430, 10, 36, 36 };
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
                 CheckCollisionPointRec(mouse, gearRect)) {
                 state->prevScreen = state->currentScreen;
@@ -2181,7 +2049,7 @@ void GameUpdate(GameState *state)
                 for (int i = 0; i < TOTAL_LEVELS; i++) {
                     int row = i / LEVELS_PER_ROW;
                     int col = i % LEVELS_PER_ROW;
-                    Rectangle btn = {100 + col * 95, 150 + row * 125, AMAP_BTN_SIZE, AMAP_BTN_SIZE};
+                    Rectangle btn = {100 + col * 95, 150 + row * 125, 80, 80};
                     if (CheckCollisionPointRec(mouse, btn)) {
                         if (i + 1 <= state->unlockedLevel) {
                             SoundPlayMenuClick(&assets);
@@ -2203,13 +2071,8 @@ void GameUpdate(GameState *state)
 
         case SCREEN_RESULT: {
             // Result screen buttons
-            const int cardH = 400;
-            const int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
-            const int topBtnY = cardY + cardH - 140;
-            const int botBtnY = topBtnY + BTN_H + BTN_GAP;
-
-            Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
-            Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
+            Rectangle btnTop = { 130, 440, 220, 50 };
+            Rectangle btnBot = { 130, 505, 220, 50 };
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (state->level.levelFailed) {
@@ -2269,10 +2132,10 @@ void GameUpdate(GameState *state)
 void GameUpdateSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
-    Rectangle sfxIcon = {160, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
-    Rectangle musicIcon = {280, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
-    Rectangle actionButton = {BTN_X, 330, BTN_W, BTN_H};
-    Rectangle homeButton = {BTN_X, 395, BTN_W, BTN_H};
+    Rectangle sfxIcon = {160, 250, 40, 40};
+    Rectangle musicIcon = {280, 250, 40, 40};
+    Rectangle actionButton = {130, 330, 220, 50};
+    Rectangle homeButton = {130, 395, 220, 50};
     bool menuSettings = state->currentScreen == SCREEN_MENU_SETTINGS;
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
