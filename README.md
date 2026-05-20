@@ -55,9 +55,9 @@ gcc -std=c99 -Wall -Wno-missing-braces -Iraylib\src main.c raylib\src\libraylib.
 
 ```text
 main.c      Tüm oyun kodu: sabitler, tipler, oyun mantığı, input, render, ses, kayıt ve main loop
-assets/         Font, görsel ve ses dosyaları
-raylib/         Projeyle gelen raylib kaynakları
-data/           Çalışma sırasında oluşan kişisel kayıt dosyaları
+assets/     Kullanılan font, görsel ve ses dosyaları tek klasörde
+raylib/     Projeyle gelen raylib kaynakları
+data/       Çalışma sırasında oluşan kişisel kayıt dosyaları
 ```
 
 ## Kayıt Dosyası

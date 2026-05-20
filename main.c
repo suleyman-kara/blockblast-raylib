@@ -38,10 +38,6 @@
 #define BASE_SCORE 100
 #define ScoreCalculate(lines, combo) (BASE_SCORE * (lines) * (combo))
 
-// ─── Banner
-// ───────────────────────────────────────────────────────────────────
-#define BANNER_DURATION 1.8f
-
 // ─── Animation
 // ────────────────────────────────────────────────────────────────
 #define CLEAR_ANIM_DURATION 0.35f
@@ -68,7 +64,6 @@
 
 // ─── Settings Menu
 // ────────────────────────────────────────────────────────────
-#define SETTING_COUNT 4
 #define SETTING_SFX 0
 #define SETTING_MUSIC 1
 #define SETTING_RESTART 2
@@ -110,7 +105,7 @@
 #define BG_COLOR COLOR_BG // backward compatibility
 
 // ─── Piece colours (index 0 = empty, 1-7 = piece colours) ────────────────────
-static const Color PIECE_COLORS[] = {
+const Color PIECE_COLORS[] = {
     {40, 40, 60, 255},   // 0 = empty cell
     {255, 87, 87, 255},  // 1 = red
     {255, 189, 46, 255}, // 2 = yellow
@@ -131,8 +126,6 @@ static const Color PIECE_COLORS[] = {
 // ─────────────────────────────────────────────────────────
 #define SETTINGS_CARD_WIDTH 320
 #define SETTINGS_CARD_HEIGHT 430
-#define SETTINGS_TITLE_FONT_SIZE 30
-#define SETTINGS_CARD_PADDING_X 40
 
 // ─── Gems
 // ─────────────────────────────────────────────────────────────────────
@@ -147,9 +140,6 @@ static const Color PIECE_COLORS[] = {
 #define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
 #define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
 #define AMAP_BTN_SIZE              80
-#define AMAP_BTN_GAP               15
-#define AMAP_BTN_LABEL_GAP         30
-#define AMAP_START_Y               150
 
 // ─── Settings overlay colors
 // ──────────────────────────────────────────────────
@@ -226,7 +216,7 @@ typedef struct {
 } PieceDef;
 
 // ---- All piece shape definitions ----
-static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
+const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
     // 1x1
     { .shape = {{1}}, .width = 1, .height = 1 },
     // 1x2 horizontal
@@ -352,7 +342,7 @@ typedef struct {
     bool musicEnabled;
 } GameAssets;
 
-static GameAssets assets;
+GameAssets assets;
 
 /* ---- Level types ---- */
 
@@ -379,7 +369,7 @@ typedef struct {
 // ─── Level Definitions ────────────────────────────────────────────────────────
 // Index 0 = classic mode (infinite, no targets)
 // Index 1-10 = adventure levels
-static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
+const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
     // Classic mode — no targets, no prefill
     { .level = 0,  .targetScore = 0, .targetDiamonds = 0, .targetEmeralds = 0, .prefillCount = 0 },
 
@@ -396,11 +386,11 @@ static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
     { .level = 10, .targetScore = 1500, .targetDiamonds = 6, .targetEmeralds = 5, .prefillCount = 8 },
 };
 
-static inline bool LevelIsUnlocked(int unlockedLevel, int lvl) {
+bool LevelIsUnlocked(int unlockedLevel, int lvl) {
     return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl <= unlockedLevel);
 }
 
-static inline bool LevelIsCompleted(int unlockedLevel, int lvl) {
+bool LevelIsCompleted(int unlockedLevel, int lvl) {
     return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl < unlockedLevel);
 }
 
@@ -484,7 +474,7 @@ void LevelInit(LevelState *state, int levelIndex, Board *board);
 bool LevelCheckGoal(LevelState *state, int currentScore);
 bool LevelCheckFailure(Board *board, PieceSlot slots[3]);
 
-static int ClampUnlockedLevel(int unlockedLevel);
+int ClampUnlockedLevel(int unlockedLevel);
 void SaveLoad(int *highScore, int *unlockedLevel);
 void SaveWrite(int highScore, int unlockedLevel);
 
@@ -506,8 +496,8 @@ void RenderMenu(GameState *state);
 void RenderSettings(GameState *state);
 void RenderMenuSettings(GameState *state);
 void RenderFrame(GameState *state);
-static void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c);
-static void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c);
+void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c);
+void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c);
 void DrawBlockBeveled(int x, int y, int size, Color baseColor);
 void RenderBoard(GameState *state);
 void RenderGhost(GameState *state);
@@ -516,32 +506,20 @@ void RenderDraggedPiece(GameState *state);
 void RenderGearIcon(void);
 void DrawGemIcon(int x, int y, int cellSize, int gemType);
 
-static void TryStartDrag(GameState *state, Vector2 mouse);
-static void AddClearFeedback(GameState *state,
+void TryStartDrag(GameState *state, Vector2 mouse);
+void AddClearFeedback(GameState *state,
                              bool clearedCells[GRID_SIZE][GRID_SIZE],
                              int savedColors[GRID_SIZE][GRID_SIZE], int points);
-static void GenerateNextPiecesIfNeeded(GameState *state);
-static void TryDropDraggedPiece(GameState *state);
+void GenerateNextPiecesIfNeeded(GameState *state);
+void TryDropDraggedPiece(GameState *state);
 void InputUpdate(GameState *state);
 
 void GameInit(GameState *state);
 void GameReset(GameState *state);
 void GameUpdate(GameState *state);
-static void ExecuteSetting(GameState *state, int index);
+void ExecuteSetting(GameState *state, int index);
 void GameUpdateSettings(GameState *state);
 void GameUpdateMenuSettings(GameState *state);
-
-
-void AssetsLoad(GameAssets *assets);
-void AssetsUnload(GameAssets *assets);
-void AssetsUpdateMusic(GameAssets *assets);
-void SoundToggleSfx(GameAssets *assets);
-void SoundToggleMusic(GameAssets *assets);
-void SoundPlayPlace(GameAssets *assets);
-void SoundPlayLineClear(GameAssets *assets, int linesCleared);
-void SoundPlayCombo(GameAssets *assets, int comboCount);
-void SoundPlayLose(GameAssets *assets);
-void SoundPlayMenuClick(GameAssets *assets);
 
 int main(void)
 {
@@ -766,10 +744,9 @@ bool BoardHasValidMove(Board *board, PieceSlot slots[3])
     for (int s = 0; s < 3; s++) {
         if (!SlotIsOccupied(&slots[s])) continue;
 
-        Piece *p = &slots[s].piece;
-        for (int r = 0; r <= GRID_SIZE - p->height; r++) {
-            for (int c = 0; c <= GRID_SIZE - p->width; c++) {
-                if (BoardCanPlace(board, p, r, c))
+        for (int r = 0; r <= GRID_SIZE - slots[s].piece.height; r++) {
+            for (int c = 0; c <= GRID_SIZE - slots[s].piece.width; c++) {
+                if (BoardCanPlace(board, &slots[s].piece, r, c))
                     return true;
             }
         }
@@ -837,11 +814,11 @@ void AnimAddCleared(AnimQueue *queue, bool clearedCells[GRID_SIZE][GRID_SIZE])
             if (!clearedCells[r][c]) continue;
             if (queue->count >= MAX_ANIMS * GRID_SIZE) return;
 
-            ClearAnim *a = &queue->items[queue->count++];
-            a->active = true;
-            a->timer = CLEAR_ANIM_DURATION;
-            a->row = r;
-            a->col = c;
+            queue->items[queue->count].active = true;
+            queue->items[queue->count].timer = CLEAR_ANIM_DURATION;
+            queue->items[queue->count].row = r;
+            queue->items[queue->count].col = c;
+            queue->count++;
         }
     }
 }
@@ -851,12 +828,11 @@ bool AnimUpdate(AnimQueue *queue, float dt)
     bool anyActive = false;
 
     for (int i = 0; i < queue->count; i++) {
-        ClearAnim *a = &queue->items[i];
-        if (!a->active) continue;
+        if (!queue->items[i].active) continue;
 
-        a->timer -= dt;
-        if (a->timer <= 0.0f) {
-            a->active = false;
+        queue->items[i].timer -= dt;
+        if (queue->items[i].timer <= 0.0f) {
+            queue->items[i].active = false;
         } else {
             anyActive = true;
         }
@@ -881,9 +857,10 @@ bool AnimIsActive(AnimQueue *queue)
 float AnimGetCellAlpha(AnimQueue *queue, int row, int col)
 {
     for (int i = 0; i < queue->count; i++) {
-        ClearAnim *a = &queue->items[i];
-        if (a->active && a->row == row && a->col == col) {
-            return a->timer / CLEAR_ANIM_DURATION; // 1.0 -> 0.0 fade out
+        if (queue->items[i].active &&
+            queue->items[i].row == row &&
+            queue->items[i].col == col) {
+            return queue->items[i].timer / CLEAR_ANIM_DURATION; // 1.0 -> 0.0 fade out
         }
     }
     return -1.0f; // not being animated
@@ -895,25 +872,25 @@ void ParticleEmit(ParticleSystem *ps, float x, float y,
     for (int i = 0; i < count; i++) {
         if (ps->count >= MAX_PARTICLES) return;
 
-        Particle *p = &ps->items[ps->count++];
-        p->active = true;
-        p->pos = (Vector2){x, y};
+        ps->items[ps->count].active = true;
+        ps->items[ps->count].pos = (Vector2){x, y};
 
         // Random direction and speed
         float angle = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
         float speed = 80.0f + ((float)rand() / (float)RAND_MAX) * 160.0f;
-        p->vel = (Vector2){cosf(angle) * speed, sinf(angle) * speed};
+        ps->items[ps->count].vel = (Vector2){cosf(angle) * speed, sinf(angle) * speed};
 
-        p->life = PARTICLE_LIFE + ((float)rand() / (float)RAND_MAX) * 0.4f;
-        p->maxLife = p->life;
-        p->size = 3.0f + ((float)rand() / (float)RAND_MAX) * 4.0f;
-        p->gravity = 200.0f + ((float)rand() / (float)RAND_MAX) * 100.0f;
+        ps->items[ps->count].life = PARTICLE_LIFE + ((float)rand() / (float)RAND_MAX) * 0.4f;
+        ps->items[ps->count].maxLife = ps->items[ps->count].life;
+        ps->items[ps->count].size = 3.0f + ((float)rand() / (float)RAND_MAX) * 4.0f;
+        ps->items[ps->count].gravity = 200.0f + ((float)rand() / (float)RAND_MAX) * 100.0f;
 
         // Slight color variation
-        p->color = color;
+        ps->items[ps->count].color = color;
         int variation = (rand() % 40) - 20;
-        p->color.r = (unsigned char)fminf(255, fmaxf(0, color.r + variation));
-        p->color.g = (unsigned char)fminf(255, fmaxf(0, color.g + variation));
+        ps->items[ps->count].color.r = (unsigned char)fminf(255, fmaxf(0, color.r + variation));
+        ps->items[ps->count].color.g = (unsigned char)fminf(255, fmaxf(0, color.g + variation));
+        ps->count++;
     }
 }
 
@@ -922,23 +899,22 @@ void ParticleUpdate(ParticleSystem *ps, float dt)
     bool anyActive = false;
 
     for (int i = 0; i < ps->count; i++) {
-        Particle *p = &ps->items[i];
-        if (!p->active) continue;
+        if (!ps->items[i].active) continue;
 
-        p->life -= dt;
-        if (p->life <= 0.0f) {
-            p->active = false;
+        ps->items[i].life -= dt;
+        if (ps->items[i].life <= 0.0f) {
+            ps->items[i].active = false;
             continue;
         }
 
         anyActive = true;
 
         // Apply gravity
-        p->vel.y += p->gravity * dt;
+        ps->items[i].vel.y += ps->items[i].gravity * dt;
 
         // Move
-        p->pos.x += p->vel.x * dt;
-        p->pos.y += p->vel.y * dt;
+        ps->items[i].pos.x += ps->items[i].vel.x * dt;
+        ps->items[i].pos.y += ps->items[i].vel.y * dt;
     }
 
     // Reset count if all inactive
@@ -948,22 +924,21 @@ void ParticleUpdate(ParticleSystem *ps, float dt)
 void ParticleDraw(ParticleSystem *ps)
 {
     for (int i = 0; i < ps->count; i++) {
-        Particle *p = &ps->items[i];
-        if (!p->active) continue;
+        if (!ps->items[i].active) continue;
 
-        float t = p->life / p->maxLife;  // 1.0 -> 0.0
+        float t = ps->items[i].life / ps->items[i].maxLife;  // 1.0 -> 0.0
 
         // Size shrinks over time
-        float currentSize = p->size * t;
+        float currentSize = ps->items[i].size * t;
         if (currentSize < 0.5f) continue;
 
         // Alpha fades
-        Color clr = p->color;
+        Color clr = ps->items[i].color;
         clr.a = (unsigned char)(t * 255.0f);
 
         DrawRectangle(
-            (int)(p->pos.x - currentSize / 2),
-            (int)(p->pos.y - currentSize / 2),
+            (int)(ps->items[i].pos.x - currentSize / 2),
+            (int)(ps->items[i].pos.y - currentSize / 2),
             (int)currentSize + 1,
             (int)currentSize + 1,
             clr
@@ -993,31 +968,29 @@ void FloatTextAdd(FloatTextQueue *queue, const char *text,
         }
     }
 
-    FloatText *ft = &queue->items[idx];
-    ft->active = true;
-    strncpy(ft->text, text, FLOAT_TEXT_LEN - 1);
-    ft->text[FLOAT_TEXT_LEN - 1] = '\0';
-    ft->x = centerX;
-    ft->y = startY;
-    ft->startY = startY;
-    ft->timer = FLOAT_TEXT_DURATION;
-    ft->duration = FLOAT_TEXT_DURATION;
-    ft->speed = FLOAT_TEXT_SPEED;
-    ft->fontSize = fontSize;
-    ft->color = color;
+    queue->items[idx].active = true;
+    strncpy(queue->items[idx].text, text, FLOAT_TEXT_LEN - 1);
+    queue->items[idx].text[FLOAT_TEXT_LEN - 1] = '\0';
+    queue->items[idx].x = centerX;
+    queue->items[idx].y = startY;
+    queue->items[idx].startY = startY;
+    queue->items[idx].timer = FLOAT_TEXT_DURATION;
+    queue->items[idx].duration = FLOAT_TEXT_DURATION;
+    queue->items[idx].speed = FLOAT_TEXT_SPEED;
+    queue->items[idx].fontSize = fontSize;
+    queue->items[idx].color = color;
 }
 
 void FloatTextUpdate(FloatTextQueue *queue, float dt)
 {
     for (int i = 0; i < queue->count; i++) {
-        FloatText *ft = &queue->items[i];
-        if (!ft->active) continue;
+        if (!queue->items[i].active) continue;
 
-        ft->timer -= dt;
-        ft->y -= ft->speed * dt;  // move upward
+        queue->items[i].timer -= dt;
+        queue->items[i].y -= queue->items[i].speed * dt;  // move upward
 
-        if (ft->timer <= 0.0f) {
-            ft->active = false;
+        if (queue->items[i].timer <= 0.0f) {
+            queue->items[i].active = false;
         }
     }
 
@@ -1035,21 +1008,20 @@ void FloatTextUpdate(FloatTextQueue *queue, float dt)
 void FloatTextDraw(FloatTextQueue *queue)
 {
     for (int i = 0; i < queue->count; i++) {
-        FloatText *ft = &queue->items[i];
-        if (!ft->active) continue;
+        if (!queue->items[i].active) continue;
 
-        float t = ft->timer / ft->duration;  // 1.0 -> 0.0
+        float t = queue->items[i].timer / queue->items[i].duration;  // 1.0 -> 0.0
         unsigned char alpha = (unsigned char)(t * 255.0f);
 
         // Scale effect: start slightly larger, settle to normal
         float scale = 1.0f + (1.0f - t) * 0.15f;
-        int fontSize = (int)(ft->fontSize * scale);
+        int fontSize = (int)(queue->items[i].fontSize * scale);
 
-        Color clr = ft->color;
+        Color clr = queue->items[i].color;
         clr.a = alpha;
 
-        int w = (int)MeasureTextEx(assets.font, ft->text, (float)fontSize, 1.0f).x;
-        DrawTextEx(assets.font, ft->text, (Vector2){ft->x - w / 2.0f, ft->y},
+        int w = (int)MeasureTextEx(assets.font, queue->items[i].text, (float)fontSize, 1.0f).x;
+        DrawTextEx(assets.font, queue->items[i].text, (Vector2){queue->items[i].x - w / 2.0f, queue->items[i].y},
                    (float)fontSize, 1.0f, clr);
     }
 }
@@ -1111,7 +1083,7 @@ bool LevelCheckFailure(Board *board, PieceSlot slots[3])
 
 #define SAVE_FILE "data/save.txt"
 
-static int ClampUnlockedLevel(int unlockedLevel)
+int ClampUnlockedLevel(int unlockedLevel)
 {
     if (unlockedLevel < 1) return 1;
     if (unlockedLevel > TOTAL_LEVELS + 1) return TOTAL_LEVELS + 1;
@@ -1161,28 +1133,28 @@ void AssetsLoad(GameAssets *assets)
 {
     InitAudioDevice();
 
-    assets->font = LoadFontEx("assets/fonts/RussoOne-Regular.ttf", 200, 0, 0);
+    assets->font = LoadFontEx("assets/RussoOne-Regular.ttf", 200, 0, 0);
 
-    assets->crown = LoadTexture("assets/images/crown.png");
-    assets->diamond = LoadTexture("assets/images/diamond.png");
-    assets->emerald = LoadTexture("assets/images/emerald.png");
-    assets->home = LoadTexture("assets/images/home.png");
-    assets->lock = LoadTexture("assets/images/lock.png");
-    assets->logout = LoadTexture("assets/images/logout.png");
-    assets->musicalNote = LoadTexture("assets/images/musical-note.png");
-    assets->waveSound = LoadTexture("assets/images/wave-sound.png");
-    assets->replay = LoadTexture("assets/images/replay.png");
-    assets->completed = LoadTexture("assets/images/completed.png");
-    assets->logo = LoadTexture("assets/images/logo.png");
+    assets->crown = LoadTexture("assets/crown.png");
+    assets->diamond = LoadTexture("assets/diamond.png");
+    assets->emerald = LoadTexture("assets/emerald.png");
+    assets->home = LoadTexture("assets/home.png");
+    assets->lock = LoadTexture("assets/lock.png");
+    assets->logout = LoadTexture("assets/logout.png");
+    assets->musicalNote = LoadTexture("assets/musical-note.png");
+    assets->waveSound = LoadTexture("assets/wave-sound.png");
+    assets->replay = LoadTexture("assets/replay.png");
+    assets->completed = LoadTexture("assets/completed.png");
+    assets->logo = LoadTexture("assets/logo.png");
 
-    assets->sfxPlace = LoadSound("assets/sounds/block-placing.ogg");
-    assets->sfxLineClear1 = LoadSound("assets/sounds/line-clear-1.ogg");
-    assets->sfxLineClear2 = LoadSound("assets/sounds/line-clear-2.ogg");
-    assets->sfxCombo1 = LoadSound("assets/sounds/combo-1.ogg");
-    assets->sfxCombo2 = LoadSound("assets/sounds/combo-2.ogg");
-    assets->sfxLose = LoadSound("assets/sounds/lose.ogg");
-    assets->sfxMenuClick = LoadSound("assets/sounds/menu-click.ogg");
-    assets->bgMusic = LoadMusicStream("assets/sounds/background-music.wav");
+    assets->sfxPlace = LoadSound("assets/block-placing.ogg");
+    assets->sfxLineClear1 = LoadSound("assets/line-clear-1.ogg");
+    assets->sfxLineClear2 = LoadSound("assets/line-clear-2.ogg");
+    assets->sfxCombo1 = LoadSound("assets/combo-1.ogg");
+    assets->sfxCombo2 = LoadSound("assets/combo-2.ogg");
+    assets->sfxLose = LoadSound("assets/lose.ogg");
+    assets->sfxMenuClick = LoadSound("assets/menu-click.ogg");
+    assets->bgMusic = LoadMusicStream("assets/background-music.wav");
     assets->bgMusic.looping = true;
 
     assets->sfxEnabled = true;
@@ -1373,8 +1345,8 @@ void RenderLevelSelect(GameState *state)
         (Rectangle){15, 15, 32, 32},
         (Vector2){0, 0}, 0.0f, WHITE);
 
-    int textW = (int)MeasureTextEx(assets.font, "ADVENTURE", 36.0f, 1.0f).x;
-    DrawTextEx(assets.font, "ADVENTURE", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 30}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
+    int textW;
+    DrawTextEx(assets.font, "ADVENTURE", (Vector2){130, 30}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
 
     Vector2 mouse = GetMousePosition();
 
@@ -1416,12 +1388,10 @@ void RenderLevelSelect(GameState *state)
     }
 
     if (state->unlockedLevel > TOTAL_LEVELS) {
-        textW = (int)MeasureTextEx(assets.font, "Completed!", 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, "Completed!", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 690}, 28.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
+        DrawTextEx(assets.font, "Completed!", (Vector2){145, 690}, 28.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
     }
 
-    textW = (int)MeasureTextEx(assets.font, "ESC: Main Menu", 16.0f, 1.0f).x;
-    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, COLOR_TEXT_MUTED);
+    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){178, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, COLOR_TEXT_MUTED);
 }
 
 
@@ -1496,11 +1466,9 @@ void RenderResult(GameState *state)
 
     DrawRectangleRounded(bottomButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, bottomHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(bottomButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, bottomHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    textW = (int)MeasureTextEx(assets.font, "Main Menu", 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Main Menu", (Vector2){BTN_X + (BTN_W - textW) / 2.0f, bottomButton.y + 16}, 18.0f, 1.0f, bottomHover ? COLOR_TEXT_PRIMARY : COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Main Menu", (Vector2){188, bottomButton.y + 16}, 18.0f, 1.0f, bottomHover ? COLOR_TEXT_PRIMARY : COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    textW = (int)MeasureTextEx(assets.font, "ESC: Go Back", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, COLOR_TEXT_MUTED);
+    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){188, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, COLOR_TEXT_MUTED);
 }
 
 
@@ -1537,12 +1505,9 @@ void RenderMenu(GameState *state) {
   DrawRectangleRoundedLines(stdBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
                             stdBorder);
 
-  const char *stdText = "Classic Mode";
-  int stw = (int)MeasureTextEx(assets.font, stdText, 22.0f, 1.0f).x;
   Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
-  DrawTextEx(assets.font, stdText,
-             (Vector2){(float)(BTN_X + (BTN_W - stw) / 2),
-                       (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
+  DrawTextEx(assets.font, "Classic Mode",
+             (Vector2){151, (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, stdTextColor);
 
   // --- Adventure Mode Button ---
@@ -1557,20 +1522,14 @@ void RenderMenu(GameState *state) {
   DrawRectangleRoundedLines(advBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
                             advBorder);
 
-  const char *advText = "Adventure Mode";
-  int atw = (int)MeasureTextEx(assets.font, advText, 22.0f, 1.0f).x;
   Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
-  DrawTextEx(assets.font, advText,
-             (Vector2){(float)(BTN_X + (BTN_W - atw) / 2),
-                       (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
+  DrawTextEx(assets.font, "Adventure Mode",
+             (Vector2){134, (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, advTextColor);
 
   if (state->unlockedLevel > TOTAL_LEVELS) {
-      const char *compText = "Completed";
-      int ctw = (int)MeasureTextEx(assets.font, compText, 14.0f, 1.0f).x;
-      DrawTextEx(assets.font, compText,
-                 (Vector2){(float)(BTN_X + (BTN_W - ctw) / 2),
-                           (float)(MENU_ADV_Y + BTN_H + 5)},
+      DrawTextEx(assets.font, "Completed",
+                 (Vector2){198, (float)(MENU_ADV_Y + BTN_H + 5)},
                  14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
   }
 
@@ -1582,10 +1541,8 @@ void RenderMenu(GameState *state) {
   Color quitTextColor = quitHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT;
   DrawRectangleRounded(quitBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, quitBg);
   DrawRectangleRoundedLines(quitBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, quitBorder);
-  int qtw = (int)MeasureTextEx(assets.font, "Quit", 22.0f, 1.0f).x;
   DrawTextEx(assets.font, "Quit",
-             (Vector2){(float)(BTN_X + (BTN_W - qtw) / 2),
-                       (float)(MENU_QUIT_Y + (BTN_H - 22) / 2)},
+             (Vector2){217, (float)(MENU_QUIT_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, quitTextColor);
 
   // --- Game Simulation Decoration ---
@@ -1653,36 +1610,30 @@ void RenderSettings(GameState *state)
     DrawRectangleRounded((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
     DrawRectangleRoundedLines((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
 
-    int textW = (int)MeasureTextEx(assets.font, "SETTINGS", 30.0f, 1.0f).x;
-    DrawTextEx(assets.font, "SETTINGS", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 25}, 30.0f, 1.0f, WHITE);
+    DrawTextEx(assets.font, "SETTINGS", (Vector2){158, cardY + 25}, 30.0f, 1.0f, WHITE);
     DrawLineEx((Vector2){120, cardY + 65}, (Vector2){360, cardY + 65}, 1.5f, COLOR_SETTINGS_SEPARATOR);
 
     DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){sfxIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.sfxEnabled) DrawLineEx((Vector2){sfxIconX + 2, iconY + 38}, (Vector2){sfxIconX + 38, iconY + 2}, 5.0f, RED);
-    textW = (int)MeasureTextEx(assets.font, "SFX", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "SFX", (Vector2){sfxIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "SFX", (Vector2){166, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){musicIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.musicEnabled) DrawLineEx((Vector2){musicIconX + 2, iconY + 38}, (Vector2){musicIconX + 38, iconY + 2}, 5.0f, RED);
-    textW = (int)MeasureTextEx(assets.font, "Music", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Music", (Vector2){musicIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Music", (Vector2){279, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     bool replayHover = CheckCollisionPointRec(mouse, replayButton);
     DrawRectangleRounded(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
     DrawTexturePro(assets.replay, (Rectangle){0, 0, (float)assets.replay.width, (float)assets.replay.height}, (Rectangle){BTN_X + 15, replayY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
-    textW = (int)MeasureTextEx(assets.font, "Replay", 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Replay", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, replayY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Replay", (Vector2){206, replayY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     bool homeHover = CheckCollisionPointRec(mouse, homeButton);
     DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
     DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
-    textW = (int)MeasureTextEx(assets.font, "Home", 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Home", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Home", (Vector2){215, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    textW = (int)MeasureTextEx(assets.font, "ESC to go back", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "ESC to go back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+    DrawTextEx(assets.font, "ESC to go back", (Vector2){180, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
 
 
@@ -1704,35 +1655,29 @@ void RenderMenuSettings(GameState *state)
     DrawRectangleRounded((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
     DrawRectangleRoundedLines((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
 
-    int textW = (int)MeasureTextEx(assets.font, "SETTINGS", 30.0f, 1.0f).x;
-    DrawTextEx(assets.font, "SETTINGS", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 25}, 30.0f, 1.0f, WHITE);
+    DrawTextEx(assets.font, "SETTINGS", (Vector2){158, cardY + 25}, 30.0f, 1.0f, WHITE);
     DrawLineEx((Vector2){120, cardY + 65}, (Vector2){360, cardY + 65}, 1.5f, COLOR_SETTINGS_SEPARATOR);
 
     DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){sfxIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.sfxEnabled) DrawLineEx((Vector2){sfxIconX + 2, iconY + 38}, (Vector2){sfxIconX + 38, iconY + 2}, 5.0f, RED);
-    textW = (int)MeasureTextEx(assets.font, "SFX", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "SFX", (Vector2){sfxIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "SFX", (Vector2){166, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){musicIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.musicEnabled) DrawLineEx((Vector2){musicIconX + 2, iconY + 38}, (Vector2){musicIconX + 38, iconY + 2}, 5.0f, RED);
-    textW = (int)MeasureTextEx(assets.font, "Music", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Music", (Vector2){musicIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Music", (Vector2){279, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     bool resetHover = CheckCollisionPointRec(mouse, resetButton);
     DrawRectangleRounded(resetButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, resetHover ? COLOR_BTN_QUIT_BG_HOVER : COLOR_BTN_QUIT_BG);
     DrawRectangleRoundedLines(resetButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, resetHover ? COLOR_BTN_QUIT_BORDER_HOVER : COLOR_BTN_QUIT_BORDER);
-    textW = (int)MeasureTextEx(assets.font, "Reset Save", 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Reset Save", (Vector2){BTN_X + (BTN_W - textW) / 2.0f, resetY + 16}, 18.0f, 1.0f, resetHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT);
+    DrawTextEx(assets.font, "Reset Save", (Vector2){181, resetY + 16}, 18.0f, 1.0f, resetHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT);
 
     bool homeHover = CheckCollisionPointRec(mouse, homeButton);
     DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
     DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
-    textW = (int)MeasureTextEx(assets.font, "Home", 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, "Home", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTextEx(assets.font, "Home", (Vector2){215, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    textW = (int)MeasureTextEx(assets.font, "ESC to go back", 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, "ESC to go back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+    DrawTextEx(assets.font, "ESC to go back", (Vector2){180, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
 
 
@@ -1782,12 +1727,12 @@ void RenderFrame(GameState *state)
 }
 
 // ----- Block Rendering -----
-static void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c) {
+void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c) {
     DrawTriangle(v1, v2, v3, c);
     DrawTriangle(v1, v3, v2, c);
 }
 
-static void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c) {
+void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c) {
     DrawSafeTriangle(v1, v2, v3, c);
     DrawSafeTriangle(v1, v3, v4, c);
 }
@@ -1894,9 +1839,7 @@ void RenderGhost(GameState *state)
 {
     if (!state->isDragging) return;
 
-    PieceSlot *slot = &state->slots[state->dragSlotIndex];
-    if (!SlotIsOccupied(slot)) return;
-    Piece *piece = &slot->piece;
+    if (!SlotIsOccupied(&state->slots[state->dragSlotIndex])) return;
 
     float pieceScreenX = state->dragPos.x - state->dragOffset.x;
     float pieceScreenY = state->dragPos.y - state->dragOffset.y;
@@ -1904,14 +1847,14 @@ void RenderGhost(GameState *state)
     int gridCol = (int)((pieceScreenX - GRID_DRAW_X + CELL_SIZE/2) / CELL_SIZE);
     int gridRow = (int)((pieceScreenY - GRID_DRAW_Y + CELL_SIZE/2) / CELL_SIZE);
 
-    if (!BoardCanPlace(&state->board, piece, gridRow, gridCol)) return;
+    if (!BoardCanPlace(&state->board, &state->slots[state->dragSlotIndex].piece, gridRow, gridCol)) return;
 
-    Color ghost = PIECE_COLORS[piece->colorIndex];
+    Color ghost = PIECE_COLORS[state->slots[state->dragSlotIndex].piece.colorIndex];
     ghost.a = 80;
 
-    for (int r = 0; r < piece->height; r++) {
-        for (int c = 0; c < piece->width; c++) {
-            if (piece->shape[r][c] == 0) continue;
+    for (int r = 0; r < state->slots[state->dragSlotIndex].piece.height; r++) {
+        for (int c = 0; c < state->slots[state->dragSlotIndex].piece.width; c++) {
+            if (state->slots[state->dragSlotIndex].piece.shape[r][c] == 0) continue;
             int x = GRID_DRAW_X + (gridCol + c) * CELL_SIZE;
             int y = GRID_DRAW_Y + (gridRow + r) * CELL_SIZE;
             DrawBlockBeveled(x, y, CELL_SIZE, ghost);
@@ -1930,22 +1873,20 @@ void RenderPieceSlots(GameState *state)
         // Skip the slot being dragged
         if (state->isDragging && state->dragSlotIndex == i) continue;
 
-        PieceSlot *slot = &state->slots[i];
-        if (!SlotIsOccupied(slot)) continue;
+        if (!SlotIsOccupied(&state->slots[i])) continue;
 
-        Piece *p = &slot->piece;
-        Color clr = PIECE_COLORS[p->colorIndex];
+        Color clr = PIECE_COLORS[state->slots[i].piece.colorIndex];
 
-        for (int r = 0; r < p->height; r++) {
-            for (int c = 0; c < p->width; c++) {
-                if (p->shape[r][c] == 0) continue;
-                int x = (int)(slot->posX + c * PANEL_PIECE_SCALE);
-                int y = (int)(slot->posY + r * PANEL_PIECE_SCALE);
+        for (int r = 0; r < state->slots[i].piece.height; r++) {
+            for (int c = 0; c < state->slots[i].piece.width; c++) {
+                if (state->slots[i].piece.shape[r][c] == 0) continue;
+                int x = (int)(state->slots[i].posX + c * PANEL_PIECE_SCALE);
+                int y = (int)(state->slots[i].posY + r * PANEL_PIECE_SCALE);
                 DrawBlockBeveled(x, y, PANEL_PIECE_SCALE, clr);
 
                 // Draw gem icon in panel if present
-                if (p->gemCells[r][c] != GEM_NONE) {
-                    DrawGemIcon(x, y, PANEL_PIECE_SCALE, p->gemCells[r][c]);
+                if (state->slots[i].piece.gemCells[r][c] != GEM_NONE) {
+                    DrawGemIcon(x, y, PANEL_PIECE_SCALE, state->slots[i].piece.gemCells[r][c]);
                 }
             }
         }
@@ -1957,26 +1898,24 @@ void RenderDraggedPiece(GameState *state)
 {
     if (!state->isDragging) return;
 
-    PieceSlot *slot = &state->slots[state->dragSlotIndex];
-    if (!SlotIsOccupied(slot)) return;
-    Piece *p = &slot->piece;
+    if (!SlotIsOccupied(&state->slots[state->dragSlotIndex])) return;
 
     float baseX = state->dragPos.x - state->dragOffset.x;
     float baseY = state->dragPos.y - state->dragOffset.y;
 
-    Color clr = PIECE_COLORS[p->colorIndex];
+    Color clr = PIECE_COLORS[state->slots[state->dragSlotIndex].piece.colorIndex];
     clr.a = 200;
 
-    for (int r = 0; r < p->height; r++) {
-        for (int c = 0; c < p->width; c++) {
-            if (p->shape[r][c] == 0) continue;
+    for (int r = 0; r < state->slots[state->dragSlotIndex].piece.height; r++) {
+        for (int c = 0; c < state->slots[state->dragSlotIndex].piece.width; c++) {
+            if (state->slots[state->dragSlotIndex].piece.shape[r][c] == 0) continue;
             int x = (int)(baseX + c * CELL_SIZE);
             int y = (int)(baseY + r * CELL_SIZE);
             DrawBlockBeveled(x, y, CELL_SIZE, clr);
 
             // Draw gem icon on dragged piece
-            if (p->gemCells[r][c] != GEM_NONE) {
-                DrawGemIcon(x, y, CELL_SIZE, p->gemCells[r][c]);
+            if (state->slots[state->dragSlotIndex].piece.gemCells[r][c] != GEM_NONE) {
+                DrawGemIcon(x, y, CELL_SIZE, state->slots[state->dragSlotIndex].piece.gemCells[r][c]);
             }
         }
     }
@@ -2044,32 +1983,31 @@ void DrawGemIcon(int x, int y, int cellSize, int gemType)
 
 /* ---- Input implementation ---- */
 
-static void TryStartDrag(GameState *state, Vector2 mouse)
+void TryStartDrag(GameState *state, Vector2 mouse)
 {
   if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || state->isDragging)
     return;
 
   for (int i = 0; i < 3; i++) {
-    PieceSlot *slot = &state->slots[i];
-    if (!SlotIsOccupied(slot))
+    if (!SlotIsOccupied(&state->slots[i]))
       continue;
 
-    float pw = slot->piece.width * PANEL_PIECE_SCALE;
-    float ph = slot->piece.height * PANEL_PIECE_SCALE;
-    Rectangle rect = {slot->posX, slot->posY, pw, ph};
+    float pw = state->slots[i].piece.width * PANEL_PIECE_SCALE;
+    float ph = state->slots[i].piece.height * PANEL_PIECE_SCALE;
+    Rectangle rect = {state->slots[i].posX, state->slots[i].posY, pw, ph};
 
     if (CheckCollisionPointRec(mouse, rect)) {
       state->isDragging = true;
       state->dragSlotIndex = i;
-      state->dragOffset.x = mouse.x - slot->posX;
-      state->dragOffset.y = mouse.y - slot->posY;
+      state->dragOffset.x = mouse.x - state->slots[i].posX;
+      state->dragOffset.y = mouse.y - state->slots[i].posY;
       state->dragPos = mouse;
       break;
     }
   }
 }
 
-static void AddClearFeedback(GameState *state,
+void AddClearFeedback(GameState *state,
                              bool clearedCells[GRID_SIZE][GRID_SIZE],
                              int savedColors[GRID_SIZE][GRID_SIZE],
                              int points)
@@ -2112,7 +2050,7 @@ static void AddClearFeedback(GameState *state,
   }
 }
 
-static void GenerateNextPiecesIfNeeded(GameState *state)
+void GenerateNextPiecesIfNeeded(GameState *state)
 {
   if (!AllSlotsEmpty(state->slots))
     return;
@@ -2124,15 +2062,14 @@ static void GenerateNextPiecesIfNeeded(GameState *state)
                        emeraldChance);
 
   for (int i = 0; i < 3; i++) {
-    PieceSlot *newSlot = &state->slots[i];
-    if (!SlotIsOccupied(newSlot))
+    if (!SlotIsOccupied(&state->slots[i]))
       continue;
 
     float slotCenterX =
-        newSlot->posX + (newSlot->piece.width * PANEL_PIECE_SCALE) / 2.0f;
+        state->slots[i].posX + (state->slots[i].piece.width * PANEL_PIECE_SCALE) / 2.0f;
     float slotCenterY =
-        newSlot->posY + (newSlot->piece.height * PANEL_PIECE_SCALE) / 2.0f;
-    int colorIdx = newSlot->piece.colorIndex;
+        state->slots[i].posY + (state->slots[i].piece.height * PANEL_PIECE_SCALE) / 2.0f;
+    int colorIdx = state->slots[i].piece.colorIndex;
     if (colorIdx < 1 || colorIdx > 7)
       colorIdx = 1;
     ParticleEmit(&state->particles, slotCenterX, slotCenterY,
@@ -2140,18 +2077,16 @@ static void GenerateNextPiecesIfNeeded(GameState *state)
   }
 }
 
-static void TryDropDraggedPiece(GameState *state)
+void TryDropDraggedPiece(GameState *state)
 {
   if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON) || !state->isDragging)
     return;
 
   state->isDragging = false;
 
-  PieceSlot *slot = &state->slots[state->dragSlotIndex];
-  if (!SlotIsOccupied(slot))
+  if (!SlotIsOccupied(&state->slots[state->dragSlotIndex]))
     return;
 
-  Piece *piece = &slot->piece;
   float pieceScreenX = state->dragPos.x - state->dragOffset.x;
   float pieceScreenY = state->dragPos.y - state->dragOffset.y;
 
@@ -2160,17 +2095,17 @@ static void TryDropDraggedPiece(GameState *state)
   int gridRow =
       (int)((pieceScreenY - GRID_DRAW_Y + CELL_SIZE / 2) / CELL_SIZE);
 
-  if (!BoardCanPlace(&state->board, piece, gridRow, gridCol))
+  if (!BoardCanPlace(&state->board, &state->slots[state->dragSlotIndex].piece, gridRow, gridCol))
     return;
 
-  BoardPlace(&state->board, piece, gridRow, gridCol);
+  BoardPlace(&state->board, &state->slots[state->dragSlotIndex].piece, gridRow, gridCol);
   SoundPlayPlace(&assets);
 
   float placeCenterX =
-      GRID_DRAW_X + gridCol * CELL_SIZE + (piece->width * CELL_SIZE) / 2.0f;
+      GRID_DRAW_X + gridCol * CELL_SIZE + (state->slots[state->dragSlotIndex].piece.width * CELL_SIZE) / 2.0f;
   float placeCenterY =
-      GRID_DRAW_Y + gridRow * CELL_SIZE + (piece->height * CELL_SIZE) / 2.0f;
-  int colorIdx = piece->colorIndex;
+      GRID_DRAW_Y + gridRow * CELL_SIZE + (state->slots[state->dragSlotIndex].piece.height * CELL_SIZE) / 2.0f;
+  int colorIdx = state->slots[state->dragSlotIndex].piece.colorIndex;
   if (colorIdx < 1 || colorIdx > 7)
     colorIdx = 1;
   ParticleEmit(&state->particles, placeCenterX, placeCenterY,
@@ -2217,7 +2152,7 @@ static void TryDropDraggedPiece(GameState *state)
   if (state->score > state->highScore)
     state->highScore = state->score;
 
-  SlotClear(slot);
+  SlotClear(&state->slots[state->dragSlotIndex]);
   GenerateNextPiecesIfNeeded(state);
 }
 
@@ -2468,7 +2403,7 @@ void GameUpdate(GameState *state)
 
 
 // Execute a setting action for the given index
-static void ExecuteSetting(GameState *state, int index)
+void ExecuteSetting(GameState *state, int index)
 {
     SoundPlayMenuClick(&assets);
     switch (index) {
