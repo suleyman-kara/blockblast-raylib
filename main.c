@@ -5,9 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define PI 3.14
-
-Font gameFont = { 0 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BLOCK BLAST — Single file with all constants and colours
@@ -141,7 +138,67 @@ static const Color PIECE_COLORS[] = {
 // ─────────────────────────────────────────────────────────────────────
 #define GEM_SIZE_RATIO 0.50f
 
-/* ---- Piece types and declarations ---- */
+// ─── Adventure Map UI Constants ───────────────────────────────────────────────
+#define COLOR_AMAP_LOCKED_BG       ((Color){ 25,  25,  40,  255 })
+#define COLOR_AMAP_LOCKED_BORDER   ((Color){ 40,  40,  55,  255 })
+#define COLOR_AMAP_UNLOCKED_BG     ((Color){ 40,  35,  60,  255 })
+#define COLOR_AMAP_UNLOCKED_HOVER  ((Color){ 60,  50,  80,  255 })
+#define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
+#define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
+#define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
+#define AMAP_BTN_SIZE              80
+#define AMAP_BTN_GAP               15
+#define AMAP_BTN_LABEL_GAP         30
+#define AMAP_START_Y               150
+
+// ─── Settings overlay colors
+// ──────────────────────────────────────────────────
+#define COLOR_SETTINGS_OVERLAY_BG ((Color){0, 0, 0, 160})
+#define COLOR_SETTINGS_CARD_BG ((Color){20, 25, 50, 235})
+#define COLOR_SETTINGS_CARD_BORDER ((Color){60, 70, 110, 180})
+#define COLOR_SETTINGS_SEPARATOR ((Color){80, 80, 120, 200})
+#define COLOR_SETTINGS_SELECTED_TEXT ((Color){255, 220, 50, 255})
+#define COLOR_SETTINGS_UNSELECTED_TEXT ((Color){180, 180, 210, 255})
+#define COLOR_SETTINGS_FOOTER_HINT ((Color){100, 100, 140, 200})
+
+// ─── Menu Buttons — Classic Mode colors
+// ───────────────────────────────────────
+#define COLOR_BTN_STD_BG ((Color){60, 100, 180, 255})
+#define COLOR_BTN_STD_BG_HOVER ((Color){80, 130, 210, 255})
+#define COLOR_BTN_STD_BORDER ((Color){100, 150, 220, 255})
+#define COLOR_BTN_STD_BORDER_HOVER ((Color){140, 200, 255, 255})
+#define COLOR_BTN_STD_TEXT ((Color){220, 230, 250, 255})
+#define COLOR_BTN_STD_TEXT_HOVER ((Color){255, 255, 255, 255})
+
+// ─── Menu Buttons — Adventure Mode colors
+// ─────────────────────────────────────
+#define COLOR_BTN_ADV_BG ((Color){55, 40, 85, 255})
+#define COLOR_BTN_ADV_BG_HOVER ((Color){80, 60, 120, 255})
+#define COLOR_BTN_ADV_BORDER ((Color){100, 70, 150, 255})
+#define COLOR_BTN_ADV_BORDER_HOVER ((Color){180, 120, 255, 255})
+#define COLOR_BTN_ADV_TEXT ((Color){170, 150, 200, 255})
+#define COLOR_BTN_ADV_TEXT_HOVER ((Color){230, 210, 255, 255})
+
+// ─── Menu Buttons — Quit colors
+// ──────────────────────────────
+#define COLOR_BTN_QUIT_BG ((Color){140, 40, 40, 255})
+#define COLOR_BTN_QUIT_BG_HOVER ((Color){180, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER ((Color){160, 60, 60, 255})
+#define COLOR_BTN_QUIT_BORDER_HOVER ((Color){220, 80, 80, 255})
+#define COLOR_BTN_QUIT_TEXT ((Color){220, 180, 180, 255})
+#define COLOR_BTN_QUIT_TEXT_HOVER ((Color){255, 220, 220, 255})
+
+// ─── Grid & Board Colors ────────────────────────────────────────────────────────
+#define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
+#define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
+#define COLOR_GRID_HIGHLIGHT    ((Color){ 255, 255, 255, 40  })
+
+#define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })
+#define COLOR_PANEL_TOP_BORDER  ((Color){ 50,  50,  70, 255 })
+#define PANEL_TOP_BORDER_WIDTH  2.0f
+
+
+/* ---- Piece types ---- */
 
 // A block piece with its shape matrix and metadata
 typedef struct {
@@ -168,25 +225,48 @@ typedef struct {
     int height;
 } PieceDef;
 
-// Get the array of all piece definitions
-const PieceDef *GetPieceDefinitions(void);
+// ---- All piece shape definitions ----
+static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
+    // 1x1
+    { .shape = {{1}}, .width = 1, .height = 1 },
+    // 1x2 horizontal
+    { .shape = {{1,1}}, .width = 2, .height = 1 },
+    // 2x1 vertical
+    { .shape = {{1},{1}}, .width = 1, .height = 2 },
+    // 1x3 horizontal
+    { .shape = {{1,1,1}}, .width = 3, .height = 1 },
+    // 3x1 vertical
+    { .shape = {{1},{1},{1}}, .width = 1, .height = 3 },
+    // 1x4 horizontal
+    { .shape = {{1,1,1,1}}, .width = 4, .height = 1 },
+    // 4x1 vertical
+    { .shape = {{1},{1},{1},{1}}, .width = 1, .height = 4 },
+    // 1x5 horizontal
+    { .shape = {{1,1,1,1,1}}, .width = 5, .height = 1 },
+    // 5x1 vertical
+    { .shape = {{1},{1},{1},{1},{1}}, .width = 1, .height = 5 },
+    // 2x2 square
+    { .shape = {{1,1},{1,1}}, .width = 2, .height = 2 },
+    // 3x3 square
+    { .shape = {{1,1,1},{1,1,1},{1,1,1}}, .width = 3, .height = 3 },
+    // L-shape
+    { .shape = {{1,0},{1,0},{1,1}}, .width = 2, .height = 3 },
+    // Reverse L
+    { .shape = {{0,1},{0,1},{1,1}}, .width = 2, .height = 3 },
+    // L rotated
+    { .shape = {{1,1,1},{1,0,0}}, .width = 3, .height = 2 },
+    // Reverse L rotated
+    { .shape = {{1,1,1},{0,0,1}}, .width = 3, .height = 2 },
+    // T-shape
+    { .shape = {{1,1,1},{0,1,0}}, .width = 3, .height = 2 },
+    // Z-shape
+    { .shape = {{1,1,0},{0,1,1}}, .width = 3, .height = 2 },
+    // S-shape
+    { .shape = {{0,1,1},{1,1,0}}, .width = 3, .height = 2 },
+};
 
-// Fill out with a random piece definition and color.
-// Pass 0,0 for no gems (classic mode).
-void PieceGenerate(Piece *out, float diamondChance, float emeraldChance);
 
-void SlotClear(PieceSlot *slot);
-bool SlotIsOccupied(const PieceSlot *slot);
-
-// Generate 3 random pieces into the given slots
-// Pass 0,0 for gem chances in classic mode
-void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
-                           float diamondChance, float emeraldChance);
-
-// Check if all 3 slots are empty (pieces used up)
-bool AllSlotsEmpty(PieceSlot slots[3]);
-
-/* ---- Board types and declarations ---- */
+/* ---- Board types ---- */
 
 // Board: 8x8 grid where blocks are placed
 typedef struct {
@@ -195,27 +275,7 @@ typedef struct {
   int gems[GRID_SIZE][GRID_SIZE]; // GEM_NONE, GEM_DIAMOND, GEM_EMERALD
 } Board;
 
-// Initialize all cells to CELL_EMPTY and gems to GEM_NONE
-void BoardInit(Board *board);
-
-// Check if a piece can be placed at grid position (row, col)
-bool BoardCanPlace(Board *board, Piece *piece, int row, int col);
-
-// Place piece onto the board at (row, col). Assumes BoardCanPlace was checked.
-// Also copies gem data from piece's gemCells into board's gems array.
-void BoardPlace(Board *board, Piece *piece, int row, int col);
-
-// Scan and clear full rows/columns. Returns number of lines cleared.
-int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
-
-// Check if any remaining piece in slots can fit anywhere on the board
-bool BoardHasValidMove(Board *board, PieceSlot slots[3]);
-
-// Pre-fill the board with random pieces that may contain allowed target gems
-void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
-                      bool allowEmeralds);
-
-/* ---- Effect types and declarations ---- */
+/* ---- Effect types ---- */
 
 typedef struct {
     bool active;
@@ -262,63 +322,39 @@ typedef struct {
     int count;
 } FloatTextQueue;
 
-void AnimAddCleared(AnimQueue *queue, bool clearedCells[GRID_SIZE][GRID_SIZE]);
-bool AnimUpdate(AnimQueue *queue, float dt);
-bool AnimIsActive(AnimQueue *queue);
-float AnimGetCellAlpha(AnimQueue *queue, int row, int col);
+/* ---- Asset types ---- */
 
-void ParticleEmit(ParticleSystem *ps, float x, float y, Color color, int count);
-void ParticleUpdate(ParticleSystem *ps, float dt);
-void ParticleDraw(ParticleSystem *ps);
-
-void FloatTextAdd(FloatTextQueue *queue, const char *text,
-                  float centerX, float startY,
-                  int fontSize, Color color);
-void FloatTextUpdate(FloatTextQueue *queue, float dt);
-void FloatTextDraw(FloatTextQueue *queue);
-
-/* ---- Sound types and declarations ---- */
-
-// Sound system — holds all loaded audio resources and volume state
 typedef struct {
-    // Sound effects
-    Sound sfxPlace;       // block-placing.ogg
-    Sound sfxLineClear1;  // line-clear-1.ogg
-    Sound sfxLineClear2;  // line-clear-2.ogg
-    Sound sfxCombo1;      // combo-1.ogg
-    Sound sfxCombo2;      // combo-2.ogg
-    Sound sfxLose;        // lose.ogg
-    Sound sfxMenuClick;   // menu-click.ogg
+    Font font;
 
-    // Background music
-    Music bgMusic;        // background-music.wav
+    Texture2D crown;
+    Texture2D diamond;
+    Texture2D emerald;
+    Texture2D home;
+    Texture2D lock;
+    Texture2D logout;
+    Texture2D musicalNote;
+    Texture2D waveSound;
+    Texture2D replay;
+    Texture2D completed;
+    Texture2D logo;
 
-    // Toggle state
+    Sound sfxPlace;
+    Sound sfxLineClear1;
+    Sound sfxLineClear2;
+    Sound sfxCombo1;
+    Sound sfxCombo2;
+    Sound sfxLose;
+    Sound sfxMenuClick;
+    Music bgMusic;
+
     bool sfxEnabled;
     bool musicEnabled;
-} SoundSystem;
+} GameAssets;
 
-// Initialize audio device and load all sound resources
-void SoundInit(SoundSystem *snd);
+static GameAssets assets;
 
-// Unload all sound resources and close audio device
-void SoundClose(SoundSystem *snd);
-
-// Must be called every frame to keep music stream playing
-void SoundUpdate(SoundSystem *snd);
-
-// Toggle functions
-void SoundToggleSfx(SoundSystem *snd);
-void SoundToggleMusic(SoundSystem *snd);
-
-// Play specific sound effects (respects sfxEnabled)
-void SoundPlayPlace(SoundSystem *snd);
-void SoundPlayLineClear(SoundSystem *snd, int linesCleared);
-void SoundPlayCombo(SoundSystem *snd, int comboCount);
-void SoundPlayLose(SoundSystem *snd);
-void SoundPlayMenuClick(SoundSystem *snd);
-
-/* ---- Level types and declarations ---- */
+/* ---- Level types ---- */
 
 // ─── Level Definition (immutable, const array) ────────────────────────────────
 // Level 0 = classic (infinite play, all targets 0)
@@ -340,19 +376,25 @@ typedef struct {
     bool levelFailed;
 } LevelState;
 
-// ─── Public Functions ─────────────────────────────────────────────────────────
+// ─── Level Definitions ────────────────────────────────────────────────────────
+// Index 0 = classic mode (infinite, no targets)
+// Index 1-10 = adventure levels
+static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
+    // Classic mode — no targets, no prefill
+    { .level = 0,  .targetScore = 0, .targetDiamonds = 0, .targetEmeralds = 0, .prefillCount = 0 },
 
-// Get the level definitions array (index 0 = classic, 1-10 = adventure)
-const LevelDef *LevelGetDefs(void);
-
-// Initialize level state + board for a given level
-void LevelInit(LevelState *state, int levelIndex, Board *board);
-
-// Check if all goals are met. Returns false for classic (level 0).
-bool LevelCheckGoal(LevelState *state, int currentScore);
-
-// Check if no valid moves remain
-bool LevelCheckFailure(Board *board, PieceSlot slots[3]);
+    // Adventure levels
+    { .level = 1,  .targetScore = 500,  .prefillCount = 0 },
+    { .level = 2,  .targetScore = 1000, .prefillCount = 0 },
+    { .level = 3,  .targetDiamonds = 3, .prefillCount = 2 },
+    { .level = 4,  .targetDiamonds = 5, .prefillCount = 3 },
+    { .level = 5,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 4 },
+    { .level = 6,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 5 },
+    { .level = 7,  .targetScore = 500,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 5 },
+    { .level = 8,  .targetScore = 800,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 6 },
+    { .level = 9,  .targetScore = 1000, .targetDiamonds = 5, .targetEmeralds = 4, .prefillCount = 7 },
+    { .level = 10, .targetScore = 1500, .targetDiamonds = 6, .targetEmeralds = 5, .prefillCount = 8 },
+};
 
 static inline bool LevelIsUnlocked(int unlockedLevel, int lvl) {
     return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl <= unlockedLevel);
@@ -361,33 +403,6 @@ static inline bool LevelIsUnlocked(int unlockedLevel, int lvl) {
 static inline bool LevelIsCompleted(int unlockedLevel, int lvl) {
     return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl < unlockedLevel);
 }
-
-/* ---- Texture types and declarations ---- */
-
-// Central repository for all game textures.
-// Loaded once at startup, unloaded at shutdown.
-typedef struct {
-    Texture2D crown;
-    Texture2D diamond;
-    Texture2D emerald;
-    Texture2D home;
-    Texture2D lock;
-    Texture2D logout;
-    Texture2D musicalNote;
-    Texture2D waveSound;
-    Texture2D replay;
-    Texture2D completed;
-    Texture2D logo;
-} GameTextures;
-
-// Global instance
-extern GameTextures gameTextures;
-
-// Load all game textures (call once at startup after InitWindow)
-void TexturesLoad(void);
-
-// Unload all game textures (call once at shutdown before CloseWindow)
-void TexturesUnload(void);
 
 /* ---- UI layout helpers ---- */
 
@@ -444,10 +459,7 @@ static inline SettingsLayout GetSettingsLayout(bool hasThreeButtons)
     return layout;
 }
 
-/* ---- Game state and declarations ---- */
-
-// Global font loaded from a TrueType file (defined in main.c)
-extern Font gameFont;
+/* ---- Game state ---- */
 
 // Game screens
 typedef enum {
@@ -482,9 +494,6 @@ typedef struct {
     // Settings menu
     int selectedSetting;
 
-    // Sound system
-    SoundSystem sound;
-
     // Level
     LevelState level;
     int selectedLevel;              // 0 = classic, 1-10 = adventure
@@ -493,48 +502,131 @@ typedef struct {
     Screen prevScreen;  // screen before settings overlay
 } GameState;
 
-// Initialize a new game state
-void GameInit(GameState *state);
 
-// Update game logic for one frame
-void GameUpdate(GameState *state);
+/* ---- Function prototypes ---- */
 
-// Reset board and slots for a new game (uses selectedLevel to determine behavior)
-void GameReset(GameState *state);
+const PieceDef *GetPieceDefinitions(void);
+void PieceGenerate(Piece *out, float diamondChance, float emeraldChance);
+void SlotClear(PieceSlot *slot);
+bool SlotIsOccupied(const PieceSlot *slot);
+void GenerateRandomPieces(PieceSlot slots[3], float panelY, float screenWidth,
+                          float diamondChance, float emeraldChance);
+bool AllSlotsEmpty(PieceSlot slots[3]);
 
-// Update settings screen logic (keyboard/mouse navigation)
-void GameUpdateSettings(GameState *state);
-void GameUpdateMenuSettings(GameState *state);
+void BoardInit(Board *board);
+bool BoardCanPlace(Board *board, Piece *piece, int row, int col);
+void BoardPlace(Board *board, Piece *piece, int row, int col);
+int BoardClearLines(Board *board, bool clearedCells[GRID_SIZE][GRID_SIZE]);
+bool BoardHasValidMove(Board *board, PieceSlot slots[3]);
+void BoardPrefillGems(Board *board, int count, bool allowDiamonds,
+                      bool allowEmeralds);
 
-/* ---- Save declarations ---- */
+void AnimAddCleared(AnimQueue *queue, bool clearedCells[GRID_SIZE][GRID_SIZE]);
+bool AnimUpdate(AnimQueue *queue, float dt);
+bool AnimIsActive(AnimQueue *queue);
+float AnimGetCellAlpha(AnimQueue *queue, int row, int col);
+void ParticleEmit(ParticleSystem *ps, float x, float y, Color color, int count);
+void ParticleUpdate(ParticleSystem *ps, float dt);
+void ParticleDraw(ParticleSystem *ps);
+void FloatTextAdd(FloatTextQueue *queue, const char *text, float centerX,
+                  float startY, int fontSize, Color color);
+void FloatTextUpdate(FloatTextQueue *queue, float dt);
+void FloatTextDraw(FloatTextQueue *queue);
 
+const LevelDef *LevelGetDefs(void);
+void LevelInit(LevelState *state, int levelIndex, Board *board);
+bool LevelCheckGoal(LevelState *state, int currentScore);
+bool LevelCheckFailure(Board *board, PieceSlot slots[3]);
+
+static int ClampUnlockedLevel(int unlockedLevel);
 void SaveLoad(int *highScore, int *unlockedLevel);
 void SaveWrite(int highScore, int unlockedLevel);
 
-/* ---- Input declarations ---- */
+void AssetsLoad(GameAssets *assets);
+void AssetsUnload(GameAssets *assets);
+void AssetsUpdateMusic(GameAssets *assets);
+void SoundToggleSfx(GameAssets *assets);
+void SoundToggleMusic(GameAssets *assets);
+void SoundPlayPlace(GameAssets *assets);
+void SoundPlayLineClear(GameAssets *assets, int linesCleared);
+void SoundPlayCombo(GameAssets *assets, int comboCount);
+void SoundPlayLose(GameAssets *assets);
+void SoundPlayMenuClick(GameAssets *assets);
 
-// Process mouse input: drag start, drag move, drop
-void InputUpdate(GameState *state);
-
-/* ---- Render declarations ---- */
-
-// Draw the entire game frame based on current state
+static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h);
+static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color);
+static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
+                             Color bg, Color bgHover, Color border,
+                             Color borderHover, Color textColor,
+                             Color textHover, bool hover);
+static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
+                           const char *countText, int fontSize, int textYOffset,
+                           Color textColor);
+void RenderPlayHUD(GameState *state);
+void RenderLevelSelect(GameState *state);
+void RenderResult(GameState *state);
+static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
+                                 Color bg, Color bgHover, Color border,
+                                 Color borderHover, Color textColor,
+                                 Color textHover, bool hover);
+void RenderMenu(GameState *state);
+void RenderSettings(GameState *state);
+void RenderMenuSettings(GameState *state);
 void RenderFrame(GameState *state);
-
-// Sub-render functions (called by RenderFrame)
+static void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c);
+static void DrawSafeQuad(Vector2 v1, Vector2 v2, Vector2 v3, Vector2 v4, Color c);
+void DrawBlockBeveled(int x, int y, int size, Color baseColor);
 void RenderBoard(GameState *state);
 void RenderGhost(GameState *state);
 void RenderPieceSlots(GameState *state);
 void RenderDraggedPiece(GameState *state);
-void DrawBlockBeveled(int x, int y, int size, Color baseColor);
-void RenderPlayHUD(GameState *state);
 void RenderGearIcon(void);
 void DrawGemIcon(int x, int y, int cellSize, int gemType);
-void RenderMenu(GameState *state);
-void RenderSettings(GameState *state);
-void RenderLevelSelect(GameState *state);
-void RenderResult(GameState *state);
-void RenderMenuSettings(GameState *state);
+
+static void TryStartDrag(GameState *state, Vector2 mouse);
+static void AddClearFeedback(GameState *state,
+                             bool clearedCells[GRID_SIZE][GRID_SIZE],
+                             int savedColors[GRID_SIZE][GRID_SIZE], int points);
+static void GenerateNextPiecesIfNeeded(GameState *state);
+static void TryDropDraggedPiece(GameState *state);
+void InputUpdate(GameState *state);
+
+void GameInit(GameState *state);
+void GameReset(GameState *state);
+static Rectangle GetLevelButtonRect(int levelIndex);
+void GameUpdate(GameState *state);
+static void ExecuteSetting(GameState *state, int index);
+void GameUpdateSettings(GameState *state);
+void GameUpdateMenuSettings(GameState *state);
+
+int main(void)
+{
+    MakeDirectory("data");
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Block Blast");
+    SetExitKey(0);
+    SetTargetFPS(60);
+
+    AssetsLoad(&assets);
+
+    GameState state;
+    GameInit(&state);
+
+    while (!WindowShouldClose()) {
+        AssetsUpdateMusic(&assets);
+
+        if (state.currentScreen == SCREEN_PLAY) {
+            InputUpdate(&state);
+        }
+
+        GameUpdate(&state);
+        RenderFrame(&state);
+    }
+
+    AssetsUnload(&assets);
+    CloseWindow();
+    return 0;
+}
 
 /* ------------------------------------------------------------------------- */
 /* Implementation                                                            */
@@ -542,45 +634,7 @@ void RenderMenuSettings(GameState *state);
 
 /* ---- Piece implementation ---- */
 
-// ---- All piece shape definitions ----
-static const PieceDef PIECE_DEFS[PIECE_DEF_COUNT] = {
-    // 1x1
-    { .shape = {{1}}, .width = 1, .height = 1 },
-    // 1x2 horizontal
-    { .shape = {{1,1}}, .width = 2, .height = 1 },
-    // 2x1 vertical
-    { .shape = {{1},{1}}, .width = 1, .height = 2 },
-    // 1x3 horizontal
-    { .shape = {{1,1,1}}, .width = 3, .height = 1 },
-    // 3x1 vertical
-    { .shape = {{1},{1},{1}}, .width = 1, .height = 3 },
-    // 1x4 horizontal
-    { .shape = {{1,1,1,1}}, .width = 4, .height = 1 },
-    // 4x1 vertical
-    { .shape = {{1},{1},{1},{1}}, .width = 1, .height = 4 },
-    // 1x5 horizontal
-    { .shape = {{1,1,1,1,1}}, .width = 5, .height = 1 },
-    // 5x1 vertical
-    { .shape = {{1},{1},{1},{1},{1}}, .width = 1, .height = 5 },
-    // 2x2 square
-    { .shape = {{1,1},{1,1}}, .width = 2, .height = 2 },
-    // 3x3 square
-    { .shape = {{1,1,1},{1,1,1},{1,1,1}}, .width = 3, .height = 3 },
-    // L-shape
-    { .shape = {{1,0},{1,0},{1,1}}, .width = 2, .height = 3 },
-    // Reverse L
-    { .shape = {{0,1},{0,1},{1,1}}, .width = 2, .height = 3 },
-    // L rotated
-    { .shape = {{1,1,1},{1,0,0}}, .width = 3, .height = 2 },
-    // Reverse L rotated
-    { .shape = {{1,1,1},{0,0,1}}, .width = 3, .height = 2 },
-    // T-shape
-    { .shape = {{1,1,1},{0,1,0}}, .width = 3, .height = 2 },
-    // Z-shape
-    { .shape = {{1,1,0},{0,1,1}}, .width = 3, .height = 2 },
-    // S-shape
-    { .shape = {{0,1,1},{1,1,0}}, .width = 3, .height = 2 },
-};
+
 
 
 const PieceDef *GetPieceDefinitions(void)
@@ -1050,33 +1104,15 @@ void FloatTextDraw(FloatTextQueue *queue)
         Color clr = ft->color;
         clr.a = alpha;
 
-        int w = (int)MeasureTextEx(gameFont, ft->text, (float)fontSize, 1.0f).x;
-        DrawTextEx(gameFont, ft->text, (Vector2){ft->x - w / 2.0f, ft->y},
+        int w = (int)MeasureTextEx(assets.font, ft->text, (float)fontSize, 1.0f).x;
+        DrawTextEx(assets.font, ft->text, (Vector2){ft->x - w / 2.0f, ft->y},
                    (float)fontSize, 1.0f, clr);
     }
 }
 
 /* ---- Level implementation ---- */
 
-// ─── Level Definitions ────────────────────────────────────────────────────────
-// Index 0 = classic mode (infinite, no targets)
-// Index 1-10 = adventure levels
-static const LevelDef defaultLevelDefs[TOTAL_LEVELS + 1] = {
-    // Classic mode — no targets, no prefill
-    { .level = 0,  .targetScore = 0, .targetDiamonds = 0, .targetEmeralds = 0, .prefillCount = 0 },
 
-    // Adventure levels
-    { .level = 1,  .targetScore = 500,  .prefillCount = 0 },
-    { .level = 2,  .targetScore = 1000, .prefillCount = 0 },
-    { .level = 3,  .targetDiamonds = 3, .prefillCount = 2 },
-    { .level = 4,  .targetDiamonds = 5, .prefillCount = 3 },
-    { .level = 5,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 4 },
-    { .level = 6,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 5 },
-    { .level = 7,  .targetScore = 500,  .targetDiamonds = 3, .targetEmeralds = 2, .prefillCount = 5 },
-    { .level = 8,  .targetScore = 800,  .targetDiamonds = 4, .targetEmeralds = 3, .prefillCount = 6 },
-    { .level = 9,  .targetScore = 1000, .targetDiamonds = 5, .targetEmeralds = 4, .prefillCount = 7 },
-    { .level = 10, .targetScore = 1500, .targetDiamonds = 6, .targetEmeralds = 5, .prefillCount = 8 },
-};
 
 const LevelDef *LevelGetDefs(void)
 {
@@ -1175,170 +1211,134 @@ void SaveWrite(int highScore, int unlockedLevel)
     fclose(f);
 }
 
-/* ---- Sound implementation ---- */
+/* ---- Asset implementation ---- */
 
-// Path prefix for sound assets (relative to working directory)
-#define SND_PATH "assets/sounds/"
-
-void SoundInit(SoundSystem *snd)
+void AssetsLoad(GameAssets *assets)
 {
     InitAudioDevice();
 
-    // Load sound effects
-    snd->sfxPlace      = LoadSound(SND_PATH "block-placing.ogg");
-    snd->sfxLineClear1 = LoadSound(SND_PATH "line-clear-1.ogg");
-    snd->sfxLineClear2 = LoadSound(SND_PATH "line-clear-2.ogg");
-    snd->sfxCombo1     = LoadSound(SND_PATH "combo-1.ogg");
-    snd->sfxCombo2     = LoadSound(SND_PATH "combo-2.ogg");
-    snd->sfxLose       = LoadSound(SND_PATH "lose.ogg");
-    snd->sfxMenuClick  = LoadSound(SND_PATH "menu-click.ogg");
+    assets->font = LoadFontEx("assets/fonts/RussoOne-Regular.ttf", 200, 0, 0);
 
-    // Load background music
-    snd->bgMusic = LoadMusicStream(SND_PATH "background-music.wav");
-    snd->bgMusic.looping = true;
+    assets->crown = LoadTexture("assets/images/crown.png");
+    assets->diamond = LoadTexture("assets/images/diamond.png");
+    assets->emerald = LoadTexture("assets/images/emerald.png");
+    assets->home = LoadTexture("assets/images/home.png");
+    assets->lock = LoadTexture("assets/images/lock.png");
+    assets->logout = LoadTexture("assets/images/logout.png");
+    assets->musicalNote = LoadTexture("assets/images/musical-note.png");
+    assets->waveSound = LoadTexture("assets/images/wave-sound.png");
+    assets->replay = LoadTexture("assets/images/replay.png");
+    assets->completed = LoadTexture("assets/images/completed.png");
+    assets->logo = LoadTexture("assets/images/logo.png");
 
-    // Default: both enabled
-    snd->sfxEnabled   = true;
-    snd->musicEnabled = true;
+    assets->sfxPlace = LoadSound("assets/sounds/block-placing.ogg");
+    assets->sfxLineClear1 = LoadSound("assets/sounds/line-clear-1.ogg");
+    assets->sfxLineClear2 = LoadSound("assets/sounds/line-clear-2.ogg");
+    assets->sfxCombo1 = LoadSound("assets/sounds/combo-1.ogg");
+    assets->sfxCombo2 = LoadSound("assets/sounds/combo-2.ogg");
+    assets->sfxLose = LoadSound("assets/sounds/lose.ogg");
+    assets->sfxMenuClick = LoadSound("assets/sounds/menu-click.ogg");
+    assets->bgMusic = LoadMusicStream("assets/sounds/background-music.wav");
+    assets->bgMusic.looping = true;
 
-    // Set default volumes
-    SetSoundVolume(snd->sfxPlace,      0.7f);
-    SetSoundVolume(snd->sfxLineClear1, 0.8f);
-    SetSoundVolume(snd->sfxLineClear2, 0.8f);
-    SetSoundVolume(snd->sfxCombo1,     0.9f);
-    SetSoundVolume(snd->sfxCombo2,     0.9f);
-    SetSoundVolume(snd->sfxLose,       0.8f);
-    SetSoundVolume(snd->sfxMenuClick,  0.6f);
-    SetMusicVolume(snd->bgMusic, 0.4f);
+    assets->sfxEnabled = true;
+    assets->musicEnabled = true;
 
-    // Start playing background music
-    PlayMusicStream(snd->bgMusic);
+    SetSoundVolume(assets->sfxPlace, 0.7f);
+    SetSoundVolume(assets->sfxLineClear1, 0.8f);
+    SetSoundVolume(assets->sfxLineClear2, 0.8f);
+    SetSoundVolume(assets->sfxCombo1, 0.9f);
+    SetSoundVolume(assets->sfxCombo2, 0.9f);
+    SetSoundVolume(assets->sfxLose, 0.8f);
+    SetSoundVolume(assets->sfxMenuClick, 0.6f);
+    SetMusicVolume(assets->bgMusic, 0.4f);
+
+    PlayMusicStream(assets->bgMusic);
 }
 
-void SoundClose(SoundSystem *snd)
+void AssetsUnload(GameAssets *assets)
 {
-    // Unload sound effects
-    UnloadSound(snd->sfxPlace);
-    UnloadSound(snd->sfxLineClear1);
-    UnloadSound(snd->sfxLineClear2);
-    UnloadSound(snd->sfxCombo1);
-    UnloadSound(snd->sfxCombo2);
-    UnloadSound(snd->sfxLose);
-    UnloadSound(snd->sfxMenuClick);
+    UnloadSound(assets->sfxPlace);
+    UnloadSound(assets->sfxLineClear1);
+    UnloadSound(assets->sfxLineClear2);
+    UnloadSound(assets->sfxCombo1);
+    UnloadSound(assets->sfxCombo2);
+    UnloadSound(assets->sfxLose);
+    UnloadSound(assets->sfxMenuClick);
+    UnloadMusicStream(assets->bgMusic);
 
-    // Unload music
-    UnloadMusicStream(snd->bgMusic);
+    UnloadTexture(assets->crown);
+    UnloadTexture(assets->diamond);
+    UnloadTexture(assets->emerald);
+    UnloadTexture(assets->home);
+    UnloadTexture(assets->lock);
+    UnloadTexture(assets->logout);
+    UnloadTexture(assets->musicalNote);
+    UnloadTexture(assets->waveSound);
+    UnloadTexture(assets->replay);
+    UnloadTexture(assets->completed);
+    UnloadTexture(assets->logo);
 
+    UnloadFont(assets->font);
     CloseAudioDevice();
 }
 
-void SoundUpdate(SoundSystem *snd)
+void AssetsUpdateMusic(GameAssets *assets)
 {
-    if (snd->musicEnabled) {
-        UpdateMusicStream(snd->bgMusic);
+    if (assets->musicEnabled) {
+        UpdateMusicStream(assets->bgMusic);
     }
 }
 
-void SoundToggleSfx(SoundSystem *snd)
+void SoundToggleSfx(GameAssets *assets)
 {
-    snd->sfxEnabled = !snd->sfxEnabled;
+    assets->sfxEnabled = !assets->sfxEnabled;
 }
 
-void SoundToggleMusic(SoundSystem *snd)
+void SoundToggleMusic(GameAssets *assets)
 {
-    snd->musicEnabled = !snd->musicEnabled;
-    if (snd->musicEnabled) {
-        ResumeMusicStream(snd->bgMusic);
+    assets->musicEnabled = !assets->musicEnabled;
+    if (assets->musicEnabled) {
+        ResumeMusicStream(assets->bgMusic);
     } else {
-        PauseMusicStream(snd->bgMusic);
+        PauseMusicStream(assets->bgMusic);
     }
 }
 
-void SoundPlayPlace(SoundSystem *snd)
+void SoundPlayPlace(GameAssets *assets)
 {
-    if (snd->sfxEnabled) PlaySound(snd->sfxPlace);
+    if (assets->sfxEnabled) PlaySound(assets->sfxPlace);
 }
 
-void SoundPlayLineClear(SoundSystem *snd, int linesCleared)
+void SoundPlayLineClear(GameAssets *assets, int linesCleared)
 {
-    if (!snd->sfxEnabled) return;
-    // Use the second (bigger) clear sound for 2+ lines
+    if (!assets->sfxEnabled) return;
     if (linesCleared >= 2)
-        PlaySound(snd->sfxLineClear2);
+        PlaySound(assets->sfxLineClear2);
     else
-        PlaySound(snd->sfxLineClear1);
+        PlaySound(assets->sfxLineClear1);
 }
 
-void SoundPlayCombo(SoundSystem *snd, int comboCount)
+void SoundPlayCombo(GameAssets *assets, int comboCount)
 {
-    if (!snd->sfxEnabled) return;
-    // Use the second (epic) combo sound for combo >= 4
+    if (!assets->sfxEnabled) return;
     if (comboCount >= 4)
-        PlaySound(snd->sfxCombo2);
+        PlaySound(assets->sfxCombo2);
     else
-        PlaySound(snd->sfxCombo1);
+        PlaySound(assets->sfxCombo1);
 }
 
-void SoundPlayLose(SoundSystem *snd)
+void SoundPlayLose(GameAssets *assets)
 {
-    if (snd->sfxEnabled) PlaySound(snd->sfxLose);
+    if (assets->sfxEnabled) PlaySound(assets->sfxLose);
 }
 
-void SoundPlayMenuClick(SoundSystem *snd)
+void SoundPlayMenuClick(GameAssets *assets)
 {
-    if (snd->sfxEnabled) PlaySound(snd->sfxMenuClick);
-}
-
-/* ---- Texture implementation ---- */
-
-// Global texture instance
-GameTextures gameTextures;
-
-void TexturesLoad(void)
-{
-    // Load all textures from PNG files
-    gameTextures.crown = LoadTexture("assets/images/crown.png");
-    gameTextures.diamond = LoadTexture("assets/images/diamond.png");
-    gameTextures.emerald = LoadTexture("assets/images/emerald.png");
-    gameTextures.home = LoadTexture("assets/images/home.png");
-    gameTextures.lock = LoadTexture("assets/images/lock.png");
-    gameTextures.logout = LoadTexture("assets/images/logout.png");
-    gameTextures.musicalNote = LoadTexture("assets/images/musical-note.png");
-    gameTextures.waveSound = LoadTexture("assets/images/wave-sound.png");
-    gameTextures.replay = LoadTexture("assets/images/replay.png");
-    gameTextures.completed = LoadTexture("assets/images/completed.png");
-    gameTextures.logo = LoadTexture("assets/images/logo.png");
-}
-
-void TexturesUnload(void)
-{
-    UnloadTexture(gameTextures.crown);
-    UnloadTexture(gameTextures.diamond);
-    UnloadTexture(gameTextures.emerald);
-    UnloadTexture(gameTextures.home);
-    UnloadTexture(gameTextures.lock);
-    UnloadTexture(gameTextures.logout);
-    UnloadTexture(gameTextures.musicalNote);
-    UnloadTexture(gameTextures.waveSound);
-    UnloadTexture(gameTextures.replay);
-    UnloadTexture(gameTextures.completed);
-    UnloadTexture(gameTextures.logo);
+    if (assets->sfxEnabled) PlaySound(assets->sfxMenuClick);
 }
 
 /* ---- UI rendering implementation ---- */
-
-// ─── Adventure Map UI Constants ───────────────────────────────────────────────
-#define COLOR_AMAP_LOCKED_BG       ((Color){ 25,  25,  40,  255 })
-#define COLOR_AMAP_LOCKED_BORDER   ((Color){ 40,  40,  55,  255 })
-#define COLOR_AMAP_UNLOCKED_BG     ((Color){ 40,  35,  60,  255 })
-#define COLOR_AMAP_UNLOCKED_HOVER  ((Color){ 60,  50,  80,  255 })
-#define COLOR_AMAP_UNLOCKED_BORDER ((Color){ 120, 80,  180, 255 })
-#define COLOR_AMAP_COMPLETED_TEXT  ((Color){ 50,  255, 100, 255 })
-#define COLOR_AMAP_LOCKED_NUMBER   ((Color){ 60,  60,  80,  255 })
-#define AMAP_BTN_SIZE              80
-#define AMAP_BTN_GAP               15
-#define AMAP_BTN_LABEL_GAP         30
-#define AMAP_START_Y               150
 
 // ─── Helper: draw texture full ───────────────────────────────────────────────
 static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
@@ -1352,8 +1352,8 @@ static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
 // ─── Helper: draw text centered X ────────────────────────────────────────────
 static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
 {
-    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(gameFont, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
+    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(assets.font, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
                (float)fontSize, 1.0f, color);
 }
 
@@ -1371,8 +1371,8 @@ static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
     DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
     DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
 
-    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(gameFont, text,
+    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(assets.font, text,
                (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
                          btn.y + (btn.height - (float)fontSize) / 2.0f},
                (float)fontSize, 1.0f, cTxt);
@@ -1384,8 +1384,8 @@ static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
                             Color textColor)
 {
     DrawTextureFull(tex, centerX - gemSize / 2, topY, gemSize, gemSize);
-    int tw = (int)MeasureTextEx(gameFont, countText, (float)fontSize, 1.0f).x;
-    DrawTextEx(gameFont, countText,
+    int tw = (int)MeasureTextEx(assets.font, countText, (float)fontSize, 1.0f).x;
+    DrawTextEx(assets.font, countText,
                (Vector2){(float)(centerX - tw / 2), (float)(topY + textYOffset)},
                (float)fontSize, 1.0f, textColor);
 }
@@ -1401,22 +1401,22 @@ void RenderPlayHUD(GameState *state)
     if (state->selectedLevel == 0) {
         // Classic mode: crown + high score + score + combo
         int crownSize = 28;
-        DrawTexturePro(gameTextures.crown,
-            (Rectangle){ 0, 0, (float)gameTextures.crown.width, (float)gameTextures.crown.height },
+        DrawTexturePro(assets.crown,
+            (Rectangle){ 0, 0, (float)assets.crown.width, (float)assets.crown.height },
             (Rectangle){ 15, 12, (float)crownSize, (float)crownSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(gameFont, buf, (Vector2){15 + crownSize + 8, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+        DrawTextEx(assets.font, buf, (Vector2){15 + crownSize + 8, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
 
         sprintf(buf, "%d", state->score);
-        int scoreW = (int)MeasureTextEx(gameFont, buf, 40.0f, 1.0f).x;
-        DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        int scoreW = (int)MeasureTextEx(assets.font, buf, 40.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
 
         if (state->combo > 1) {
             sprintf(buf, "COMBO x%d", state->combo);
-            int cw = (int)MeasureTextEx(gameFont, buf, 18.0f, 1.0f).x;
-            DrawTextEx(gameFont, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
+            int cw = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
         }
     } else {
         // Adventure mode: show only non-zero targets
@@ -1435,7 +1435,7 @@ void RenderPlayHUD(GameState *state)
             int remaining = def->targetDiamonds - state->level.collectedDiamonds;
             if (remaining < 0) remaining = 0;
             sprintf(buf, "%d", remaining);
-            DrawGemCounter(gameTextures.diamond, SCREEN_WIDTH / 2, midY - 6,
+            DrawGemCounter(assets.diamond, SCREEN_WIDTH / 2, midY - 6,
                            gemSize, buf, 26, gemSize + 4, COLOR_TEXT_PRIMARY);
         } else {
             // Mixed: show all non-zero targets
@@ -1452,7 +1452,7 @@ void RenderPlayHUD(GameState *state)
                 int remaining = def->targetDiamonds - state->level.collectedDiamonds;
                 if (remaining < 0) remaining = 0;
                 sprintf(buf, "%d", remaining);
-                DrawGemCounter(gameTextures.diamond, centerX - spacing, midY - 4,
+                DrawGemCounter(assets.diamond, centerX - spacing, midY - 4,
                                gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
             }
 
@@ -1460,7 +1460,7 @@ void RenderPlayHUD(GameState *state)
                 int remaining = def->targetEmeralds - state->level.collectedEmeralds;
                 if (remaining < 0) remaining = 0;
                 sprintf(buf, "%d", remaining);
-                DrawGemCounter(gameTextures.emerald, centerX + spacing, midY - 4,
+                DrawGemCounter(assets.emerald, centerX + spacing, midY - 4,
                                gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
             }
         }
@@ -1472,7 +1472,7 @@ void RenderPlayHUD(GameState *state)
 // ============================================================================
 void RenderLevelSelect(GameState *state)
 {
-    DrawTextureFull(gameTextures.logout, 15, 15, 32, 32);
+    DrawTextureFull(assets.logout, 15, 15, 32, 32);
     DrawTextCenteredX("ADVENTURE", 30, 36, COLOR_TEXT_PRIMARY);
 
     int totalRowWidth = LEVELS_PER_ROW * AMAP_BTN_SIZE + (LEVELS_PER_ROW - 1) * AMAP_BTN_GAP;
@@ -1500,20 +1500,20 @@ void RenderLevelSelect(GameState *state)
         char lvlBuf[8];
         sprintf(lvlBuf, "%d", i + 1);
         Color lvlColor = isUnlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
-        int lnw = (int)MeasureTextEx(gameFont, lvlBuf, 28.0f, 1.0f).x;
-        DrawTextEx(gameFont, lvlBuf,
+        int lnw = (int)MeasureTextEx(assets.font, lvlBuf, 28.0f, 1.0f).x;
+        DrawTextEx(assets.font, lvlBuf,
                    (Vector2){(float)(bx + (AMAP_BTN_SIZE - lnw) / 2), (float)(by + 20)},
                    28.0f, 1.0f, lvlColor);
 
         if (isCompleted) {
             int compSize = 28;
-            DrawTextureFull(gameTextures.completed,
+            DrawTextureFull(assets.completed,
                 bx + AMAP_BTN_SIZE - compSize + 6,
                 by - 6,
                 compSize, compSize);
         } else if (!isUnlocked) {
             int lockSize = 24;
-            DrawTextureFull(gameTextures.lock,
+            DrawTextureFull(assets.lock,
                 bx + (AMAP_BTN_SIZE - lockSize) / 2,
                 by + AMAP_BTN_SIZE - lockSize - 8,
                 lockSize, lockSize);
@@ -1621,43 +1621,6 @@ void RenderResult(GameState *state)
     DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
 }
 
-// ─── Settings overlay colors
-// ──────────────────────────────────────────────────
-#define COLOR_SETTINGS_OVERLAY_BG ((Color){0, 0, 0, 160})
-#define COLOR_SETTINGS_CARD_BG ((Color){20, 25, 50, 235})
-#define COLOR_SETTINGS_CARD_BORDER ((Color){60, 70, 110, 180})
-#define COLOR_SETTINGS_SEPARATOR ((Color){80, 80, 120, 200})
-#define COLOR_SETTINGS_SELECTED_TEXT ((Color){255, 220, 50, 255})
-#define COLOR_SETTINGS_UNSELECTED_TEXT ((Color){180, 180, 210, 255})
-#define COLOR_SETTINGS_FOOTER_HINT ((Color){100, 100, 140, 200})
-
-// ─── Menu Buttons — Classic Mode colors
-// ───────────────────────────────────────
-#define COLOR_BTN_STD_BG ((Color){60, 100, 180, 255})
-#define COLOR_BTN_STD_BG_HOVER ((Color){80, 130, 210, 255})
-#define COLOR_BTN_STD_BORDER ((Color){100, 150, 220, 255})
-#define COLOR_BTN_STD_BORDER_HOVER ((Color){140, 200, 255, 255})
-#define COLOR_BTN_STD_TEXT ((Color){220, 230, 250, 255})
-#define COLOR_BTN_STD_TEXT_HOVER ((Color){255, 255, 255, 255})
-
-// ─── Menu Buttons — Adventure Mode colors
-// ─────────────────────────────────────
-#define COLOR_BTN_ADV_BG ((Color){55, 40, 85, 255})
-#define COLOR_BTN_ADV_BG_HOVER ((Color){80, 60, 120, 255})
-#define COLOR_BTN_ADV_BORDER ((Color){100, 70, 150, 255})
-#define COLOR_BTN_ADV_BORDER_HOVER ((Color){180, 120, 255, 255})
-#define COLOR_BTN_ADV_TEXT ((Color){170, 150, 200, 255})
-#define COLOR_BTN_ADV_TEXT_HOVER ((Color){230, 210, 255, 255})
-
-// ─── Menu Buttons — Quit colors
-// ──────────────────────────────
-#define COLOR_BTN_QUIT_BG ((Color){140, 40, 40, 255})
-#define COLOR_BTN_QUIT_BG_HOVER ((Color){180, 60, 60, 255})
-#define COLOR_BTN_QUIT_BORDER ((Color){160, 60, 60, 255})
-#define COLOR_BTN_QUIT_BORDER_HOVER ((Color){220, 80, 80, 255})
-#define COLOR_BTN_QUIT_TEXT ((Color){220, 180, 180, 255})
-#define COLOR_BTN_QUIT_TEXT_HOVER ((Color){255, 220, 220, 255})
-
 // ─── Helper: draw styled button ──────────────────────────────────────────────
 static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
                               Color bg, Color bgHover,
@@ -1672,8 +1635,8 @@ static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
     DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
     DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
 
-    int tw = (int)MeasureTextEx(gameFont, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(gameFont, text,
+    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
+    DrawTextEx(assets.font, text,
                (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
                          btn.y + (btn.height - (float)fontSize) / 2.0f},
                (float)fontSize, 1.0f, cTxt);
@@ -1683,12 +1646,12 @@ static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
 void RenderMenu(GameState *state) {
   // Draw Logo (Scaled to fit the screen)
   float targetW = SCREEN_WIDTH - 80.0f; // 40px margin on each side
-  float scale = targetW / (float)gameTextures.logo.width;
-  float targetH = (float)gameTextures.logo.height * scale;
+  float scale = targetW / (float)assets.logo.width;
+  float targetH = (float)assets.logo.height * scale;
   float logoX = (SCREEN_WIDTH - targetW) / 2.0f;
   float logoY = 50.0f; // Slightly higher to account for scaling
-  DrawTexturePro(gameTextures.logo,
-                 (Rectangle){0, 0, (float)gameTextures.logo.width, (float)gameTextures.logo.height},
+  DrawTexturePro(assets.logo,
+                 (Rectangle){0, 0, (float)assets.logo.width, (float)assets.logo.height},
                  (Rectangle){logoX, logoY, targetW, targetH},
                  (Vector2){0, 0}, 0.0f, WHITE);
 
@@ -1710,9 +1673,9 @@ void RenderMenu(GameState *state) {
                             stdBorder);
 
   const char *stdText = "Classic Mode";
-  int stw = (int)MeasureTextEx(gameFont, stdText, 22.0f, 1.0f).x;
+  int stw = (int)MeasureTextEx(assets.font, stdText, 22.0f, 1.0f).x;
   Color stdTextColor = stdHover ? COLOR_BTN_STD_TEXT_HOVER : COLOR_BTN_STD_TEXT;
-  DrawTextEx(gameFont, stdText,
+  DrawTextEx(assets.font, stdText,
              (Vector2){(float)(BTN_X + (BTN_W - stw) / 2),
                        (float)(MENU_STD_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, stdTextColor);
@@ -1730,17 +1693,17 @@ void RenderMenu(GameState *state) {
                             advBorder);
 
   const char *advText = "Adventure Mode";
-  int atw = (int)MeasureTextEx(gameFont, advText, 22.0f, 1.0f).x;
+  int atw = (int)MeasureTextEx(assets.font, advText, 22.0f, 1.0f).x;
   Color advTextColor = advHover ? COLOR_BTN_ADV_TEXT_HOVER : COLOR_BTN_ADV_TEXT;
-  DrawTextEx(gameFont, advText,
+  DrawTextEx(assets.font, advText,
              (Vector2){(float)(BTN_X + (BTN_W - atw) / 2),
                        (float)(MENU_ADV_Y + (BTN_H - 22) / 2)},
              22.0f, 1.0f, advTextColor);
 
   if (state->unlockedLevel > TOTAL_LEVELS) {
       const char *compText = "Completed";
-      int ctw = (int)MeasureTextEx(gameFont, compText, 14.0f, 1.0f).x;
-      DrawTextEx(gameFont, compText,
+      int ctw = (int)MeasureTextEx(assets.font, compText, 14.0f, 1.0f).x;
+      DrawTextEx(assets.font, compText,
                  (Vector2){(float)(BTN_X + (BTN_W - ctw) / 2),
                            (float)(MENU_ADV_Y + BTN_H + 5)},
                  14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
@@ -1824,9 +1787,9 @@ void RenderSettings(GameState *state) {
   // Title
   const char *title = "SETTINGS";
   int tw =
-      (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f)
+      (int)MeasureTextEx(assets.font, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f)
           .x;
-  DrawTextEx(gameFont, title,
+  DrawTextEx(assets.font, title,
              (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
              (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
 
@@ -1841,16 +1804,16 @@ void RenderSettings(GameState *state) {
   // SFX icon
   int sfxIconX = (int)layout.sfxIcon.x;
   int iconAreaY = (int)layout.sfxIcon.y;
-  DrawTexturePro(gameTextures.waveSound,
-                 (Rectangle){0, 0, (float)gameTextures.waveSound.width,
-                             (float)gameTextures.waveSound.height},
+  DrawTexturePro(assets.waveSound,
+                 (Rectangle){0, 0, (float)assets.waveSound.width,
+                             (float)assets.waveSound.height},
                  (Rectangle){(float)sfxIconX, (float)iconAreaY,
                              (float)SETTINGS_ICON_SIZE,
                              (float)SETTINGS_ICON_SIZE},
                  (Vector2){0, 0}, 0.0f, WHITE);
 
   // Red cross overlay if SFX is off (single diagonal: bottom-left to top-right)
-  if (!state->sound.sfxEnabled) {
+  if (!assets.sfxEnabled) {
     int cx = sfxIconX;
     int cy = iconAreaY;
     DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
@@ -1859,17 +1822,17 @@ void RenderSettings(GameState *state) {
 
   // SFX label below icon
   const char *sfxLabel = "SFX";
-  int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
-  DrawTextEx(gameFont, sfxLabel,
+  int sfxLabelW = (int)MeasureTextEx(assets.font, sfxLabel, 14.0f, 1.0f).x;
+  DrawTextEx(assets.font, sfxLabel,
              (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
                        (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
              14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
   // Music icon
   int musicIconX = (int)layout.musicIcon.x;
-  DrawTexturePro(gameTextures.musicalNote,
-                 (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
-                             (float)gameTextures.musicalNote.height},
+  DrawTexturePro(assets.musicalNote,
+                 (Rectangle){0, 0, (float)assets.musicalNote.width,
+                             (float)assets.musicalNote.height},
                  (Rectangle){(float)musicIconX, (float)iconAreaY,
                              (float)SETTINGS_ICON_SIZE,
                              (float)SETTINGS_ICON_SIZE},
@@ -1877,7 +1840,7 @@ void RenderSettings(GameState *state) {
 
   // Red cross overlay if Music is off (single diagonal: bottom-left to
   // top-right)
-  if (!state->sound.musicEnabled) {
+  if (!assets.musicEnabled) {
     int cx = musicIconX;
     int cy = iconAreaY;
     DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
@@ -1886,9 +1849,9 @@ void RenderSettings(GameState *state) {
 
   // Music label below icon
   const char *musicLabel = "Music";
-  int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
+  int musicLabelW = (int)MeasureTextEx(assets.font, musicLabel, 14.0f, 1.0f).x;
   DrawTextEx(
-      gameFont, musicLabel,
+      assets.font, musicLabel,
       (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
                 (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
       14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
@@ -1909,18 +1872,18 @@ void RenderSettings(GameState *state) {
 
   // Replay icon at left of text
   int replayIconSize = 20;
-  DrawTexturePro(gameTextures.replay,
-                 (Rectangle){0, 0, (float)gameTextures.replay.width,
-                             (float)gameTextures.replay.height},
+  DrawTexturePro(assets.replay,
+                 (Rectangle){0, 0, (float)assets.replay.width,
+                             (float)assets.replay.height},
                  (Rectangle){(float)(BTN_X + 15),
                              (float)(replayBtnY + (BTN_H - replayIconSize) / 2),
                              (float)replayIconSize, (float)replayIconSize},
                  (Vector2){0, 0}, 0.0f, WHITE);
 
   const char *replayText = "Replay";
-  int replayTextW = (int)MeasureTextEx(gameFont, replayText, 18.0f, 1.0f).x;
+  int replayTextW = (int)MeasureTextEx(assets.font, replayText, 18.0f, 1.0f).x;
   DrawTextEx(
-      gameFont, replayText,
+      assets.font, replayText,
       (Vector2){(float)(BTN_X + 15 + replayIconSize + 8 +
                         (BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
                 (float)(replayBtnY + (BTN_H - 18) / 2)},
@@ -1941,17 +1904,17 @@ void RenderSettings(GameState *state) {
 
   // Home icon at left of text
   int homeIconSize = 20;
-  DrawTexturePro(gameTextures.home,
-                 (Rectangle){0, 0, (float)gameTextures.home.width,
-                             (float)gameTextures.home.height},
+  DrawTexturePro(assets.home,
+                 (Rectangle){0, 0, (float)assets.home.width,
+                             (float)assets.home.height},
                  (Rectangle){(float)(BTN_X + 15),
                              (float)(homeBtnY + (BTN_H - homeIconSize) / 2),
                              (float)homeIconSize, (float)homeIconSize},
                  (Vector2){0, 0}, 0.0f, WHITE);
 
   const char *homeText = "Home";
-  int homeTextW = (int)MeasureTextEx(gameFont, homeText, 18.0f, 1.0f).x;
-  DrawTextEx(gameFont, homeText,
+  int homeTextW = (int)MeasureTextEx(assets.font, homeText, 18.0f, 1.0f).x;
+  DrawTextEx(assets.font, homeText,
              (Vector2){(float)(BTN_X + 15 + homeIconSize + 8 +
                                (BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
                        (float)(homeBtnY + (BTN_H - 18) / 2)},
@@ -1959,8 +1922,8 @@ void RenderSettings(GameState *state) {
 
   // Footer hint
   const char *hint = "ESC to go back";
-  int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
-  DrawTextEx(gameFont, hint,
+  int hw = (int)MeasureTextEx(assets.font, hint, 14.0f, 1.0f).x;
+  DrawTextEx(assets.font, hint,
              (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
                        (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
              14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
@@ -1988,8 +1951,8 @@ void RenderMenuSettings(GameState *state)
 
     // Title
     const char *title = "SETTINGS";
-    int tw = (int)MeasureTextEx(gameFont, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
-    DrawTextEx(gameFont, title,
+    int tw = (int)MeasureTextEx(assets.font, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
+    DrawTextEx(assets.font, title,
                (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
                (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
 
@@ -2004,15 +1967,15 @@ void RenderMenuSettings(GameState *state)
     // SFX icon
     int sfxIconX = (int)layout.sfxIcon.x;
     int iconAreaY = (int)layout.sfxIcon.y;
-    DrawTexturePro(gameTextures.waveSound,
-                   (Rectangle){0, 0, (float)gameTextures.waveSound.width,
-                               (float)gameTextures.waveSound.height},
+    DrawTexturePro(assets.waveSound,
+                   (Rectangle){0, 0, (float)assets.waveSound.width,
+                               (float)assets.waveSound.height},
                    (Rectangle){(float)sfxIconX, (float)iconAreaY,
                                (float)SETTINGS_ICON_SIZE,
                                (float)SETTINGS_ICON_SIZE},
                    (Vector2){0, 0}, 0.0f, WHITE);
 
-    if (!state->sound.sfxEnabled) {
+    if (!assets.sfxEnabled) {
         int cx = sfxIconX;
         int cy = iconAreaY;
         DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
@@ -2020,23 +1983,23 @@ void RenderMenuSettings(GameState *state)
     }
 
     const char *sfxLabel = "SFX";
-    int sfxLabelW = (int)MeasureTextEx(gameFont, sfxLabel, 14.0f, 1.0f).x;
-    DrawTextEx(gameFont, sfxLabel,
+    int sfxLabelW = (int)MeasureTextEx(assets.font, sfxLabel, 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, sfxLabel,
                (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
                          (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
                14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     // Music icon
     int musicIconX = (int)layout.musicIcon.x;
-    DrawTexturePro(gameTextures.musicalNote,
-                   (Rectangle){0, 0, (float)gameTextures.musicalNote.width,
-                               (float)gameTextures.musicalNote.height},
+    DrawTexturePro(assets.musicalNote,
+                   (Rectangle){0, 0, (float)assets.musicalNote.width,
+                               (float)assets.musicalNote.height},
                    (Rectangle){(float)musicIconX, (float)iconAreaY,
                                (float)SETTINGS_ICON_SIZE,
                                (float)SETTINGS_ICON_SIZE},
                    (Vector2){0, 0}, 0.0f, WHITE);
 
-    if (!state->sound.musicEnabled) {
+    if (!assets.musicEnabled) {
         int cx = musicIconX;
         int cy = iconAreaY;
         DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
@@ -2044,8 +2007,8 @@ void RenderMenuSettings(GameState *state)
     }
 
     const char *musicLabel = "Music";
-    int musicLabelW = (int)MeasureTextEx(gameFont, musicLabel, 14.0f, 1.0f).x;
-    DrawTextEx(gameFont, musicLabel,
+    int musicLabelW = (int)MeasureTextEx(assets.font, musicLabel, 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, musicLabel,
                (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
                          (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
                14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
@@ -2070,8 +2033,8 @@ void RenderMenuSettings(GameState *state)
 
     // Footer hint
     const char *hint = "ESC to go back";
-    int hw = (int)MeasureTextEx(gameFont, hint, 14.0f, 1.0f).x;
-    DrawTextEx(gameFont, hint,
+    int hw = (int)MeasureTextEx(assets.font, hint, 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, hint,
                (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
                          (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
                14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
@@ -2121,15 +2084,6 @@ void RenderFrame(GameState *state)
 
     EndDrawing();
 }
-
-// ─── Grid & Board Colors ────────────────────────────────────────────────────────
-#define COLOR_GRID_BORDER       ((Color){ 50,  50,  70, 255 })
-#define COLOR_GRID_EMPTY        ((Color){ 40,  40,  60, 255 })
-#define COLOR_GRID_HIGHLIGHT    ((Color){ 255, 255, 255, 40  })
-
-#define COLOR_PANEL_BG          ((Color){ 30,  30,  50, 255 })
-#define COLOR_PANEL_TOP_BORDER  ((Color){ 50,  50,  70, 255 })
-#define PANEL_TOP_BORDER_WIDTH  2.0f
 
 // ----- Block Rendering -----
 static void DrawSafeTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c) {
@@ -2380,13 +2334,13 @@ void DrawGemIcon(int x, int y, int cellSize, int gemType)
     int cy = y + cellSize / 2;
 
     if (gemType == GEM_DIAMOND) {
-        DrawTexturePro(gameTextures.diamond,
-            (Rectangle){ 0, 0, (float)gameTextures.diamond.width, (float)gameTextures.diamond.height },
+        DrawTexturePro(assets.diamond,
+            (Rectangle){ 0, 0, (float)assets.diamond.width, (float)assets.diamond.height },
             (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
     } else if (gemType == GEM_EMERALD) {
-        DrawTexturePro(gameTextures.emerald,
-            (Rectangle){ 0, 0, (float)gameTextures.emerald.width, (float)gameTextures.emerald.height },
+        DrawTexturePro(assets.emerald,
+            (Rectangle){ 0, 0, (float)assets.emerald.width, (float)assets.emerald.height },
             (Rectangle){ (float)(cx - gemSize/2), (float)(cy - gemSize/2), (float)gemSize, (float)gemSize },
             (Vector2){ 0, 0 }, 0.0f, WHITE);
     }
@@ -2514,7 +2468,7 @@ static void TryDropDraggedPiece(GameState *state)
     return;
 
   BoardPlace(&state->board, piece, gridRow, gridCol);
-  SoundPlayPlace(&state->sound);
+  SoundPlayPlace(&assets);
 
   float placeCenterX =
       GRID_DRAW_X + gridCol * CELL_SIZE + (piece->width * CELL_SIZE) / 2.0f;
@@ -2550,9 +2504,9 @@ static void TryDropDraggedPiece(GameState *state)
     int points = ScoreCalculate(linesCleared, state->combo);
     state->score += points;
 
-    SoundPlayLineClear(&state->sound, linesCleared);
+    SoundPlayLineClear(&assets, linesCleared);
     if (state->combo >= 2)
-      SoundPlayCombo(&state->sound, state->combo);
+      SoundPlayCombo(&assets, state->combo);
 
     AddClearFeedback(state, clearedCells, savedColors, points);
 
@@ -2667,18 +2621,18 @@ void GameUpdate(GameState *state)
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, stdBtn)) {
-                    SoundPlayMenuClick(&state->sound);
+                    SoundPlayMenuClick(&assets);
                     state->selectedLevel = 0;
                     state->currentScreen = SCREEN_PLAY;
                     GameReset(state);
                 } else if (CheckCollisionPointRec(mouse, advBtn)) {
-                    SoundPlayMenuClick(&state->sound);
+                    SoundPlayMenuClick(&assets);
                     state->currentScreen = SCREEN_LEVEL_SELECT;
                 } else if (CheckCollisionPointRec(mouse, quitBtn)) {
-                    SoundPlayMenuClick(&state->sound);
+                    SoundPlayMenuClick(&assets);
                     CloseWindow();
                 } else if (CheckCollisionPointRec(mouse, gearRect)) {
-                    SoundPlayMenuClick(&state->sound);
+                    SoundPlayMenuClick(&assets);
                     state->currentScreen = SCREEN_MENU_SETTINGS;
                 }
             }
@@ -2724,7 +2678,7 @@ void GameUpdate(GameState *state)
                         state->highScore = state->score;
                     SaveWrite(state->highScore, state->unlockedLevel);
 
-                    SoundPlayLose(&state->sound);
+                    SoundPlayLose(&assets);
                 }
 
                 state->currentScreen = SCREEN_RESULT;
@@ -2738,7 +2692,7 @@ void GameUpdate(GameState *state)
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 if (CheckCollisionPointRec(mouse, leaveRect)) {
-                    SoundPlayMenuClick(&state->sound);
+                    SoundPlayMenuClick(&assets);
                     state->currentScreen = SCREEN_MENU;
                     break;
                 }
@@ -2747,7 +2701,7 @@ void GameUpdate(GameState *state)
                     Rectangle btn = GetLevelButtonRect(i);
                     if (CheckCollisionPointRec(mouse, btn)) {
                         if (LevelIsUnlocked(state->unlockedLevel, i + 1)) {
-                            SoundPlayMenuClick(&state->sound);
+                            SoundPlayMenuClick(&assets);
                             state->selectedLevel = i + 1;  // levels are 1-indexed
                             state->currentScreen = SCREEN_PLAY;
                             GameReset(state);
@@ -2758,7 +2712,7 @@ void GameUpdate(GameState *state)
             }
 
             if (IsKeyPressed(KEY_ESCAPE)) {
-                SoundPlayMenuClick(&state->sound);
+                SoundPlayMenuClick(&assets);
                 state->currentScreen = SCREEN_MENU;
             }
             break;
@@ -2778,13 +2732,13 @@ void GameUpdate(GameState *state)
                 if (state->level.levelFailed) {
                     // Failed: Top = Retry, Bottom = Home
                     if (CheckCollisionPointRec(mouse, btnTop)) {
-                        SoundPlayMenuClick(&state->sound);
+                        SoundPlayMenuClick(&assets);
                         state->level.levelFailed = false;
                         state->level.levelComplete = false;
                         GameReset(state);
                         state->currentScreen = SCREEN_PLAY;
                     } else if (CheckCollisionPointRec(mouse, btnBot)) {
-                        SoundPlayMenuClick(&state->sound);
+                        SoundPlayMenuClick(&assets);
                         state->level.levelFailed = false;
                         state->level.levelComplete = false;
                         state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
@@ -2792,7 +2746,7 @@ void GameUpdate(GameState *state)
                 } else {
                     // Won: Top = Next Level, Bottom = Home
                     if (CheckCollisionPointRec(mouse, btnTop)) {
-                        SoundPlayMenuClick(&state->sound);
+                        SoundPlayMenuClick(&assets);
                         int nextLevel = state->level.currentLevel + 1;
                         state->level.levelComplete = false;
                         if (nextLevel <= TOTAL_LEVELS) {
@@ -2803,7 +2757,7 @@ void GameUpdate(GameState *state)
                             state->currentScreen = SCREEN_LEVEL_SELECT;
                         }
                     } else if (CheckCollisionPointRec(mouse, btnBot)) {
-                        SoundPlayMenuClick(&state->sound);
+                        SoundPlayMenuClick(&assets);
                         state->level.levelComplete = false;
                         state->currentScreen = SCREEN_LEVEL_SELECT;
                     }
@@ -2811,7 +2765,7 @@ void GameUpdate(GameState *state)
             }
 
             if (IsKeyPressed(KEY_ESCAPE)) {
-                SoundPlayMenuClick(&state->sound);
+                SoundPlayMenuClick(&assets);
                 state->level.levelFailed = false;
                 state->level.levelComplete = false;
                 state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
@@ -2833,13 +2787,13 @@ void GameUpdate(GameState *state)
 // Execute a setting action for the given index
 static void ExecuteSetting(GameState *state, int index)
 {
-    SoundPlayMenuClick(&state->sound);
+    SoundPlayMenuClick(&assets);
     switch (index) {
         case SETTING_SFX:
-            SoundToggleSfx(&state->sound);
+            SoundToggleSfx(&assets);
             break;
         case SETTING_MUSIC:
-            SoundToggleMusic(&state->sound);
+            SoundToggleMusic(&assets);
             break;
         case SETTING_RESTART:
             state->currentScreen = SCREEN_PLAY;
@@ -2883,7 +2837,7 @@ void GameUpdateSettings(GameState *state)
 
     // Back to game with ESC
     if (IsKeyPressed(KEY_ESCAPE)) {
-        SoundPlayMenuClick(&state->sound);
+        SoundPlayMenuClick(&assets);
         state->currentScreen = state->prevScreen;
     }
 }
@@ -2897,79 +2851,27 @@ void GameUpdateMenuSettings(GameState *state)
     // Click handling
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
-            SoundPlayMenuClick(&state->sound);
-            SoundToggleSfx(&state->sound);
+            SoundPlayMenuClick(&assets);
+            SoundToggleSfx(&assets);
         } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
-            SoundPlayMenuClick(&state->sound);
-            SoundToggleMusic(&state->sound);
+            SoundPlayMenuClick(&assets);
+            SoundToggleMusic(&assets);
         } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
-            SoundPlayMenuClick(&state->sound);
+            SoundPlayMenuClick(&assets);
             state->unlockedLevel = 1;
             state->highScore = 0;
             SaveWrite(state->highScore, state->unlockedLevel);
         } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
-            SoundPlayMenuClick(&state->sound);
+            SoundPlayMenuClick(&assets);
             state->currentScreen = SCREEN_MENU;
         }
     }
 
     // Back to menu with ESC
     if (IsKeyPressed(KEY_ESCAPE)) {
-        SoundPlayMenuClick(&state->sound);
+        SoundPlayMenuClick(&assets);
         state->currentScreen = SCREEN_MENU;
     }
 }
 
-/* ---- Program entry point ---- */
 
-int main(void)
-{
-    // Ensure data directory exists for save files
-    MakeDirectory("data");
-
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Block Blast");
-    SetExitKey(0);  // Disable ESC as exit key (we use it for settings menu)
-    SetTargetFPS(60);
-
-    // Load TrueType font for crisp text rendering
-    gameFont = LoadFontEx("assets/fonts/RussoOne-Regular.ttf", 200, 0, 0);
-    if (gameFont.texture.id != 0)
-        printf("INFO: FONT: Loaded custom font successfully.\n");
-
-    // Load all textures at startup
-    TexturesLoad();
-
-    GameState state;
-    GameInit(&state);
-
-    // Initialize sound system (must be after InitWindow)
-    SoundInit(&state.sound);
-
-    while (!WindowShouldClose()) {
-        // Update music stream
-        SoundUpdate(&state.sound);
-
-        // Input (during play screen only)
-        if (state.currentScreen == SCREEN_PLAY) {
-            InputUpdate(&state);
-        }
-
-        // Update
-        GameUpdate(&state);
-
-        // Draw
-        RenderFrame(&state);
-    }
-
-    // Cleanup sound system
-    SoundClose(&state.sound);
-
-    // Unload all textures
-    TexturesUnload();
-
-    // Unload font
-    if (gameFont.texture.id != 0) UnloadFont(gameFont);
-
-    CloseWindow();
-    return 0;
-}
