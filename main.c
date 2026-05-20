@@ -320,12 +320,10 @@ typedef struct {
     Texture2D crown;
     Texture2D diamond;
     Texture2D emerald;
-    Texture2D home;
     Texture2D lock;
     Texture2D logout;
     Texture2D musicalNote;
     Texture2D waveSound;
-    Texture2D replay;
     Texture2D completed;
     Texture2D logo;
 
@@ -1138,12 +1136,10 @@ void AssetsLoad(GameAssets *assets)
     assets->crown = LoadTexture("assets/crown.png");
     assets->diamond = LoadTexture("assets/diamond.png");
     assets->emerald = LoadTexture("assets/emerald.png");
-    assets->home = LoadTexture("assets/home.png");
     assets->lock = LoadTexture("assets/lock.png");
     assets->logout = LoadTexture("assets/logout.png");
     assets->musicalNote = LoadTexture("assets/musical-note.png");
     assets->waveSound = LoadTexture("assets/wave-sound.png");
-    assets->replay = LoadTexture("assets/replay.png");
     assets->completed = LoadTexture("assets/completed.png");
     assets->logo = LoadTexture("assets/logo.png");
 
@@ -1186,12 +1182,10 @@ void AssetsUnload(GameAssets *assets)
     UnloadTexture(assets->crown);
     UnloadTexture(assets->diamond);
     UnloadTexture(assets->emerald);
-    UnloadTexture(assets->home);
     UnloadTexture(assets->lock);
     UnloadTexture(assets->logout);
     UnloadTexture(assets->musicalNote);
     UnloadTexture(assets->waveSound);
-    UnloadTexture(assets->replay);
     UnloadTexture(assets->completed);
     UnloadTexture(assets->logo);
 
@@ -1624,13 +1618,11 @@ void RenderSettings(GameState *state)
     bool replayHover = CheckCollisionPointRec(mouse, replayButton);
     DrawRectangleRounded(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    DrawTexturePro(assets.replay, (Rectangle){0, 0, (float)assets.replay.width, (float)assets.replay.height}, (Rectangle){BTN_X + 15, replayY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
     DrawTextEx(assets.font, "Replay", (Vector2){206, replayY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     bool homeHover = CheckCollisionPointRec(mouse, homeButton);
     DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
     DrawTextEx(assets.font, "Home", (Vector2){215, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     DrawTextEx(assets.font, "ESC to go back", (Vector2){180, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
@@ -1674,7 +1666,6 @@ void RenderMenuSettings(GameState *state)
     bool homeHover = CheckCollisionPointRec(mouse, homeButton);
     DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
-    DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
     DrawTextEx(assets.font, "Home", (Vector2){215, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
     DrawTextEx(assets.font, "ESC to go back", (Vector2){180, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
