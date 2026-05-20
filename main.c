@@ -404,61 +404,6 @@ static inline bool LevelIsCompleted(int unlockedLevel, int lvl) {
     return (lvl >= 1 && lvl <= TOTAL_LEVELS && lvl < unlockedLevel);
 }
 
-/* ---- UI layout helpers ---- */
-
-typedef struct {
-    int cardX;
-    int cardY;
-    int iconAreaY;
-    Rectangle sfxIcon;
-    Rectangle musicIcon;
-    Rectangle firstButton;
-    Rectangle secondButton;
-    Rectangle thirdButton;
-} SettingsLayout;
-
-static inline SettingsLayout GetSettingsLayout(bool hasThreeButtons)
-{
-    SettingsLayout layout;
-    int iconSpacing;
-    int iconStartX;
-    int firstButtonY;
-    int secondButtonY;
-    int thirdButtonY;
-
-    layout.cardX = (SCREEN_WIDTH - SETTINGS_CARD_WIDTH) / 2;
-    layout.cardY = (SCREEN_HEIGHT - SETTINGS_CARD_HEIGHT) / 2 - 20;
-    layout.iconAreaY = layout.cardY + 85;
-
-    iconSpacing = (SETTINGS_CARD_WIDTH - 2 * SETTINGS_CARD_PADDING_X) / 2;
-    iconStartX = layout.cardX + SETTINGS_CARD_PADDING_X;
-
-    layout.sfxIcon = (Rectangle){
-        (float)(iconStartX + (iconSpacing - SETTINGS_ICON_SIZE) / 2),
-        (float)layout.iconAreaY,
-        SETTINGS_ICON_SIZE,
-        SETTINGS_ICON_SIZE
-    };
-    layout.musicIcon = (Rectangle){
-        (float)(iconStartX + iconSpacing + (iconSpacing - SETTINGS_ICON_SIZE) / 2),
-        (float)layout.iconAreaY,
-        SETTINGS_ICON_SIZE,
-        SETTINGS_ICON_SIZE
-    };
-
-    firstButtonY = layout.iconAreaY + SETTINGS_ICON_SIZE + 40;
-    secondButtonY = firstButtonY + BTN_H + BTN_GAP;
-    thirdButtonY = secondButtonY + BTN_H + BTN_GAP;
-
-    layout.firstButton = (Rectangle){ (float)BTN_X, (float)firstButtonY, BTN_W, BTN_H };
-    layout.secondButton = (Rectangle){ (float)BTN_X, (float)secondButtonY, BTN_W, BTN_H };
-    layout.thirdButton = hasThreeButtons
-        ? (Rectangle){ (float)BTN_X, (float)thirdButtonY, BTN_W, BTN_H }
-        : (Rectangle){ 0, 0, 0, 0 };
-
-    return layout;
-}
-
 /* ---- Game state ---- */
 
 // Game screens
@@ -499,6 +444,7 @@ typedef struct {
     int selectedLevel;              // 0 = classic, 1-10 = adventure
     int unlockedLevel;              // 1 = first adventure level, TOTAL_LEVELS + 1 = all completed
 
+    bool shouldQuit;
     Screen prevScreen;  // screen before settings overlay
 } GameState;
 
@@ -553,22 +499,9 @@ void SoundPlayCombo(GameAssets *assets, int comboCount);
 void SoundPlayLose(GameAssets *assets);
 void SoundPlayMenuClick(GameAssets *assets);
 
-static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h);
-static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color);
-static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
-                             Color bg, Color bgHover, Color border,
-                             Color borderHover, Color textColor,
-                             Color textHover, bool hover);
-static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
-                           const char *countText, int fontSize, int textYOffset,
-                           Color textColor);
 void RenderPlayHUD(GameState *state);
 void RenderLevelSelect(GameState *state);
 void RenderResult(GameState *state);
-static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
-                                 Color bg, Color bgHover, Color border,
-                                 Color borderHover, Color textColor,
-                                 Color textHover, bool hover);
 void RenderMenu(GameState *state);
 void RenderSettings(GameState *state);
 void RenderMenuSettings(GameState *state);
@@ -593,11 +526,22 @@ void InputUpdate(GameState *state);
 
 void GameInit(GameState *state);
 void GameReset(GameState *state);
-static Rectangle GetLevelButtonRect(int levelIndex);
 void GameUpdate(GameState *state);
 static void ExecuteSetting(GameState *state, int index);
 void GameUpdateSettings(GameState *state);
 void GameUpdateMenuSettings(GameState *state);
+
+
+void AssetsLoad(GameAssets *assets);
+void AssetsUnload(GameAssets *assets);
+void AssetsUpdateMusic(GameAssets *assets);
+void SoundToggleSfx(GameAssets *assets);
+void SoundToggleMusic(GameAssets *assets);
+void SoundPlayPlace(GameAssets *assets);
+void SoundPlayLineClear(GameAssets *assets, int linesCleared);
+void SoundPlayCombo(GameAssets *assets, int comboCount);
+void SoundPlayLose(GameAssets *assets);
+void SoundPlayMenuClick(GameAssets *assets);
 
 int main(void)
 {
@@ -612,7 +556,7 @@ int main(void)
     GameState state;
     GameInit(&state);
 
-    while (!WindowShouldClose()) {
+    while (!WindowShouldClose() && !state.shouldQuit) {
         AssetsUpdateMusic(&assets);
 
         if (state.currentScreen == SCREEN_PLAY) {
@@ -1340,55 +1284,18 @@ void SoundPlayMenuClick(GameAssets *assets)
 
 /* ---- UI rendering implementation ---- */
 
+
 // ─── Helper: draw texture full ───────────────────────────────────────────────
-static void DrawTextureFull(Texture2D tex, int x, int y, int w, int h)
-{
-    DrawTexturePro(tex,
-        (Rectangle){ 0, 0, (float)tex.width, (float)tex.height },
-        (Rectangle){ (float)x, (float)y, (float)w, (float)h },
-        (Vector2){ 0, 0 }, 0.0f, WHITE);
-}
+
 
 // ─── Helper: draw text centered X ────────────────────────────────────────────
-static void DrawTextCenteredX(const char *text, int y, int fontSize, Color color)
-{
-    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(assets.font, text, (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)y},
-               (float)fontSize, 1.0f, color);
-}
+
 
 // ─── Helper: draw styled button ──────────────────────────────────────────────
-static void DrawButtonStyled(Rectangle btn, const char *text, int fontSize,
-                              Color bg, Color bgHover,
-                              Color border, Color borderHover,
-                              Color textColor, Color textHover,
-                              bool hover)
-{
-    Color cBg  = hover ? bgHover  : bg;
-    Color cBrd = hover ? borderHover : border;
-    Color cTxt = hover ? textHover : textColor;
 
-    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
-    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
-
-    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(assets.font, text,
-               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
-                         btn.y + (btn.height - (float)fontSize) / 2.0f},
-               (float)fontSize, 1.0f, cTxt);
-}
 
 // ─── Helper: draw gem counter ────────────────────────────────────────────────
-static void DrawGemCounter(Texture2D tex, int centerX, int topY, int gemSize,
-                            const char *countText, int fontSize, int textYOffset,
-                            Color textColor)
-{
-    DrawTextureFull(tex, centerX - gemSize / 2, topY, gemSize, gemSize);
-    int tw = (int)MeasureTextEx(assets.font, countText, (float)fontSize, 1.0f).x;
-    DrawTextEx(assets.font, countText,
-               (Vector2){(float)(centerX - tw / 2), (float)(topY + textYOffset)},
-               (float)fontSize, 1.0f, textColor);
-}
+
 
 // ============================================================================
 //  Play HUD — adapts based on level targets
@@ -1397,137 +1304,126 @@ void RenderPlayHUD(GameState *state)
 {
     const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
     char buf[128];
+    int textW;
 
     if (state->selectedLevel == 0) {
-        // Classic mode: crown + high score + score + combo
-        int crownSize = 28;
         DrawTexturePro(assets.crown,
-            (Rectangle){ 0, 0, (float)assets.crown.width, (float)assets.crown.height },
-            (Rectangle){ 15, 12, (float)crownSize, (float)crownSize },
-            (Vector2){ 0, 0 }, 0.0f, WHITE);
+            (Rectangle){0, 0, (float)assets.crown.width, (float)assets.crown.height},
+            (Rectangle){15, 12, 28, 28},
+            (Vector2){0, 0}, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(assets.font, buf, (Vector2){15 + crownSize + 8, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
+        DrawTextEx(assets.font, buf, (Vector2){51, 16}, 20.0f, 1.0f, (Color){255, 220, 50, 255});
 
         sprintf(buf, "%d", state->score);
-        int scoreW = (int)MeasureTextEx(assets.font, buf, 40.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - scoreW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
+        textW = (int)MeasureTextEx(assets.font, buf, 40.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 40}, 40.0f, 1.0f, COLOR_TEXT_PRIMARY);
 
         if (state->combo > 1) {
             sprintf(buf, "COMBO x%d", state->combo);
-            int cw = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - cw) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
+            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 80}, 18.0f, 1.0f, (Color){255, 220, 50, 255});
         }
-    } else {
-        // Adventure mode: show only non-zero targets
-        int midY = 45;
-        bool hasScore = (def->targetScore > 0);
-        bool hasDiamond = (def->targetDiamonds > 0);
-        bool hasEmerald = (def->targetEmeralds > 0);
+        return;
+    }
 
-        if (hasScore && !hasDiamond && !hasEmerald) {
-            // Score only
-            sprintf(buf, "%d / %d", state->score, def->targetScore);
-            DrawTextCenteredX(buf, midY, 36, COLOR_TEXT_PRIMARY);
-        } else if (!hasScore && hasDiamond && !hasEmerald) {
-            // Diamond only
-            int gemSize = 36;
-            int remaining = def->targetDiamonds - state->level.collectedDiamonds;
-            if (remaining < 0) remaining = 0;
-            sprintf(buf, "%d", remaining);
-            DrawGemCounter(assets.diamond, SCREEN_WIDTH / 2, midY - 6,
-                           gemSize, buf, 26, gemSize + 4, COLOR_TEXT_PRIMARY);
-        } else {
-            // Mixed: show all non-zero targets
-            int gemSize = 32;
-            int spacing = 125; // increased spacing
-            int centerX = SCREEN_WIDTH / 2;
+    bool hasScore = def->targetScore > 0;
+    bool hasDiamond = def->targetDiamonds > 0;
+    bool hasEmerald = def->targetEmeralds > 0;
 
-            if (hasScore) {
-                sprintf(buf, "%d / %d", state->score, def->targetScore);
-                DrawTextCenteredX(buf, midY + 4, 28, COLOR_TEXT_PRIMARY);
-            }
+    if (hasScore) {
+        sprintf(buf, "%d / %d", state->score, def->targetScore);
+        textW = (int)MeasureTextEx(assets.font, buf, 28.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 49}, 28.0f, 1.0f, COLOR_TEXT_PRIMARY);
+    }
 
-            if (hasDiamond) {
-                int remaining = def->targetDiamonds - state->level.collectedDiamonds;
-                if (remaining < 0) remaining = 0;
-                sprintf(buf, "%d", remaining);
-                DrawGemCounter(assets.diamond, centerX - spacing, midY - 4,
-                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
-            }
+    if (hasDiamond) {
+        int remaining = def->targetDiamonds - state->level.collectedDiamonds;
+        if (remaining < 0) remaining = 0;
+        sprintf(buf, "%d", remaining);
+        DrawTexturePro(assets.diamond,
+            (Rectangle){0, 0, (float)assets.diamond.width, (float)assets.diamond.height},
+            (Rectangle){99, 41, 32, 32},
+            (Vector2){0, 0}, 0.0f, WHITE);
+        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){115 - textW / 2.0f, 79}, 22.0f, 1.0f, COLOR_TEXT_PRIMARY);
+    }
 
-            if (hasEmerald) {
-                int remaining = def->targetEmeralds - state->level.collectedEmeralds;
-                if (remaining < 0) remaining = 0;
-                sprintf(buf, "%d", remaining);
-                DrawGemCounter(assets.emerald, centerX + spacing, midY - 4,
-                               gemSize, buf, 22, gemSize + 6, COLOR_TEXT_PRIMARY);
-            }
-        }
+    if (hasEmerald) {
+        int remaining = def->targetEmeralds - state->level.collectedEmeralds;
+        if (remaining < 0) remaining = 0;
+        sprintf(buf, "%d", remaining);
+        DrawTexturePro(assets.emerald,
+            (Rectangle){0, 0, (float)assets.emerald.width, (float)assets.emerald.height},
+            (Rectangle){349, 41, 32, 32},
+            (Vector2){0, 0}, 0.0f, WHITE);
+        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){365 - textW / 2.0f, 79}, 22.0f, 1.0f, COLOR_TEXT_PRIMARY);
     }
 }
+
 
 // ============================================================================
 //  Level Select Screen
 // ============================================================================
 void RenderLevelSelect(GameState *state)
 {
-    DrawTextureFull(assets.logout, 15, 15, 32, 32);
-    DrawTextCenteredX("ADVENTURE", 30, 36, COLOR_TEXT_PRIMARY);
+    DrawTexturePro(assets.logout,
+        (Rectangle){0, 0, (float)assets.logout.width, (float)assets.logout.height},
+        (Rectangle){15, 15, 32, 32},
+        (Vector2){0, 0}, 0.0f, WHITE);
 
-    int totalRowWidth = LEVELS_PER_ROW * AMAP_BTN_SIZE + (LEVELS_PER_ROW - 1) * AMAP_BTN_GAP;
-    int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
+    int textW = (int)MeasureTextEx(assets.font, "ADVENTURE", 36.0f, 1.0f).x;
+    DrawTextEx(assets.font, "ADVENTURE", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 30}, 36.0f, 1.0f, COLOR_TEXT_PRIMARY);
+
     Vector2 mouse = GetMousePosition();
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
         int col = i % LEVELS_PER_ROW;
-        int bx = mapStartX + col * (AMAP_BTN_SIZE + AMAP_BTN_GAP);
-        int by = AMAP_START_Y + row * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP);
-        Rectangle btnRect = { bx, by, AMAP_BTN_SIZE, AMAP_BTN_SIZE };
+        int x = 100 + col * 95;
+        int y = 150 + row * 125;
+        Rectangle button = {x, y, AMAP_BTN_SIZE, AMAP_BTN_SIZE};
 
-        bool isUnlocked = LevelIsUnlocked(state->unlockedLevel, i + 1);
-        bool isCompleted = LevelIsCompleted(state->unlockedLevel, i + 1);
-        bool hover = CheckCollisionPointRec(mouse, btnRect) && isUnlocked;
+        bool unlocked = LevelIsUnlocked(state->unlockedLevel, i + 1);
+        bool completed = LevelIsCompleted(state->unlockedLevel, i + 1);
+        bool hover = unlocked && CheckCollisionPointRec(mouse, button);
 
-        Color btnColor = !isUnlocked ? COLOR_AMAP_LOCKED_BG :
-                         hover ? COLOR_AMAP_UNLOCKED_HOVER : COLOR_AMAP_UNLOCKED_BG;
-        Color borderColor = !isUnlocked ? COLOR_AMAP_LOCKED_BORDER : COLOR_AMAP_UNLOCKED_BORDER;
+        Color bg = unlocked ? COLOR_AMAP_UNLOCKED_BG : COLOR_AMAP_LOCKED_BG;
+        Color border = unlocked ? COLOR_AMAP_UNLOCKED_BORDER : COLOR_AMAP_LOCKED_BORDER;
+        Color numberColor = unlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
+        if (hover) bg = COLOR_AMAP_UNLOCKED_HOVER;
 
-        DrawRectangleRounded(btnRect, 0.2f, 6, btnColor);
-        DrawRectangleRoundedLines(btnRect, 0.2f, 6, borderColor);
+        DrawRectangleRounded(button, 0.2f, 6, bg);
+        DrawRectangleRoundedLines(button, 0.2f, 6, border);
 
-        char lvlBuf[8];
-        sprintf(lvlBuf, "%d", i + 1);
-        Color lvlColor = isUnlocked ? COLOR_TEXT_PRIMARY : COLOR_AMAP_LOCKED_NUMBER;
-        int lnw = (int)MeasureTextEx(assets.font, lvlBuf, 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, lvlBuf,
-                   (Vector2){(float)(bx + (AMAP_BTN_SIZE - lnw) / 2), (float)(by + 20)},
-                   28.0f, 1.0f, lvlColor);
+        char levelText[8];
+        sprintf(levelText, "%d", i + 1);
+        textW = (int)MeasureTextEx(assets.font, levelText, 28.0f, 1.0f).x;
+        DrawTextEx(assets.font, levelText, (Vector2){x + (AMAP_BTN_SIZE - textW) / 2.0f, y + 20}, 28.0f, 1.0f, numberColor);
 
-        if (isCompleted) {
-            int compSize = 28;
-            DrawTextureFull(assets.completed,
-                bx + AMAP_BTN_SIZE - compSize + 6,
-                by - 6,
-                compSize, compSize);
-        } else if (!isUnlocked) {
-            int lockSize = 24;
-            DrawTextureFull(assets.lock,
-                bx + (AMAP_BTN_SIZE - lockSize) / 2,
-                by + AMAP_BTN_SIZE - lockSize - 8,
-                lockSize, lockSize);
+        if (completed) {
+            DrawTexturePro(assets.completed,
+                (Rectangle){0, 0, (float)assets.completed.width, (float)assets.completed.height},
+                (Rectangle){x + 58, y - 6, 28, 28},
+                (Vector2){0, 0}, 0.0f, WHITE);
+        } else if (!unlocked) {
+            DrawTexturePro(assets.lock,
+                (Rectangle){0, 0, (float)assets.lock.width, (float)assets.lock.height},
+                (Rectangle){x + 28, y + 48, 24, 24},
+                (Vector2){0, 0}, 0.0f, WHITE);
         }
     }
 
     if (state->unlockedLevel > TOTAL_LEVELS) {
-        int lastRow = (TOTAL_LEVELS - 1) / LEVELS_PER_ROW;
-        int botY = AMAP_START_Y + lastRow * (AMAP_BTN_SIZE + AMAP_BTN_GAP + AMAP_BTN_LABEL_GAP) + AMAP_BTN_SIZE + 40;
-        DrawTextCenteredX("Completed!", botY, 28, COLOR_AMAP_COMPLETED_TEXT);
+        textW = (int)MeasureTextEx(assets.font, "Completed!", 28.0f, 1.0f).x;
+        DrawTextEx(assets.font, "Completed!", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 690}, 28.0f, 1.0f, COLOR_AMAP_COMPLETED_TEXT);
     }
 
-    DrawTextCenteredX("ESC: Main Menu", SCREEN_HEIGHT - 30, 16, COLOR_TEXT_MUTED);
+    textW = (int)MeasureTextEx(assets.font, "ESC: Main Menu", 16.0f, 1.0f).x;
+    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, COLOR_TEXT_MUTED);
 }
+
 
 // ============================================================================
 //  Result Screen (adaptive win/lose)
@@ -1535,112 +1431,81 @@ void RenderLevelSelect(GameState *state)
 void RenderResult(GameState *state)
 {
     const LevelDef *def = &LevelGetDefs()[state->selectedLevel];
-
-    // Draw game board underneath
-    RenderPlayHUD(state);
-    RenderBoard(state);
-    RenderPieceSlots(state);
-
-    // Dark overlay
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
-
-    // Card
-    int cardW = 380, cardH = 400;
-    int cardX = (SCREEN_WIDTH - cardW) / 2;
-    int cardY = (SCREEN_HEIGHT - cardH) / 2 - 20;
-    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){20, 25, 50, 235});
-    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, (Color){60, 70, 110, 180});
-
     char buf[128];
     Vector2 mouse = GetMousePosition();
 
-    // Title
-    if (state->level.levelFailed) {
-        if (state->selectedLevel == 0) {
-            DrawTextCenteredX("GAME OVER", cardY + 30, 32, (Color){255, 80, 80, 255});
-        } else {
-            DrawTextCenteredX("LEVEL FAILED!", cardY + 30, 32, (Color){255, 80, 80, 255});
-        }
-    } else {
-        DrawTextCenteredX("LEVEL COMPLETE!", cardY + 30, 32, (Color){50, 255, 100, 255});
-    }
+    RenderPlayHUD(state);
+    RenderBoard(state);
+    RenderPieceSlots(state);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 200});
 
-    // Score
-    int statY = cardY + 100;
+    int cardX = 50;
+    int cardY = 180;
+    int cardW = 380;
+    int cardH = 400;
+    DrawRectangleRounded((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, cardW, cardH}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+
+    const char *title = state->level.levelFailed ? (state->selectedLevel == 0 ? "GAME OVER" : "LEVEL FAILED!") : "LEVEL COMPLETE!";
+    Color titleColor = state->level.levelFailed ? (Color){255, 80, 80, 255} : (Color){50, 255, 100, 255};
+    int textW = (int)MeasureTextEx(assets.font, title, 32.0f, 1.0f).x;
+    DrawTextEx(assets.font, title, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 30}, 32.0f, 1.0f, titleColor);
+
     sprintf(buf, "Score: %d", state->score);
-    DrawTextCenteredX(buf, statY, 28, WHITE);
+    textW = (int)MeasureTextEx(assets.font, buf, 28.0f, 1.0f).x;
+    DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 100}, 28.0f, 1.0f, WHITE);
 
     if (state->selectedLevel == 0) {
-        // Classic: show high score
         sprintf(buf, "Best: %d", state->highScore);
-        DrawTextCenteredX(buf, statY + 40, 22, (Color){150, 150, 170, 255});
+        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
+        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 140}, 22.0f, 1.0f, COLOR_TEXT_SECONDARY);
     } else {
-        // Adventure: show gem progress
-        int infoY = statY + 45;
+        int y = cardY + 145;
         if (def->targetDiamonds > 0) {
             sprintf(buf, "Diamonds: %d / %d", state->level.collectedDiamonds, def->targetDiamonds);
-            DrawTextCenteredX(buf, infoY, 18, (Color){100, 200, 255, 255});
-            infoY += 30;
+            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, (Color){100, 200, 255, 255});
+            y += 30;
         }
         if (def->targetEmeralds > 0) {
             sprintf(buf, "Emeralds: %d / %d", state->level.collectedEmeralds, def->targetEmeralds);
-            DrawTextCenteredX(buf, infoY, 18, (Color){50, 220, 100, 255});
+            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
+            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, (Color){50, 220, 100, 255});
         }
     }
 
-    // Buttons
-    const int topBtnY = cardY + cardH - 140;
-    const int botBtnY = topBtnY + BTN_H + BTN_GAP;
-    Rectangle btnTop = { BTN_X, topBtnY, BTN_W, BTN_H };
-    Rectangle btnBot = { BTN_X, botBtnY, BTN_W, BTN_H };
-    bool topHover = CheckCollisionPointRec(mouse, btnTop);
-    bool botHover = CheckCollisionPointRec(mouse, btnBot);
+    Rectangle topButton = {BTN_X, cardY + cardH - 140, BTN_W, BTN_H};
+    Rectangle bottomButton = {BTN_X, cardY + cardH - 75, BTN_W, BTN_H};
+    bool topHover = CheckCollisionPointRec(mouse, topButton);
+    bool bottomHover = CheckCollisionPointRec(mouse, bottomButton);
 
-    if (state->level.levelFailed) {
-        const char *retryText = (state->selectedLevel == 0) ? "Play Again" : "Try Again";
-        DrawButtonStyled(btnTop, retryText, 18,
-            (Color){55, 40, 85, 255}, (Color){80, 50, 120, 255},
-            (Color){100, 70, 150, 255}, (Color){180, 120, 255, 255},
-            (Color){170, 150, 200, 255}, (Color){255, 255, 255, 255},
-            topHover);
-    } else {
-        const char *topText = (state->level.currentLevel < TOTAL_LEVELS) ? "Next Level" : "Completed!";
-        DrawButtonStyled(btnTop, topText, 18,
-            (Color){35, 70, 45, 255}, (Color){50, 100, 60, 255},
-            (Color){60, 140, 80, 255}, (Color){100, 220, 120, 255},
-            (Color){150, 220, 170, 255}, (Color){255, 255, 255, 255},
-            topHover);
+    const char *topText = state->level.levelFailed ? (state->selectedLevel == 0 ? "Play Again" : "Try Again") : (state->level.currentLevel < TOTAL_LEVELS ? "Next Level" : "Completed!");
+    Color topBg = topHover ? COLOR_BTN_ADV_BG_HOVER : COLOR_BTN_ADV_BG;
+    Color topBorder = topHover ? COLOR_BTN_ADV_BORDER_HOVER : COLOR_BTN_ADV_BORDER;
+    Color topTextColor = topHover ? COLOR_TEXT_PRIMARY : COLOR_BTN_ADV_TEXT;
+    if (!state->level.levelFailed) {
+        topBg = topHover ? (Color){50, 100, 60, 255} : (Color){35, 70, 45, 255};
+        topBorder = topHover ? (Color){100, 220, 120, 255} : (Color){60, 140, 80, 255};
+        topTextColor = topHover ? COLOR_TEXT_PRIMARY : (Color){150, 220, 170, 255};
     }
 
-    DrawButtonStyled(btnBot, "Main Menu", 18,
-        (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
-        (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
-        (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
-        botHover);
+    DrawRectangleRounded(topButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, topBg);
+    DrawRectangleRoundedLines(topButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, topBorder);
+    textW = (int)MeasureTextEx(assets.font, topText, 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, topText, (Vector2){BTN_X + (BTN_W - textW) / 2.0f, topButton.y + 16}, 18.0f, 1.0f, topTextColor);
 
-    DrawTextCenteredX("ESC: Go Back", SCREEN_HEIGHT - 25, 14, (Color){100, 100, 140, 200});
+    DrawRectangleRounded(bottomButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, bottomHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(bottomButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, bottomHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
+    textW = (int)MeasureTextEx(assets.font, "Main Menu", 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Main Menu", (Vector2){BTN_X + (BTN_W - textW) / 2.0f, bottomButton.y + 16}, 18.0f, 1.0f, bottomHover ? COLOR_TEXT_PRIMARY : COLOR_SETTINGS_UNSELECTED_TEXT);
+
+    textW = (int)MeasureTextEx(assets.font, "ESC: Go Back", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, COLOR_TEXT_MUTED);
 }
+
 
 // ─── Helper: draw styled button ──────────────────────────────────────────────
-static void DrawMenuButtonStyled(Rectangle btn, const char *text, int fontSize,
-                              Color bg, Color bgHover,
-                              Color border, Color borderHover,
-                              Color textColor, Color textHover,
-                              bool hover)
-{
-    Color cBg  = hover ? bgHover  : bg;
-    Color cBrd = hover ? borderHover : border;
-    Color cTxt = hover ? textHover : textColor;
 
-    DrawRectangleRounded(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBg);
-    DrawRectangleRoundedLines(btn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, cBrd);
-
-    int tw = (int)MeasureTextEx(assets.font, text, (float)fontSize, 1.0f).x;
-    DrawTextEx(assets.font, text,
-               (Vector2){btn.x + (btn.width  - (float)tw)  / 2.0f,
-                         btn.y + (btn.height - (float)fontSize) / 2.0f},
-               (float)fontSize, 1.0f, cTxt);
-}
 
 // ----- Menu screen -----
 void RenderMenu(GameState *state) {
@@ -1712,11 +1577,16 @@ void RenderMenu(GameState *state) {
   // --- Quit Button ---
   Rectangle quitBtn = {BTN_X, MENU_QUIT_Y, BTN_W, BTN_H};
   bool quitHover = CheckCollisionPointRec(mouse, quitBtn);
-  DrawMenuButtonStyled(quitBtn, "Quit", 22,
-                   COLOR_BTN_QUIT_BG, COLOR_BTN_QUIT_BG_HOVER,
-                   COLOR_BTN_QUIT_BORDER, COLOR_BTN_QUIT_BORDER_HOVER,
-                   COLOR_BTN_QUIT_TEXT, COLOR_BTN_QUIT_TEXT_HOVER,
-                   quitHover);
+  Color quitBg = quitHover ? COLOR_BTN_QUIT_BG_HOVER : COLOR_BTN_QUIT_BG;
+  Color quitBorder = quitHover ? COLOR_BTN_QUIT_BORDER_HOVER : COLOR_BTN_QUIT_BORDER;
+  Color quitTextColor = quitHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT;
+  DrawRectangleRounded(quitBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, quitBg);
+  DrawRectangleRoundedLines(quitBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, quitBorder);
+  int qtw = (int)MeasureTextEx(assets.font, "Quit", 22.0f, 1.0f).x;
+  DrawTextEx(assets.font, "Quit",
+             (Vector2){(float)(BTN_X + (BTN_W - qtw) / 2),
+                       (float)(MENU_QUIT_Y + (BTN_H - 22) / 2)},
+             22.0f, 1.0f, quitTextColor);
 
   // --- Game Simulation Decoration ---
   int s = 35; // Block size for mini grid
@@ -1766,279 +1636,105 @@ void RenderMenu(GameState *state) {
 }
 
 // ----- Settings screen (overlay with framed card) - for in-game settings -----
-void RenderSettings(GameState *state) {
-  SettingsLayout layout = GetSettingsLayout(false);
+void RenderSettings(GameState *state)
+{
+    Vector2 mouse = GetMousePosition();
+    int cardX = 80;
+    int cardY = 165;
+    int iconY = 250;
+    int sfxIconX = 160;
+    int musicIconX = 280;
+    int replayY = 330;
+    int homeY = 395;
+    Rectangle replayButton = {BTN_X, replayY, BTN_W, BTN_H};
+    Rectangle homeButton = {BTN_X, homeY, BTN_W, BTN_H};
 
-  // Semi-transparent dark overlay
-  DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+    DrawRectangleRounded((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
 
-  // Settings card frame
-  int cardX = layout.cardX;
-  int cardY = layout.cardY;
+    int textW = (int)MeasureTextEx(assets.font, "SETTINGS", 30.0f, 1.0f).x;
+    DrawTextEx(assets.font, "SETTINGS", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 25}, 30.0f, 1.0f, WHITE);
+    DrawLineEx((Vector2){120, cardY + 65}, (Vector2){360, cardY + 65}, 1.5f, COLOR_SETTINGS_SEPARATOR);
 
-  // Card background
-  DrawRectangleRounded(
-      (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
-      0.15f, 8, COLOR_SETTINGS_CARD_BG);
-  DrawRectangleRoundedLines(
-      (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
-      0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
+    DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){sfxIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.sfxEnabled) DrawLineEx((Vector2){sfxIconX + 2, iconY + 38}, (Vector2){sfxIconX + 38, iconY + 2}, 5.0f, RED);
+    textW = (int)MeasureTextEx(assets.font, "SFX", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "SFX", (Vector2){sfxIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-  // Title
-  const char *title = "SETTINGS";
-  int tw =
-      (int)MeasureTextEx(assets.font, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f)
-          .x;
-  DrawTextEx(assets.font, title,
-             (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
-             (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
+    DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){musicIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.musicEnabled) DrawLineEx((Vector2){musicIconX + 2, iconY + 38}, (Vector2){musicIconX + 38, iconY + 2}, 5.0f, RED);
+    textW = (int)MeasureTextEx(assets.font, "Music", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Music", (Vector2){musicIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-  // Separator line
-  DrawLineEx((Vector2){cardX + 40, cardY + 65},
-             (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65}, 1.5f,
-             COLOR_SETTINGS_SEPARATOR);
+    bool replayHover = CheckCollisionPointRec(mouse, replayButton);
+    DrawRectangleRounded(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(replayButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
+    DrawTexturePro(assets.replay, (Rectangle){0, 0, (float)assets.replay.width, (float)assets.replay.height}, (Rectangle){BTN_X + 15, replayY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
+    textW = (int)MeasureTextEx(assets.font, "Replay", 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Replay", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, replayY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-  Vector2 mouse = GetMousePosition();
+    bool homeHover = CheckCollisionPointRec(mouse, homeButton);
+    DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
+    DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
+    textW = (int)MeasureTextEx(assets.font, "Home", 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Home", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-  // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
-  // SFX icon
-  int sfxIconX = (int)layout.sfxIcon.x;
-  int iconAreaY = (int)layout.sfxIcon.y;
-  DrawTexturePro(assets.waveSound,
-                 (Rectangle){0, 0, (float)assets.waveSound.width,
-                             (float)assets.waveSound.height},
-                 (Rectangle){(float)sfxIconX, (float)iconAreaY,
-                             (float)SETTINGS_ICON_SIZE,
-                             (float)SETTINGS_ICON_SIZE},
-                 (Vector2){0, 0}, 0.0f, WHITE);
-
-  // Red cross overlay if SFX is off (single diagonal: bottom-left to top-right)
-  if (!assets.sfxEnabled) {
-    int cx = sfxIconX;
-    int cy = iconAreaY;
-    DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
-               (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
-  }
-
-  // SFX label below icon
-  const char *sfxLabel = "SFX";
-  int sfxLabelW = (int)MeasureTextEx(assets.font, sfxLabel, 14.0f, 1.0f).x;
-  DrawTextEx(assets.font, sfxLabel,
-             (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
-                       (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
-             14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
-
-  // Music icon
-  int musicIconX = (int)layout.musicIcon.x;
-  DrawTexturePro(assets.musicalNote,
-                 (Rectangle){0, 0, (float)assets.musicalNote.width,
-                             (float)assets.musicalNote.height},
-                 (Rectangle){(float)musicIconX, (float)iconAreaY,
-                             (float)SETTINGS_ICON_SIZE,
-                             (float)SETTINGS_ICON_SIZE},
-                 (Vector2){0, 0}, 0.0f, WHITE);
-
-  // Red cross overlay if Music is off (single diagonal: bottom-left to
-  // top-right)
-  if (!assets.musicEnabled) {
-    int cx = musicIconX;
-    int cy = iconAreaY;
-    DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
-               (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
-  }
-
-  // Music label below icon
-  const char *musicLabel = "Music";
-  int musicLabelW = (int)MeasureTextEx(assets.font, musicLabel, 14.0f, 1.0f).x;
-  DrawTextEx(
-      assets.font, musicLabel,
-      (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
-                (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
-      14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
-
-  // ─── Replay Button ────────────────────────────────────────────────────────
-  int replayBtnY = (int)layout.firstButton.y;
-  Rectangle replayBtn = layout.firstButton;
-  bool replayHover = CheckCollisionPointRec(mouse, replayBtn);
-
-  Color replayBg =
-      replayHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
-  Color replayBorder =
-      replayHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-  DrawRectangleRounded(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
-                       replayBg);
-  DrawRectangleRoundedLines(replayBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
-                            replayBorder);
-
-  // Replay icon at left of text
-  int replayIconSize = 20;
-  DrawTexturePro(assets.replay,
-                 (Rectangle){0, 0, (float)assets.replay.width,
-                             (float)assets.replay.height},
-                 (Rectangle){(float)(BTN_X + 15),
-                             (float)(replayBtnY + (BTN_H - replayIconSize) / 2),
-                             (float)replayIconSize, (float)replayIconSize},
-                 (Vector2){0, 0}, 0.0f, WHITE);
-
-  const char *replayText = "Replay";
-  int replayTextW = (int)MeasureTextEx(assets.font, replayText, 18.0f, 1.0f).x;
-  DrawTextEx(
-      assets.font, replayText,
-      (Vector2){(float)(BTN_X + 15 + replayIconSize + 8 +
-                        (BTN_W - 15 - replayIconSize - 8 - replayTextW) / 2),
-                (float)(replayBtnY + (BTN_H - 18) / 2)},
-      18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
-
-  // ─── Home Button ──────────────────────────────────────────────────────────
-  int homeBtnY = (int)layout.secondButton.y;
-  Rectangle homeBtn = layout.secondButton;
-  bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
-
-  Color homeBg =
-      homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255};
-  Color homeBorder =
-      homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255};
-  DrawRectangleRounded(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeBg);
-  DrawRectangleRoundedLines(homeBtn, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS,
-                            homeBorder);
-
-  // Home icon at left of text
-  int homeIconSize = 20;
-  DrawTexturePro(assets.home,
-                 (Rectangle){0, 0, (float)assets.home.width,
-                             (float)assets.home.height},
-                 (Rectangle){(float)(BTN_X + 15),
-                             (float)(homeBtnY + (BTN_H - homeIconSize) / 2),
-                             (float)homeIconSize, (float)homeIconSize},
-                 (Vector2){0, 0}, 0.0f, WHITE);
-
-  const char *homeText = "Home";
-  int homeTextW = (int)MeasureTextEx(assets.font, homeText, 18.0f, 1.0f).x;
-  DrawTextEx(assets.font, homeText,
-             (Vector2){(float)(BTN_X + 15 + homeIconSize + 8 +
-                               (BTN_W - 15 - homeIconSize - 8 - homeTextW) / 2),
-                       (float)(homeBtnY + (BTN_H - 18) / 2)},
-             18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
-
-  // Footer hint
-  const char *hint = "ESC to go back";
-  int hw = (int)MeasureTextEx(assets.font, hint, 14.0f, 1.0f).x;
-  DrawTextEx(assets.font, hint,
-             (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
-                       (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
-             14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+    textW = (int)MeasureTextEx(assets.font, "ESC to go back", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "ESC to go back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
+
 
 // ----- Menu Settings screen (from main menu gear icon) -----
 void RenderMenuSettings(GameState *state)
 {
-    SettingsLayout layout = GetSettingsLayout(false);
-
-    // Semi-transparent dark overlay
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
-
-    // Settings card frame
-    int cardX = layout.cardX;
-    int cardY = layout.cardY;
-
-    // Card background
-    DrawRectangleRounded(
-        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
-        0.15f, 8, COLOR_SETTINGS_CARD_BG);
-    DrawRectangleRoundedLines(
-        (Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT},
-        0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
-
-    // Title
-    const char *title = "SETTINGS";
-    int tw = (int)MeasureTextEx(assets.font, title, (float)SETTINGS_TITLE_FONT_SIZE, 1.0f).x;
-    DrawTextEx(assets.font, title,
-               (Vector2){(SCREEN_WIDTH - tw) / 2.0f, (float)(cardY + 25)},
-               (float)SETTINGS_TITLE_FONT_SIZE, 1.0f, WHITE);
-
-    // Separator line
-    DrawLineEx((Vector2){cardX + 40, cardY + 65},
-               (Vector2){cardX + SETTINGS_CARD_WIDTH - 40, cardY + 65}, 1.5f,
-               COLOR_SETTINGS_SEPARATOR);
-
     Vector2 mouse = GetMousePosition();
+    int cardX = 80;
+    int cardY = 165;
+    int iconY = 250;
+    int sfxIconX = 160;
+    int musicIconX = 280;
+    int resetY = 330;
+    int homeY = 395;
+    Rectangle resetButton = {BTN_X, resetY, BTN_W, BTN_H};
+    Rectangle homeButton = {BTN_X, homeY, BTN_W, BTN_H};
 
-    // ─── SFX & Music Icons (horizontal) ──────────────────────────────────────
-    // SFX icon
-    int sfxIconX = (int)layout.sfxIcon.x;
-    int iconAreaY = (int)layout.sfxIcon.y;
-    DrawTexturePro(assets.waveSound,
-                   (Rectangle){0, 0, (float)assets.waveSound.width,
-                               (float)assets.waveSound.height},
-                   (Rectangle){(float)sfxIconX, (float)iconAreaY,
-                               (float)SETTINGS_ICON_SIZE,
-                               (float)SETTINGS_ICON_SIZE},
-                   (Vector2){0, 0}, 0.0f, WHITE);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_SETTINGS_OVERLAY_BG);
+    DrawRectangleRounded((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BG);
+    DrawRectangleRoundedLines((Rectangle){cardX, cardY, SETTINGS_CARD_WIDTH, SETTINGS_CARD_HEIGHT}, 0.15f, 8, COLOR_SETTINGS_CARD_BORDER);
 
-    if (!assets.sfxEnabled) {
-        int cx = sfxIconX;
-        int cy = iconAreaY;
-        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
-                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
-    }
+    int textW = (int)MeasureTextEx(assets.font, "SETTINGS", 30.0f, 1.0f).x;
+    DrawTextEx(assets.font, "SETTINGS", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 25}, 30.0f, 1.0f, WHITE);
+    DrawLineEx((Vector2){120, cardY + 65}, (Vector2){360, cardY + 65}, 1.5f, COLOR_SETTINGS_SEPARATOR);
 
-    const char *sfxLabel = "SFX";
-    int sfxLabelW = (int)MeasureTextEx(assets.font, sfxLabel, 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, sfxLabel,
-               (Vector2){(float)(sfxIconX + (SETTINGS_ICON_SIZE - sfxLabelW) / 2),
-                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
-               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){sfxIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.sfxEnabled) DrawLineEx((Vector2){sfxIconX + 2, iconY + 38}, (Vector2){sfxIconX + 38, iconY + 2}, 5.0f, RED);
+    textW = (int)MeasureTextEx(assets.font, "SFX", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "SFX", (Vector2){sfxIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    // Music icon
-    int musicIconX = (int)layout.musicIcon.x;
-    DrawTexturePro(assets.musicalNote,
-                   (Rectangle){0, 0, (float)assets.musicalNote.width,
-                               (float)assets.musicalNote.height},
-                   (Rectangle){(float)musicIconX, (float)iconAreaY,
-                               (float)SETTINGS_ICON_SIZE,
-                               (float)SETTINGS_ICON_SIZE},
-                   (Vector2){0, 0}, 0.0f, WHITE);
+    DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){musicIconX, iconY, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE}, (Vector2){0, 0}, 0.0f, WHITE);
+    if (!assets.musicEnabled) DrawLineEx((Vector2){musicIconX + 2, iconY + 38}, (Vector2){musicIconX + 38, iconY + 2}, 5.0f, RED);
+    textW = (int)MeasureTextEx(assets.font, "Music", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Music", (Vector2){musicIconX + (SETTINGS_ICON_SIZE - textW) / 2.0f, iconY + 44}, 14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    if (!assets.musicEnabled) {
-        int cx = musicIconX;
-        int cy = iconAreaY;
-        DrawLineEx((Vector2){cx + 2, cy + SETTINGS_ICON_SIZE - 2},
-                   (Vector2){cx + SETTINGS_ICON_SIZE - 2, cy + 2}, 5.0f, RED);
-    }
+    bool resetHover = CheckCollisionPointRec(mouse, resetButton);
+    DrawRectangleRounded(resetButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, resetHover ? COLOR_BTN_QUIT_BG_HOVER : COLOR_BTN_QUIT_BG);
+    DrawRectangleRoundedLines(resetButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, resetHover ? COLOR_BTN_QUIT_BORDER_HOVER : COLOR_BTN_QUIT_BORDER);
+    textW = (int)MeasureTextEx(assets.font, "Reset Save", 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Reset Save", (Vector2){BTN_X + (BTN_W - textW) / 2.0f, resetY + 16}, 18.0f, 1.0f, resetHover ? COLOR_BTN_QUIT_TEXT_HOVER : COLOR_BTN_QUIT_TEXT);
 
-    const char *musicLabel = "Music";
-    int musicLabelW = (int)MeasureTextEx(assets.font, musicLabel, 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, musicLabel,
-               (Vector2){(float)(musicIconX + (SETTINGS_ICON_SIZE - musicLabelW) / 2),
-                         (float)(iconAreaY + SETTINGS_ICON_SIZE + 4)},
-               14.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
+    bool homeHover = CheckCollisionPointRec(mouse, homeButton);
+    DrawRectangleRounded(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){60, 60, 80, 255} : (Color){40, 40, 60, 255});
+    DrawRectangleRoundedLines(homeButton, BTN_CORNER_RADIUS, BTN_BORDER_SEGMENTS, homeHover ? (Color){150, 150, 180, 255} : (Color){80, 80, 100, 255});
+    DrawTexturePro(assets.home, (Rectangle){0, 0, (float)assets.home.width, (float)assets.home.height}, (Rectangle){BTN_X + 15, homeY + 15, 20, 20}, (Vector2){0, 0}, 0.0f, WHITE);
+    textW = (int)MeasureTextEx(assets.font, "Home", 18.0f, 1.0f).x;
+    DrawTextEx(assets.font, "Home", (Vector2){BTN_X + 55 + (150 - textW) / 2.0f, homeY + 16}, 18.0f, 1.0f, COLOR_SETTINGS_UNSELECTED_TEXT);
 
-    // ─── Reset Button (progress + high score) ────────────────────────────────
-    Rectangle resetBtn = layout.firstButton;
-    bool resetHover = CheckCollisionPointRec(mouse, resetBtn);
-    DrawMenuButtonStyled(resetBtn, "Reset Save", 18,
-                     (Color){140, 40, 40, 255}, (Color){180, 60, 60, 255},
-                     (Color){160, 60, 60, 255}, (Color){220, 80, 80, 255},
-                     (Color){220, 180, 180, 255}, (Color){255, 220, 220, 255},
-                     resetHover);
-
-    // ─── Home Button ─────────────────────────────────────────────────────────
-    Rectangle homeBtn = layout.secondButton;
-    bool homeHover = CheckCollisionPointRec(mouse, homeBtn);
-    DrawMenuButtonStyled(homeBtn, "Home", 18,
-                     (Color){40, 40, 60, 255}, (Color){60, 60, 80, 255},
-                     (Color){80, 80, 100, 255}, (Color){150, 150, 180, 255},
-                     (Color){180, 180, 210, 255}, (Color){255, 255, 255, 255},
-                     homeHover);
-
-    // Footer hint
-    const char *hint = "ESC to go back";
-    int hw = (int)MeasureTextEx(assets.font, hint, 14.0f, 1.0f).x;
-    DrawTextEx(assets.font, hint,
-               (Vector2){(SCREEN_WIDTH - hw) / 2.0f,
-                         (float)(cardY + SETTINGS_CARD_HEIGHT - 30)},
-               14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
+    textW = (int)MeasureTextEx(assets.font, "ESC to go back", 14.0f, 1.0f).x;
+    DrawTextEx(assets.font, "ESC to go back", (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + SETTINGS_CARD_HEIGHT - 30}, 14.0f, 1.0f, COLOR_SETTINGS_FOOTER_HINT);
 }
+
 
 /* ---- Gameplay rendering implementation ---- */
 
@@ -2585,22 +2281,7 @@ void GameReset(GameState *state)
 }
 
 // Helper: get the rectangle for a level button on the level select screen
-static Rectangle GetLevelButtonRect(int levelIndex)
-{
-    int btnSize = 80;
-    int gap = 15;
-    int totalRowWidth = LEVELS_PER_ROW * btnSize + (LEVELS_PER_ROW - 1) * gap;
-    int mapStartX = (SCREEN_WIDTH - totalRowWidth) / 2;
-    int mapStartY = 150;
-    int row = levelIndex / LEVELS_PER_ROW;
-    int col = levelIndex % LEVELS_PER_ROW;
-    return (Rectangle){
-        mapStartX + col * (btnSize + gap),
-        mapStartY + row * (btnSize + gap + 30),
-        btnSize,
-        btnSize
-    };
-}
+
 
 void GameUpdate(GameState *state)
 {
@@ -2630,7 +2311,7 @@ void GameUpdate(GameState *state)
                     state->currentScreen = SCREEN_LEVEL_SELECT;
                 } else if (CheckCollisionPointRec(mouse, quitBtn)) {
                     SoundPlayMenuClick(&assets);
-                    CloseWindow();
+                    state->shouldQuit = true;
                 } else if (CheckCollisionPointRec(mouse, gearRect)) {
                     SoundPlayMenuClick(&assets);
                     state->currentScreen = SCREEN_MENU_SETTINGS;
@@ -2698,7 +2379,9 @@ void GameUpdate(GameState *state)
                 }
 
                 for (int i = 0; i < TOTAL_LEVELS; i++) {
-                    Rectangle btn = GetLevelButtonRect(i);
+                    int row = i / LEVELS_PER_ROW;
+                    int col = i % LEVELS_PER_ROW;
+                    Rectangle btn = {100 + col * 95, 150 + row * 125, AMAP_BTN_SIZE, AMAP_BTN_SIZE};
                     if (CheckCollisionPointRec(mouse, btn)) {
                         if (LevelIsUnlocked(state->unlockedLevel, i + 1)) {
                             SoundPlayMenuClick(&assets);
@@ -2809,69 +2492,59 @@ static void ExecuteSetting(GameState *state, int index)
 void GameUpdateSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
-    SettingsLayout layout = GetSettingsLayout(false);
+    Rectangle sfxIcon = {160, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
+    Rectangle musicIcon = {280, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
+    Rectangle replayButton = {BTN_X, 330, BTN_W, BTN_H};
+    Rectangle homeButton = {BTN_X, 395, BTN_W, BTN_H};
 
-    // Hover highlight for visual feedback
-    if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
-        state->selectedSetting = SETTING_SFX;
-    } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
-        state->selectedSetting = SETTING_MUSIC;
-    } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
-        state->selectedSetting = SETTING_RESTART;
-    } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
-        state->selectedSetting = SETTING_QUIT;
-    }
+    if (CheckCollisionPointRec(mouse, sfxIcon)) state->selectedSetting = SETTING_SFX;
+    else if (CheckCollisionPointRec(mouse, musicIcon)) state->selectedSetting = SETTING_MUSIC;
+    else if (CheckCollisionPointRec(mouse, replayButton)) state->selectedSetting = SETTING_RESTART;
+    else if (CheckCollisionPointRec(mouse, homeButton)) state->selectedSetting = SETTING_QUIT;
 
-    // Click handling
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
-            ExecuteSetting(state, SETTING_SFX);
-        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
-            ExecuteSetting(state, SETTING_MUSIC);
-        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
-            ExecuteSetting(state, SETTING_RESTART);
-        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
-            ExecuteSetting(state, SETTING_QUIT);
-        }
+        if (CheckCollisionPointRec(mouse, sfxIcon)) ExecuteSetting(state, SETTING_SFX);
+        else if (CheckCollisionPointRec(mouse, musicIcon)) ExecuteSetting(state, SETTING_MUSIC);
+        else if (CheckCollisionPointRec(mouse, replayButton)) ExecuteSetting(state, SETTING_RESTART);
+        else if (CheckCollisionPointRec(mouse, homeButton)) ExecuteSetting(state, SETTING_QUIT);
     }
 
-    // Back to game with ESC
     if (IsKeyPressed(KEY_ESCAPE)) {
         SoundPlayMenuClick(&assets);
         state->currentScreen = state->prevScreen;
     }
 }
 
+
 // Menu settings: SFX, Music, Reset Progress, Home (no Replay)
 void GameUpdateMenuSettings(GameState *state)
 {
     Vector2 mouse = GetMousePosition();
-    SettingsLayout layout = GetSettingsLayout(false);
+    Rectangle sfxIcon = {160, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
+    Rectangle musicIcon = {280, 250, SETTINGS_ICON_SIZE, SETTINGS_ICON_SIZE};
+    Rectangle resetButton = {BTN_X, 330, BTN_W, BTN_H};
+    Rectangle homeButton = {BTN_X, 395, BTN_W, BTN_H};
 
-    // Click handling
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (CheckCollisionPointRec(mouse, layout.sfxIcon)) {
+        if (CheckCollisionPointRec(mouse, sfxIcon)) {
             SoundPlayMenuClick(&assets);
             SoundToggleSfx(&assets);
-        } else if (CheckCollisionPointRec(mouse, layout.musicIcon)) {
+        } else if (CheckCollisionPointRec(mouse, musicIcon)) {
             SoundPlayMenuClick(&assets);
             SoundToggleMusic(&assets);
-        } else if (CheckCollisionPointRec(mouse, layout.firstButton)) {
+        } else if (CheckCollisionPointRec(mouse, resetButton)) {
             SoundPlayMenuClick(&assets);
             state->unlockedLevel = 1;
             state->highScore = 0;
             SaveWrite(state->highScore, state->unlockedLevel);
-        } else if (CheckCollisionPointRec(mouse, layout.secondButton)) {
+        } else if (CheckCollisionPointRec(mouse, homeButton)) {
             SoundPlayMenuClick(&assets);
             state->currentScreen = SCREEN_MENU;
         }
     }
 
-    // Back to menu with ESC
     if (IsKeyPressed(KEY_ESCAPE)) {
         SoundPlayMenuClick(&assets);
         state->currentScreen = SCREEN_MENU;
     }
 }
-
-
