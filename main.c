@@ -7,7 +7,6 @@
 #include <time.h>
 
 // ─── Screen & Layout
-// ──────────────────────────────────────────────────────────
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 800
 #define CELL_SIZE 50
@@ -16,7 +15,6 @@
 #define PANEL_Y 580
 
 // ─── Grid
-// ─────────────────────────────────────────────────────────────────────
 #define GRID_SIZE 8
 #define CELL_EMPTY 0
 #define GEM_NONE 0
@@ -24,43 +22,33 @@
 #define GEM_EMERALD 2
 
 // ─── Piece System
-// ─────────────────────────────────────────────────────────────
 #define MAX_PIECE_SIZE 5
 #define PIECE_DEF_COUNT 18
 #define PANEL_PIECE_SCALE 25
 
 // ─── Scoring
-// ──────────────────────────────────────────────────────────────────
 #define BASE_SCORE 100
 #define ScoreCalculate(lines, combo) (BASE_SCORE * (lines) * (combo))
 
 // ─── Animation
-// ────────────────────────────────────────────────────────────────
 #define CLEAR_ANIM_DURATION 0.35f
 #define MAX_ANIMS 16
 
 // ─── Floating Text
-// ────────────────────────────────────────────────────────────
 #define MAX_FLOAT_TEXTS 8
 #define FLOAT_TEXT_LEN 32
 #define FLOAT_TEXT_DURATION 1.2f
 #define FLOAT_TEXT_SPEED 60.0f
 
 // ─── Particles
-// ────────────────────────────────────────────────────────────────
 #define MAX_PARTICLES 512
 #define PARTICLE_LIFE 0.7f
 
 // ─── Adventure Mode
-// ───────────────────────────────────────────────────────────
 #define TOTAL_LEVELS 10
 #define LEVELS_PER_ROW 3
 #define DIAMOND_SPAWN_CHANCE 0.15f
 #define EMERALD_SPAWN_CHANCE 0.12f
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Colour palette — flat constants, no structs
-//  ═══════════════════════════════════════════════════════════════════════════════
 
 // Background colour for the whole screen
 #define COLOR_BG ((Color){40, 60, 100, 255})
@@ -78,7 +66,6 @@ const Color PIECE_COLORS[] = {
 };
 
 // ─── Gems
-// ─────────────────────────────────────────────────────────────────────
 #define GEM_SIZE_RATIO 0.50f
 
 /* ---- Piece types ---- */
@@ -207,8 +194,6 @@ typedef struct {
 /* ---- Asset types ---- */
 
 typedef struct {
-    Font font;
-
     Texture2D crown;
     Texture2D diamond;
     Texture2D emerald;
@@ -395,14 +380,9 @@ void GameUpdateSettings(GameState *state);
 
 int main(void)
 {
-    MakeDirectory("data");
-
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Block Blast");
-    SetExitKey(0);
     SetTargetFPS(60);
-
     AssetsLoad(&assets);
-
     GameState state;
     GameInit(&state);
 
@@ -422,12 +402,7 @@ int main(void)
     return 0;
 }
 
-/* ------------------------------------------------------------------------- */
-/* Implementation                                                            */
-/* ------------------------------------------------------------------------- */
-
 /* ---- Piece implementation ---- */
-
 void PieceGenerate(Piece *p, float diamondChance, float emeraldChance)
 {
     if (!p) return;
@@ -868,9 +843,7 @@ void FloatTextDraw(FloatTextQueue *queue)
         Color clr = queue->items[i].color;
         clr.a = alpha;
 
-        int w = (int)MeasureTextEx(assets.font, queue->items[i].text, (float)fontSize, 1.0f).x;
-        DrawTextEx(assets.font, queue->items[i].text, (Vector2){queue->items[i].x - w / 2.0f, queue->items[i].y},
-                   (float)fontSize, 1.0f, clr);
+        DrawText(queue->items[i].text, (int)queue->items[i].x, (int)queue->items[i].y, fontSize, clr);
     }
 }
 
@@ -937,7 +910,7 @@ void SaveLoad(int *highScore, int *unlockedLevel)
     if (highScore) *highScore = 0;
     if (unlockedLevel) *unlockedLevel = 1;
 
-    f = fopen("data/save.txt", "r");
+    f = fopen("save.txt", "r");
     if (!f) return;
 
     while (fgets(line, sizeof(line), f)) {
@@ -955,12 +928,10 @@ void SaveLoad(int *highScore, int *unlockedLevel)
 
 void SaveWrite(int highScore, int unlockedLevel)
 {
-    FILE *f = fopen("data/save.txt", "w");
+    FILE *f = fopen("save.txt", "w");
     if (!f) return;
-
     if (highScore < 0) highScore = 0;
 
-    fprintf(f, "# Block Blast save file\n");
     fprintf(f, "highScore=%d\n", highScore);
     fprintf(f, "unlockedLevel=%d\n", ClampUnlockedLevel(unlockedLevel));
     fclose(f);
@@ -971,8 +942,6 @@ void SaveWrite(int highScore, int unlockedLevel)
 void AssetsLoad(GameAssets *assets)
 {
     InitAudioDevice();
-
-    assets->font = LoadFontEx("assets/RussoOne-Regular.ttf", 200, 0, 0);
 
     assets->crown = LoadTexture("assets/crown.png");
     assets->diamond = LoadTexture("assets/diamond.png");
@@ -1030,15 +999,12 @@ void AssetsUnload(GameAssets *assets)
     UnloadTexture(assets->completed);
     UnloadTexture(assets->logo);
 
-    UnloadFont(assets->font);
     CloseAudioDevice();
 }
 
 void AssetsUpdateMusic(GameAssets *assets)
 {
-    if (assets->musicEnabled) {
-        UpdateMusicStream(assets->bgMusic);
-    }
+    if (assets->musicEnabled)  UpdateMusicStream(assets->bgMusic);
 }
 
 void SoundToggleSfx(GameAssets *assets)
@@ -1098,7 +1064,6 @@ void RenderPlayHUD(GameState *state)
 {
     const LevelDef *def = &defaultLevelDefs[state->selectedLevel];
     char buf[128];
-    int textW;
 
     if (state->selectedLevel == 0) {
         DrawTexturePro(assets.crown,
@@ -1107,16 +1072,14 @@ void RenderPlayHUD(GameState *state)
             (Vector2){0, 0}, 0.0f, WHITE);
 
         sprintf(buf, "%d", state->highScore);
-        DrawTextEx(assets.font, buf, (Vector2){51, 16}, 20.0f, 1.0f, WHITE);
+        DrawText(buf, 51, 16, 20, WHITE);
 
         sprintf(buf, "%d", state->score);
-        textW = (int)MeasureTextEx(assets.font, buf, 40.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 40}, 40.0f, 1.0f, WHITE);
+        DrawText(buf, 220, 40, 40, WHITE);
 
         if (state->combo > 1) {
             sprintf(buf, "COMBO x%d", state->combo);
-            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 80}, 18.0f, 1.0f, WHITE);
+            DrawText(buf, 190, 80, 18, WHITE);
         }
         return;
     }
@@ -1127,8 +1090,7 @@ void RenderPlayHUD(GameState *state)
 
     if (hasScore) {
         sprintf(buf, "%d / %d", state->score, def->targetScore);
-        textW = (int)MeasureTextEx(assets.font, buf, 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, 49}, 28.0f, 1.0f, WHITE);
+        DrawText(buf, 170, 49, 28, WHITE);
     }
 
     if (hasDiamond) {
@@ -1139,8 +1101,7 @@ void RenderPlayHUD(GameState *state)
             (Rectangle){0, 0, (float)assets.diamond.width, (float)assets.diamond.height},
             (Rectangle){99, 41, 32, 32},
             (Vector2){0, 0}, 0.0f, WHITE);
-        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){115 - textW / 2.0f, 79}, 22.0f, 1.0f, WHITE);
+        DrawText(buf, 109, 79, 22, WHITE);
     }
 
     if (hasEmerald) {
@@ -1151,8 +1112,7 @@ void RenderPlayHUD(GameState *state)
             (Rectangle){0, 0, (float)assets.emerald.width, (float)assets.emerald.height},
             (Rectangle){349, 41, 32, 32},
             (Vector2){0, 0}, 0.0f, WHITE);
-        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){365 - textW / 2.0f, 79}, 22.0f, 1.0f, WHITE);
+        DrawText(buf, 359, 79, 22, WHITE);
     }
 }
 
@@ -1167,8 +1127,7 @@ void RenderLevelSelect(GameState *state)
         (Rectangle){15, 15, 32, 32},
         (Vector2){0, 0}, 0.0f, WHITE);
 
-    int textW;
-    DrawTextEx(assets.font, "ADVENTURE", (Vector2){130, 30}, 36.0f, 1.0f, WHITE);
+    DrawText("ADVENTURE", 130, 30, 36, WHITE);
 
     for (int i = 0; i < TOTAL_LEVELS; i++) {
         int row = i / LEVELS_PER_ROW;
@@ -1188,8 +1147,7 @@ void RenderLevelSelect(GameState *state)
 
         char levelText[8];
         sprintf(levelText, "%d", i + 1);
-        textW = (int)MeasureTextEx(assets.font, levelText, 28.0f, 1.0f).x;
-        DrawTextEx(assets.font, levelText, (Vector2){x + (80 - textW) / 2.0f, y + 20}, 28.0f, 1.0f, WHITE);
+        DrawText(levelText, x + 32, y + 20, 28, WHITE);
 
         if (completed) {
             DrawTexturePro(assets.completed,
@@ -1205,10 +1163,10 @@ void RenderLevelSelect(GameState *state)
     }
 
     if (state->unlockedLevel > TOTAL_LEVELS) {
-        DrawTextEx(assets.font, "Completed!", (Vector2){145, 690}, 28.0f, 1.0f, WHITE);
+        DrawText("Completed!", 145, 690, 28, WHITE);
     }
 
-    DrawTextEx(assets.font, "ESC: Main Menu", (Vector2){178, SCREEN_HEIGHT - 30}, 16.0f, 1.0f, WHITE);
+    DrawText("ESC: Main Menu", 178, SCREEN_HEIGHT - 30, 16, WHITE);
 }
 
 
@@ -1233,29 +1191,24 @@ void RenderResult(GameState *state)
 
     const char *title = state->level.levelFailed ? (state->selectedLevel == 0 ? "GAME OVER" : "LEVEL FAILED!") : "LEVEL COMPLETE!";
     Color titleColor = state->level.levelFailed ? (Color){255, 80, 80, 255} : (Color){50, 255, 100, 255};
-    int textW = (int)MeasureTextEx(assets.font, title, 32.0f, 1.0f).x;
-    DrawTextEx(assets.font, title, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 30}, 32.0f, 1.0f, titleColor);
+    DrawText(title, 95, cardY + 30, 32, titleColor);
 
     sprintf(buf, "Score: %d", state->score);
-    textW = (int)MeasureTextEx(assets.font, buf, 28.0f, 1.0f).x;
-    DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 100}, 28.0f, 1.0f, WHITE);
+    DrawText(buf, 145, cardY + 100, 28, WHITE);
 
     if (state->selectedLevel == 0) {
         sprintf(buf, "Best: %d", state->highScore);
-        textW = (int)MeasureTextEx(assets.font, buf, 22.0f, 1.0f).x;
-        DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, cardY + 140}, 22.0f, 1.0f, WHITE);
+        DrawText(buf, 165, cardY + 140, 22, WHITE);
     } else {
         int y = cardY + 145;
         if (def->targetDiamonds > 0) {
             sprintf(buf, "Diamonds: %d / %d", state->level.collectedDiamonds, def->targetDiamonds);
-            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, WHITE);
+            DrawText(buf, 145, y, 18, WHITE);
             y += 30;
         }
         if (def->targetEmeralds > 0) {
             sprintf(buf, "Emeralds: %d / %d", state->level.collectedEmeralds, def->targetEmeralds);
-            textW = (int)MeasureTextEx(assets.font, buf, 18.0f, 1.0f).x;
-            DrawTextEx(assets.font, buf, (Vector2){(SCREEN_WIDTH - textW) / 2.0f, y}, 18.0f, 1.0f, WHITE);
+            DrawText(buf, 145, y, 18, WHITE);
         }
     }
 
@@ -1271,14 +1224,13 @@ void RenderResult(GameState *state)
 
     DrawRectangleRounded(topButton, 0.25f, 8, topBg);
     DrawRectangleRoundedLines(topButton, 0.25f, 8, topBorder);
-    textW = (int)MeasureTextEx(assets.font, topText, 18.0f, 1.0f).x;
-    DrawTextEx(assets.font, topText, (Vector2){130 + (220 - textW) / 2.0f, topButton.y + 16}, 18.0f, 1.0f, WHITE);
+    DrawText(topText, 178, topButton.y + 16, 18, WHITE);
 
     DrawRectangleRounded(bottomButton, 0.25f, 8, (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(bottomButton, 0.25f, 8, (Color){80, 80, 100, 255});
-    DrawTextEx(assets.font, "Main Menu", (Vector2){188, bottomButton.y + 16}, 18.0f, 1.0f, WHITE);
+    DrawText("Main Menu", 188, bottomButton.y + 16, 18, WHITE);
 
-    DrawTextEx(assets.font, "ESC: Go Back", (Vector2){188, SCREEN_HEIGHT - 25}, 14.0f, 1.0f, WHITE);
+    DrawText("ESC: Go Back", 188, SCREEN_HEIGHT - 25, 14, WHITE);
 }
 
 // ----- Menu screen -----
@@ -1302,32 +1254,24 @@ void RenderMenu(GameState *state) {
   DrawRectangleRounded(stdBtn, 0.25f, 8, (Color){60, 100, 180, 255});
   DrawRectangleRoundedLines(stdBtn, 0.25f, 8, (Color){100, 150, 220, 255});
 
-  DrawTextEx(assets.font, "Classic Mode",
-             (Vector2){151, 344},
-             22.0f, 1.0f, WHITE);
+  DrawText("Classic", 151, 344, 22, WHITE);
 
   // --- Adventure Mode Button ---
   Rectangle advBtn = {130, 400, 220, 50};
   DrawRectangleRounded(advBtn, 0.25f, 8, (Color){55, 40, 85, 255});
   DrawRectangleRoundedLines(advBtn, 0.25f, 8, (Color){100, 70, 150, 255});
 
-  DrawTextEx(assets.font, "Adventure Mode",
-             (Vector2){134, 414},
-             22.0f, 1.0f, WHITE);
+  DrawText("Adventure", 134, 414, 22, WHITE);
 
   if (state->unlockedLevel > TOTAL_LEVELS) {
-      DrawTextEx(assets.font, "Completed",
-                 (Vector2){198, 455},
-                 14.0f, 1.0f, (Color){ 50,  255, 100, 255 });
+      DrawText("Completed", 198, 455, 14, (Color){ 50,  255, 100, 255 });
   }
 
   // --- Quit Button ---
   Rectangle quitBtn = {130, 470, 220, 50};
   DrawRectangleRounded(quitBtn, 0.25f, 8, (Color){140, 40, 40, 255});
   DrawRectangleRoundedLines(quitBtn, 0.25f, 8, (Color){160, 60, 60, 255});
-  DrawTextEx(assets.font, "Quit",
-             (Vector2){217, 484},
-             22.0f, 1.0f, WHITE);
+  DrawText("Quit", 217, 484, 22, WHITE);
 
   // --- Game Simulation Decoration ---
   int s = 35; // Block size for mini grid
@@ -1387,32 +1331,32 @@ void RenderSettings(GameState *state)
     DrawRectangleRounded((Rectangle){80, 165, 320, 430}, 0.15f, 8, (Color){20, 25, 50, 235});
     DrawRectangleRoundedLines((Rectangle){80, 165, 320, 430}, 0.15f, 8, (Color){60, 70, 110, 180});
 
-    DrawTextEx(assets.font, "SETTINGS", (Vector2){158, 190}, 30.0f, 1.0f, WHITE);
+    DrawText("SETTINGS", 158, 190, 30, WHITE);
     DrawLineEx((Vector2){120, 230}, (Vector2){360, 230}, 1.5f, (Color){80, 80, 120, 200});
 
     DrawTexturePro(assets.waveSound, (Rectangle){0, 0, (float)assets.waveSound.width, (float)assets.waveSound.height}, (Rectangle){160, 250, 40, 40}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.sfxEnabled) DrawLineEx((Vector2){162, 288}, (Vector2){198, 252}, 5.0f, RED);
-    DrawTextEx(assets.font, "SFX", (Vector2){166, 294}, 14.0f, 1.0f, WHITE);
+    DrawText("Sound Effects", 140, 294, 14, WHITE);
 
     DrawTexturePro(assets.musicalNote, (Rectangle){0, 0, (float)assets.musicalNote.width, (float)assets.musicalNote.height}, (Rectangle){280, 250, 40, 40}, (Vector2){0, 0}, 0.0f, WHITE);
     if (!assets.musicEnabled) DrawLineEx((Vector2){282, 288}, (Vector2){318, 252}, 5.0f, RED);
-    DrawTextEx(assets.font, "Music", (Vector2){279, 294}, 14.0f, 1.0f, WHITE);
+    DrawText("Music", 279, 294, 14, WHITE);
 
     if (menuSettings) {
         DrawRectangleRounded(actionButton, 0.25f, 8, (Color){140, 40, 40, 255});
         DrawRectangleRoundedLines(actionButton, 0.25f, 8, (Color){160, 60, 60, 255});
-        DrawTextEx(assets.font, "Reset Save", (Vector2){181, 346}, 18.0f, 1.0f, WHITE);
+        DrawText("Reset Progress", 160, 346, 18, WHITE);
     } else {
         DrawRectangleRounded(actionButton, 0.25f, 8, (Color){40, 40, 60, 255});
         DrawRectangleRoundedLines(actionButton, 0.25f, 8, (Color){80, 80, 100, 255});
-        DrawTextEx(assets.font, "Replay", (Vector2){206, 346}, 18.0f, 1.0f, WHITE);
+        DrawText("Replay", 206, 346, 18, WHITE);
     }
 
     DrawRectangleRounded(homeButton, 0.25f, 8, (Color){40, 40, 60, 255});
     DrawRectangleRoundedLines(homeButton, 0.25f, 8, (Color){80, 80, 100, 255});
-    DrawTextEx(assets.font, "Home", (Vector2){215, 411}, 18.0f, 1.0f, WHITE);
+    DrawText("Home", 215, 411, 18, WHITE);
 
-    DrawTextEx(assets.font, "ESC to go back", (Vector2){180, 565}, 14.0f, 1.0f, WHITE);
+    DrawText("ESC to go back", 180, 565, 14, WHITE);
 }
 
 
@@ -2162,13 +2106,5 @@ void GameUpdateSettings(GameState *state)
             else
                 state->currentScreen = (state->selectedLevel > 0) ? SCREEN_LEVEL_SELECT : SCREEN_MENU;
         }
-    }
-
-    if (IsKeyPressed(KEY_ESCAPE)) {
-        SoundPlayMenuClick(&assets);
-        if (menuSettings)
-            state->currentScreen = SCREEN_MENU;
-        else
-            state->currentScreen = state->prevScreen;
     }
 }

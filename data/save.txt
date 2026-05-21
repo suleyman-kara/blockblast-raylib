@@ -1,3 +1,0 @@
-# Block Blast save file
-highScore=700
-unlockedLevel=2
